@@ -1,6 +1,6 @@
 {
     "version": "master",
-    "name": "matbea/btcbridge",
+    "name": "matbea/bitcoinphp-lib",
     "type": "library",
     "description": "Client library for Matbea API service.",
     "license": "Unlicense",
