@@ -1,6 +1,7 @@
 {
     "version": "1.0.0",
     "name": "matbea/bitcoinphp-lib",
+    "minimum-stability": "stable",
     "type": "library",
     "description": "Client library for Matbea API service.",
     "license": "Unlicense",
