@@ -1,4 +1,5 @@
 {
+    "version": "master",
     "name": "matbea/btcbridge",
     "type": "library",
     "description": "Client library for Matbea API service.",
