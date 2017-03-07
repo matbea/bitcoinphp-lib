@@ -1,5 +1,5 @@
 {
-    "version": "master",
+    "version": "1.0.0",
     "name": "matbea/bitcoinphp-lib",
     "type": "library",
     "description": "Client library for Matbea API service.",
