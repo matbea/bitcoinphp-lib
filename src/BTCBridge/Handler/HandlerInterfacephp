@@ -10,93 +10,26 @@
 
 namespace BTCBridge\Handler;
 
-use \Psr\Log\LoggerInterface;
-use \Monolog\Logger;
-use \BTCBridge\Api\Transaction;
-use \BTCBridge\Api\Address;
-use \BTCBridge\Api\TransactionReference;
+use Psr\Log\LoggerInterface;
 
 /**
- * Base Handler class providing the Handler structure, must be extended
+ * Interface that all BTCBridge Handlers must implement
  *
  * @author Matbea <mail@matbea.com>
  */
-abstract class AbstractHandler
+
+interface HandlerInterface
 {
-
-    /** @var LoggerInterface logger handler */
-    protected $logger;
-
-    /** @var array options */
-    protected $options = [];
-
-    /**
-     * Constructor
-     */
-    public function __construct()
-    {
-        $this->setLogger(new Logger('BTCBridge'));
-        $this->setOption(
-            "browser",
-            'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36'
-        );
-    }
-
     /**
      * Sets the logger handler
      *
      * @param LoggerInterface $loggerHandle a handler to logging Interface
      *
-     * @throws \RuntimeException in case of error of this type
-     * @throws \InvalidArgumentException in case of error of this type
+     * @throws \RuntimeException in case of any error
      *
+     * @return array
      */
-    public function setLogger(LoggerInterface $loggerHandle)
-    {
-        $this->logger = $loggerHandle;
-    }
-
-    /**
-     * Sets the option
-     *
-     * @param string $optionname a name of the option
-     * @param string $optionvalue a value of the option
-     *
-     * @throws \InvalidArgumentException if error of this type
-     *
-     */
-    protected function setOption($optionname, $optionvalue)
-    {
-        if (gettype($optionname) != "string" || "" == $optionname) {
-            throw new \InvalidArgumentException("Bad type of option name (must be non empty string)");
-        }
-        if (gettype($optionvalue) != "string" || "" == $optionvalue) {
-            throw new \InvalidArgumentException("Bad type of option value (must be non empty string)");
-        }
-        $this->options[$optionname] = $optionvalue;
-    }
-
-    /**
-     * Gets the option
-     *
-     * @param string $optionname a name of the option
-     *
-     * @throws \InvalidArgumentException if error of this type
-     * @throws \RuntimeException in case if this option is not exists
-     *
-     * @return string Option
-     */
-    protected function getOption($optionname)
-    {
-        if (gettype($optionname) != "string" || "" == $optionname) {
-            throw new \InvalidArgumentException("Bad type of option name (must be non empty string)");
-        }
-        if (!isset($this->options[$optionname])) {
-            throw new \RuntimeException("No option with name \"" . $optionname . "\" exists in the class)");
-        }
-        return $this->options[$optionname];
-    }
-
+    public function setLogger(LoggerInterface $loggerHandle);
 
     /**
      * The listtransactions RPC returns the most recent transactions that affect the wallet.
@@ -134,12 +67,11 @@ abstract class AbstractHandler
      *   the response will omit address information (useful to speed up the API call for larger wallets).
      * ]
      *
-     * @throws \RuntimeException in case of any error of this type
-     * @throws \InvalidArgumentException in case of any error of this type
+     * @throws \RuntimeException in case of any error
      *
-     * @return Address object
+     * @return array
      */
-    abstract public function listtransactions($address, array $options = array());
+    public function listtransactions($address, array $options = array());
 
     /**
      * The gettransaction RPC gets detailed information about an in-wallet transaction.
@@ -161,9 +93,9 @@ abstract class AbstractHandler
      * @throws \RuntimeException in case of any error
      * @throws \InvalidArgumentException if error of this type
      *
-     * @return Transaction
+     * @return array
      */
-    abstract public function gettransaction($TXHASH, array $options = array());
+    public function gettransaction($TXHASH, array $options = array());
 
     /**
      * The getbalance RPC gets the balance in decimal bitcoins across all accounts or for a particular account.
@@ -180,9 +112,9 @@ abstract class AbstractHandler
      * @throws \RuntimeException in case of any error
      * @throws \InvalidArgumentException if error of this type
      *
-     * @return integer                            The balance in satoshi
+     * @return float                            The balance in bitcoins
      */
-    abstract public function getbalance($Account, $Confirmations = 1, $IncludeWatchOnly = false);
+    public function getbalance($Account, $Confirmations = 1, $IncludeWatchOnly = false);
 
     /**
      * Returns the wallet’s total unconfirmed balance.
@@ -196,9 +128,9 @@ abstract class AbstractHandler
      * @throws \RuntimeException in case of any error
      * @throws \InvalidArgumentException if error of this type
      *
-     * @return integer The total number of bitcoins paid to the passed wallet in unconfirmed transactions (in satoshi)
+     * @return float The total number of bitcoins paid to the passed wallet in unconfirmed transactions
      */
-    abstract public function getunconfirmedbalance($Account);
+    public function getunconfirmedbalance($Account);
 
     /**
      * Returns an array of unspent transaction outputs belonging to this wallet.
@@ -214,9 +146,9 @@ abstract class AbstractHandler
      * @throws \RuntimeException in case of any error
      * @throws \InvalidArgumentException if error of this type
      *
-     * @return  TransactionReference[] The list of unspent outputs
+     * @return array The list of unspent outputs
      */
-    abstract public function listunspent($Account, $MinimumConfirmations = 1);
+    public function listunspent($Account, $MinimumConfirmations = 1);
 
     /**
      * The sendrawtransaction RPC validates a transaction and broadcasts it to the peer-to-peer network.
@@ -231,6 +163,7 @@ abstract class AbstractHandler
      * @throws \InvalidArgumentException if error of this type
      *
      */
-    abstract public function sendrawtransaction($Transaction);
-
+    public function sendrawtransaction($Transaction);
 }
+
+;

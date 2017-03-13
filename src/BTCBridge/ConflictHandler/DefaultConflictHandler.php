@@ -10,6 +10,7 @@
  */
 
 namespace BTCBridge\ConflictHandler;
+
 use BTCBridge\Exception\ConflictHandlerException;
 
 /**
@@ -17,72 +18,82 @@ use BTCBridge\Exception\ConflictHandlerException;
  *
  * @author Matbea <mail@matbea.com>
  */
-class DefaultConflictHandler implements ConflictHandlerInterface {
+class DefaultConflictHandler implements ConflictHandlerInterface
+{
 
-	/**
-	 * {@inheritdoc}
-	 */
-	public function listtransactions($data) {
-		$uniq_results = array_map( 'unserialize', array_unique( array_map( 'serialize', $data ) ) ); //$uniq_results = array_unique($results);
-		if ( 1 != count($uniq_results) ) {
-			throw new \BTCBridge\Exception\ConflictHandlerException("No equal results from different services.");
-		}
-		return $data[0];
-	}
+    /**
+     * {@inheritdoc}
+     */
+    public function listtransactions($data)
+    {
+        $uniq_results = array_map(
+            'unserialize',
+            array_unique(array_map('serialize', $data))
+        ); //$uniq_results = array_unique($results);
+        if (1 != count($uniq_results)) {
+            throw new ConflictHandlerException("No equal results from different services.");
+        }
+        return $data[0];
+    }
 
-	/**
-	 * {@inheritdoc}
-	 */
-	public function gettransaction($data) {
-		$uniq_results = array_map( 'unserialize', array_unique( array_map( 'serialize', $data ) ) );
-		if ( 1 != count($uniq_results) ) {
-			throw new ConflictHandlerException("No equal results from different services.");
-		}
-		return $data[0];
-	}
+    /**
+     * {@inheritdoc}
+     */
+    public function gettransaction($data)
+    {
+        $uniq_results = array_map('unserialize', array_unique(array_map('serialize', $data)));
+        if (1 != count($uniq_results)) {
+            throw new ConflictHandlerException("No equal results from different services.");
+        }
+        return $data[0];
+    }
 
-	/**
-	 * {@inheritdoc}
-	 */
-	public function getbalance($data) {
-		$uniq_results = array_map( 'unserialize', array_unique( array_map( 'serialize', $data ) ) );
-		if ( 1 != count($uniq_results) ) {
-			throw new ConflictHandlerException("No equal results from different services.");
-		}
-		return $data[0];
-	}
+    /**
+     * {@inheritdoc}
+     */
+    public function getbalance($data)
+    {
+        $uniq_results = array_map('unserialize', array_unique(array_map('serialize', $data)));
+        if (1 != count($uniq_results)) {
+            throw new ConflictHandlerException("No equal results from different services.");
+        }
+        return $data[0];
+    }
 
-	/**
-	 * {@inheritdoc}
-	 */
-	public function getunconfirmedbalance($data) {
-		$uniq_results = array_map( 'unserialize', array_unique( array_map( 'serialize', $data ) ) );
-		if ( 1 != count($uniq_results) ) {
-			throw new ConflictHandlerException("No equal results from different services.");
-		}
-		return $data[0];
-	}
+    /**
+     * {@inheritdoc}
+     */
+    public function getunconfirmedbalance($data)
+    {
+        $uniq_results = array_map('unserialize', array_unique(array_map('serialize', $data)));
+        if (1 != count($uniq_results)) {
+            throw new ConflictHandlerException("No equal results from different services.");
+        }
+        return $data[0];
+    }
 
-	/**
-	 * {@inheritdoc}
-	 */
-	public function listunspent($data) {
-		$uniq_results = array_map( 'unserialize', array_unique( array_map( 'serialize', $data ) ) );
-		if ( 1 != count($uniq_results) ) {
-			throw new ConflictHandlerException("No equal results from different services.");
-		}
-		return $data[0];
-	}
+    /**
+     * {@inheritdoc}
+     */
+    public function listunspent($data)
+    {
+        $uniq_results = array_map('unserialize', array_unique(array_map('serialize', $data)));
+        if (1 != count($uniq_results)) {
+            throw new ConflictHandlerException("No equal results from different services.");
+        }
+        return $data[0];
+    }
 
-	/**
-	 * {@inheritdoc}
-	 */
-	public function sendrawtransaction($data) {
-		$uniq_results = array_map( 'unserialize', array_unique( array_map( 'serialize', $data ) ) );
-		if ( 1 != count($uniq_results) ) {
-			throw new ConflictHandlerException("No equal results from different services.");
-		}
-		return $data[0];
-	}
+    /**
+     * {@inheritdoc}
+     */
+    public function sendrawtransaction($data)
+    {
+        $uniq_results = array_map('unserialize', array_unique(array_map('serialize', $data)));
+        if (1 != count($uniq_results)) {
+            throw new ConflictHandlerException("No equal results from different services.");
+        }
+        return $data[0];
+    }
 
 }

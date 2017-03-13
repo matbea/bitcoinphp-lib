@@ -11,99 +11,125 @@
 
 namespace BTCBridge\Handler;
 
+use BTCBridge\Api\Transaction;
+//use BTCBridge\Api\TransactionInput;
+//use BTCBridge\Api\TransactionOutput;
+//use BTCBridge\Api\Address;
+//use BTCBridge\Api\Wallet;
+//use \BTCBridge\Api\TransactionReference;
+
 /**
  * Returns data to user's btc-requests using Matbea-API
  * @author Matbea <mail@matbea.com>
  */
-class MatbeaHandler extends AbstractHandler {
+class MatbeaHandler extends AbstractHandler
+{
 
-    protected $url;
-
-    /**
-     * @param string  $url Url to matbea API resource
-     * @param Boolean $ordered Whether the order of processor will saved or not
-     *
-     * @throws InvalidArgumentException If passed url is not a valid url
-     */
-    public function __construct($ordered = false) {
-        parent::__construct($ordered);
-    }
+    protected $token = "";
 
     /**
      * {@inheritdoc}
      */
-	public function listtransactions($address,array $options=array()) {
+    public function __construct()
+    {
+        parent::__construct();
+        $this->setOption("base_url", "https://api.matbea.net");
+    }
+
+    /**
+     * Setting token to the handler
+     *
+     * @param string $token An token for accessing to the blockcypher data
+     *
+     * @throws \InvalidArgumentException in case of error of this type
+     *
+     * @return void
+     */
+    public function setToken($token)
+    {
+        if ((gettype($token) != "string") || ("" == $token)) {
+            throw new \InvalidArgumentException("Bad type of token (must be non empty string)");
+        }
+        $this->token = $token;
+    }
+
+    /**
+     * Prepare curl descriptor for querying
+     *
+     * @param resource $curl A reference to the curl onjet
+     * @param string $url An url address for connecting
+     *
+     * @throws \RuntimeException in case of any curl error
+     */
+    /** @noinspection PhpUnusedPrivateMethodInspection */
+    private function prepare_curl(&$curl, $url)
+    {
+        if (!curl_setopt($curl, CURLOPT_URL, $url)) {
+            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
+        }
+        if (!curl_setopt($curl, CURLOPT_USERAGENT, $this->getOption("browser"))) {
+            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
+        }
+        if (!curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1)) {
+            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
+        }
+        if (!curl_setopt($curl, CURLOPT_HEADER, 0)) {
+            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
+        }
+        if (!curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0)) {
+            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
+        }
+        if (!curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0)) {
+            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
+        }
+    }
+
+
+    /**
+     * {@inheritdoc}
+     */
+    public function listtransactions($address, array $options = array())
+    {
         return [];
     }
 
     /**
      * {@inheritdoc}
      */
-    public function gettransaction($TXID,$IncludeWatchOnly=false) {
-        $item = [
-            "confirmations"=> 2040,
-            "walletconflicts" => [],
-            "hex" => "", //HUERAGA - poka ne reshili
-            "fee" => 0.00030303,
-            "details" => [
-				[
-	                             "account" => "",
-				     "address" => "1MN3cT9Ro927h4kgpSZ5V7SfYjrwTysXv7",
-                                     "category" => "send",
-                                     "amount" => -0.00033894,
-                                     "label" => "",
-                                     "vout" => 0,
-                                     "fee" => -0.00030303
-                                ],
-                                [
-                                    "account" => "",
-                                    "address" => "1MN3cT9Ro927h4kgpSZ5V7SfYjrwTysXv7",
-                                    "category" => "receive",
-                                    "amount" => 0.00033894,
-                                    "label" => "",
-                                    "vout" => 0
-                                ]
-                        ]
-        ];
-        return $item;
+    public function gettransaction($TXHASH, array $options = array())
+    {
+        return new Transaction();
     }
 
     /**
      * {@inheritdoc}
      */
-    public function getbalance($Account="",$Confirmations=1,$IncludeWatchOnly=false) {
-        return 0.1;
+    public function getbalance($Account = "", $Confirmations = 1, $IncludeWatchOnly = false)
+    {
+        return 1000000;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function getunconfirmedbalance() {
-        return 0.2;
+    public function getunconfirmedbalance($Account)
+    {
+        return 200000;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function listunspent($MinimumConfirmations=1,$MaximumConfirmations=1,array $Addresses=array()) {
-        return [
-            [
-                "txid" => "721dca6852f828af1057d5bf5f324a6d2b27328a27882229048cf340c1e3ec10",
-                "vout" => 0,
-                "address" => "1MN3cT9Ro927h4kgpSZ5V7SfYjrwTysXv7",
-                "account" => "",
-                "scriptPubKey" => "76a914df5d6e3c76eb3f38744fbe3b4a4f32aaaf7d607088ac",
-                "amount" => 0.00033894,
-                "confirmations" => 950,
-                "spendable" => true
-            ]
-        ];
+    public function listunspent($Account, $MinimumConfirmations = 1)
+    {
+        return [];
     }
 
     /**
      * {@inheritdoc}
      */
-    public function sendrawtransaction($Transaction,$AllowHighFees=false) {
+    public function sendrawtransaction($Transaction)
+    {
         return "721dca6852f828af1057d5bf5f324a6d2b27328a27882229048cf340c1e3ec10";
     }
 }
