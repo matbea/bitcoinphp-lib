@@ -64,7 +64,7 @@ class MatbeaHandler extends AbstractHandler
      * @throws \RuntimeException in case of any curl error
      */
     /** @noinspection PhpUnusedPrivateMethodInspection */
-    private function prepare_curl(&$curl, $url)
+    private function prepareCurl(&$curl, $url)
     {
         if (!curl_setopt($curl, CURLOPT_URL, $url)) {
             throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");

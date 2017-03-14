@@ -62,7 +62,7 @@ class BlockCypherHandler extends AbstractHandler
      *
      * @throws \RuntimeException in case of any curl error
      */
-    private function prepare_curl(&$curl, $url)
+    private function prepareCurl(&$curl, $url)
     {
         if (!curl_setopt($curl, CURLOPT_URL, $url)) {
             throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
@@ -155,7 +155,7 @@ class BlockCypherHandler extends AbstractHandler
         }
 
         $ch = curl_init();
-        $this->prepare_curl($ch, $url);
+        $this->prepareCurl($ch, $url);
         $content = curl_exec($ch);
         if (false === $content) {
             throw new \RuntimeException("curl error occured (url:\"" . $url . "\")");
@@ -253,7 +253,7 @@ class BlockCypherHandler extends AbstractHandler
         }
 
         $ch = curl_init();
-        $this->prepare_curl($ch, $url);
+        $this->prepareCurl($ch, $url);
         $content = curl_exec($ch);
         if (false === $content) {
             throw new \RuntimeException("curl error occured (url:\"" . $url . "\")");
@@ -317,7 +317,7 @@ class BlockCypherHandler extends AbstractHandler
         }
 
         $ch = curl_init();
-        $this->prepare_curl($ch, $url);
+        $this->prepareCurl($ch, $url);
         $content = curl_exec($ch);
         if (false === $content) {
             throw new \RuntimeException("curl error occured (url:\"" . $url . "\")");
@@ -354,7 +354,7 @@ class BlockCypherHandler extends AbstractHandler
         }
 
         $ch = curl_init();
-        $this->prepare_curl($ch, $url);
+        $this->prepareCurl($ch, $url);
         $content = curl_exec($ch);
         if (false === $content) {
             throw new \RuntimeException("curl error occured (url:\"" . $url . "\")");
@@ -371,7 +371,9 @@ class BlockCypherHandler extends AbstractHandler
                 "Answer of url: \"" . $url . "\")  does not contain a \"unconfirmed_balance\" field.",
                 ["data" => $content]
             );
-            throw new \RuntimeException("Answer of url: \"" . $url . "\")  does not contain a \"unconfirmed_balance\" field.");
+            throw new \RuntimeException(
+                "Answer of url: \"" . $url . "\")  does not contain a \"unconfirmed_balance\" field."
+            );
         }
         return intval($content["unconfirmed_balance"]);
     }
@@ -392,7 +394,7 @@ class BlockCypherHandler extends AbstractHandler
         }
         $url .= "&unspentOnly=true&confirmations=" . $MinimumConfirmations;
         $ch = curl_init();
-        $this->prepare_curl($ch, $url);
+        $this->prepareCurl($ch, $url);
         $content = curl_exec($ch);
         if (false === $content) {
             throw new \RuntimeException("curl error occured (url:\"" . $url . "\")");
@@ -416,11 +418,16 @@ class BlockCypherHandler extends AbstractHandler
             foreach ($content["unconfirmed_txrefs"] as $rec) {
                 foreach ($necessary_fields as $f) {
                     if (!isset($rec[$f])) {
-                        throw new \RuntimeException("Item of unconfirmed_txrefs array does not contain \"" . $f . "\" field (url:\"" . $url . "\").");
+                        throw new \RuntimeException(
+                            "Item of unconfirmed_txrefs array does not contain \""
+                            . $f . "\" field (url:\"" . $url . "\")."
+                        );
                     }
                 }
                 if (intval($rec['tx_output_n']) < 0) {
-                    continue; //according to https://www.blockcypher.com/dev/bitcoin/?shell#txref if tx_output_n is negative then this is input, we look for outputs only
+                    //according to https://www.blockcypher.com/dev/bitcoin/?shell#txref
+                    //if tx_output_n is negative then this is input, we look for outputs only
+                    continue;
                 }
                 $item = [];
                 $item["txid"] = $rec['tx_hash'];
@@ -438,11 +445,15 @@ class BlockCypherHandler extends AbstractHandler
             foreach ($content["txrefs"] as $txref) {
                 foreach ($necessary_fields as $f) {
                     if (!isset($txref[$f])) {
-                        throw new \RuntimeException("Item of txrefs array does not contain \"" . $f . "\" field (url:\"" . $url . "\").");
+                        throw new \RuntimeException(
+                            "Item of txrefs array does not contain \"" . $f . "\" field (url:\"" . $url . "\")."
+                        );
                     }
                 }
                 if (intval($txref['tx_output_n']) < 0) {
-                    continue; //according to https://www.blockcypher.com/dev/bitcoin/?shell#txref if tx_output_n is negative then this is input, we look for outputs only
+                    //according to https://www.blockcypher.com/dev/bitcoin/?shell#txref
+                    //if tx_output_n is negative then this is input, we look for outputs only
+                    continue;
                 }
 
 
@@ -515,16 +526,22 @@ class BlockCypherHandler extends AbstractHandler
             throw new \RuntimeException("curl does not return a json object (url:\"" . $url . "\").");
         }
         if (isset($content['error'])) {
-            throw new \RuntimeException("Error \"" . $content['error'] . "\" returned (url:\"" . $url . "\", post: \"" . $post_data . "\").");
+            throw new \RuntimeException(
+                "Error \"" . $content['error'] . "\" returned (url:\"" . $url . "\", post: \"" . $post_data . "\")."
+            );
         }
         if (!isset($content['tx'])) {
-            throw new \RuntimeException("Answer does not contain \"tx\" field (url:\"" . $url . "\", post: \"" . $post_data . "\").");
+            throw new \RuntimeException(
+                "Answer does not contain \"tx\" field (url:\"" . $url . "\", post: \"" . $post_data . "\")."
+            );
         }
         if (!isset($content['tx']['hash'])) {
-            throw new \RuntimeException("Answer does not contain \"hash\" field in \"tx\" array (url:\"" . $url . "\", post: \"" . $post_data . "\").");
+            throw new \RuntimeException(
+                "Answer does not contain \"hash\" field in \"tx\" array (url:\""
+                . $url . "\", post: \"" . $post_data . "\")."
+            );
         }
         return $content['tx']['hash'];
-
     }
 
     /**
@@ -583,12 +600,16 @@ class BlockCypherHandler extends AbstractHandler
             throw new \RuntimeException("curl does not return a json object (url:\"" . $url . "\").");
         }
         if (isset($content['error'])) {
-            throw new \RuntimeException("Error \"" . $content['error'] . "\" returned (url:\"" . $url . "\", post: \"" . json_encode(
-                $post_data
-            ) . "\").");
+            throw new \RuntimeException(
+                "Error \"" . $content['error'] . "\" returned (url:\"" . $url . "\", post: \""
+                . json_encode($post_data) . "\")."
+            );
         }
         if (!isset($content['name'])) {
-            throw new \RuntimeException("Answer does not contain \"tx\" field (url:\"" . $url . "\", post: \"" . $post_data . "\").");
+            throw new \RuntimeException(
+                "Answer does not contain \"tx\" field (url:\"" . $url
+                . "\", post: \"" . $post_data . "\")."
+            );
         }
         $wallet = new Wallet;
         $wallet->setName($content['name']);
@@ -652,12 +673,15 @@ class BlockCypherHandler extends AbstractHandler
             throw new \RuntimeException("curl does not return a json object (url:\"" . $url . "\").");
         }
         if (isset($content['error'])) {
-            throw new \RuntimeException("Error \"" . $content['error'] . "\" returned (url:\"" . $url . "\", post: \"" . json_encode(
-                $post_data
-            ) . "\").");
+            throw new \RuntimeException(
+                "Error \"" . $content['error'] . "\" returned (url:\"" . $url . "\", post: \""
+                . json_encode($post_data) . "\")."
+            );
         }
         if (!isset($content['name'])) {
-            throw new \RuntimeException("Answer does not contain \"tx\" field (url:\"" . $url . "\", post: \"" . $post_data . "\").");
+            throw new \RuntimeException(
+                "Answer does not contain \"tx\" field (url:\"" . $url . "\", post: \"" . $post_data . "\")."
+            );
         }
         $wallet = new Wallet;
         $wallet->setName($content['name']);
@@ -667,5 +691,4 @@ class BlockCypherHandler extends AbstractHandler
         }
         return $wallet;
     }
-
 }

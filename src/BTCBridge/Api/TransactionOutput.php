@@ -8,10 +8,13 @@ namespace BTCBridge\Api;
  * A TransactionOutput represents an output created by a transaction. Typically found within an array in a Transaction.
  *
  * script_type values:
- * pay-to-pubkey-hash (most common transaction transferring to a public key hash, and the default behavior if no out)
- * pay-to-multi-pubkey-hash (multi-signatures transaction, now actually less used than pay-to-script-hash for this purpose)
+ * pay-to-pubkey-hash (most common transaction transferring to a public key hash,
+ * and the default behavior if no out)
+ * pay-to-multi-pubkey-hash (multi-signatures transaction, now actually less used than
+ * pay-to-script-hash for this purpose)
  * pay-to-pubkey (used for mining transactions)
- * pay-to-script-hash (used for transactions relying on arbitrary scripts, now used primarily for multi-sig transactions)
+ * pay-to-script-hash (used for transactions relying on arbitrary scripts,
+ * now used primarily for multi-sig transactions)
  * null-data (sometimes called op-return; used to embed small chunks of data in the blockchain)
  * empty (no script present, mostly used for mining transaction inputs)
  * unknown (non-standard script)

@@ -17,7 +17,8 @@ use BTCBridge\Api\Address;
 use BTCBridge\Api\Wallet;
 
 /**
- * Interface that all BTCBridge ConflictHandlers must implement. Every method can throw Exception in case of any error occured.
+ * Interface that all BTCBridge ConflictHandlers must implement.
+ * Every method can throw Exception in case of any error occured.
  *
  * @author Matbea <mail@matbea.com>
  */
@@ -136,6 +137,4 @@ interface ConflictHandlerInterface
      *
      */
     public function addaddresses($data);
-
-
 }

@@ -5,7 +5,8 @@ namespace BTCBridge\Api;
 /**
  * Class TransactionInput
  *
- * A TransactionInput represents an input consumed within a transaction. Typically found within an array in a Transaction.
+ * A TransactionInput represents an input consumed within a transaction.
+ * Typically found within an array in a Transaction.
  *
  * @package BTCBridge\Api
  *
@@ -19,7 +20,8 @@ class TransactionInput
 {
 
     /**
-     * Hash of the transaction for which an output is being spent by this input. Does not exist for coinbase transactions.
+     * Hash of the transaction for which an output is being spent by this input.
+     * Does not exist for coinbase transactions.
      *
      * @return string
      */
@@ -29,7 +31,8 @@ class TransactionInput
     }
 
     /**
-     * Hash of the transaction for which an output is being spent by this input. Does not exist for coinbase transactions.
+     * Hash of the transaction for which an output is being spent by this input.
+     * Does not exist for coinbase transactions.
      *
      * @param string $prev_hash
      * @return $this
@@ -157,5 +160,4 @@ class TransactionInput
         $this->script_type = $script_type;
         return $this;
     }
-
 }

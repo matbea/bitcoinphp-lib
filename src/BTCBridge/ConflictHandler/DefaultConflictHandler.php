@@ -26,16 +26,21 @@ class DefaultConflictHandler implements ConflictHandlerInterface
      */
     public function listtransactions($data)
     {
-        //$uniq_results = array_map('unserialize',array_unique(array_map('serialize', $data)) ); //$uniq_results = array_unique($results);
+        //$uniq_results = array_map('unserialize',array_unique(array_map('serialize', $data)) );
+        //$uniq_results = array_unique($results);
         for ($i = 0; $i < count($data) - 1; ++$i) {
             $collection1 = & $data[$i];
             $collection2 = & $data[$i + 1];
             if (count($collection1) != count($collection2)) {
-                throw new ConflictHandlerException("No equal results from different services (different size of result arrays).");
+                throw new ConflictHandlerException(
+                    "No equal results from different services (different size of result arrays)."
+                );
             }
             for ($j = 0; $j < count($collection1); ++$j) {
                 if ($collection1[$j] != $collection2[$j]) {
-                    throw new ConflictHandlerException("No equal results from different services (different items in the result arrays).");
+                    throw new ConflictHandlerException(
+                        "No equal results from different services (different items in the result arrays)."
+                    );
                 }
             }
         }
@@ -90,11 +95,15 @@ class DefaultConflictHandler implements ConflictHandlerInterface
             $collection1 = & $data[$i];
             $collection2 = & $data[$i + 1];
             if (count($collection1) != count($collection2)) {
-                throw new ConflictHandlerException("No equal results from different services (different size of result arrays).");
+                throw new ConflictHandlerException(
+                    "No equal results from different services (different size of result arrays)."
+                );
             }
             for ($j = 0; $j < count($collection1); ++$j) {
                 if ($collection1[$j] != $collection2[$j]) {
-                    throw new ConflictHandlerException("No equal results from different services (different items in the result arrays).");
+                    throw new ConflictHandlerException(
+                        "No equal results from different services (different items in the result arrays)."
+                    );
                 }
             }
         }
@@ -139,6 +148,4 @@ class DefaultConflictHandler implements ConflictHandlerInterface
         }
         return $data[0];
     }
-
-
 }

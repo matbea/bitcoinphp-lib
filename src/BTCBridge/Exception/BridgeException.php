@@ -1,6 +1,6 @@
 <?php
-
 namespace BTCBridge\Exception;
 
-class BridgeException extends \Exception {
-};
+class BridgeException extends \Exception
+{
+}

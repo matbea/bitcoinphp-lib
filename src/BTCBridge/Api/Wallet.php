@@ -82,5 +82,4 @@ class Wallet
         $this->addresses = $addresses;
         return $this;
     }
-
 }

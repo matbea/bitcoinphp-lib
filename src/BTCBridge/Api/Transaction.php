@@ -185,7 +185,8 @@ class Transaction
     }
 
     /**
-     * Number of subsequent blocks, including the block the transaction is in. Unconfirmed transactions have 0 for confirmation.
+     * Number of subsequent blocks, including the block the transaction is in.
+     * Unconfirmed transactions have 0 for confirmation.
      *
      * @return int
      */
@@ -195,7 +196,8 @@ class Transaction
     }
 
     /**
-     * Number of subsequent blocks, including the block the transaction is in. Unconfirmed transactions have 0 for confirmation.
+     * Number of subsequent blocks, including the block the transaction is in.
+     * Unconfirmed transactions have 0 for confirmation.
      *
      * @param int $confirmations
      * @return $this
@@ -334,5 +336,4 @@ class Transaction
     {
         return $this->hash;
     }
-
 }

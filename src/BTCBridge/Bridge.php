@@ -115,7 +115,7 @@ class Bridge
      * @throws \RuntimeException in case of any error of this type
      * @throws \InvalidArgumentException in case of any error of this type
      *
-     * @return Address object
+     * @return Address
      */
     public function listtransactions($address, array $options = array())
     {
@@ -286,7 +286,7 @@ class Bridge
      * @param string $name Name of wallet
      * @param string[] $addresses
      *
-     * @return Wallet object
+     * @return Wallet
      *
      * @throws \RuntimeException in case of error of this type
      * @throws \InvalidArgumentException in case of error of this type
@@ -315,7 +315,7 @@ class Bridge
      * @param string $name Name of wallet
      * @param string[] $addresses
      *
-     * @return Wallet object
+     * @return Wallet
      *
      * @throws \RuntimeException in case of error of this type
      * @throws \InvalidArgumentException in case of error of this type
