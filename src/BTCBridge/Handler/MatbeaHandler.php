@@ -12,6 +12,8 @@
 namespace BTCBridge\Handler;
 
 use BTCBridge\Api\Transaction;
+use BTCBridge\Api\Wallet;
+
 //use BTCBridge\Api\TransactionInput;
 //use BTCBridge\Api\TransactionOutput;
 //use BTCBridge\Api\Address;
@@ -131,5 +133,21 @@ class MatbeaHandler extends AbstractHandler
     public function sendrawtransaction($Transaction)
     {
         return "721dca6852f828af1057d5bf5f324a6d2b27328a27882229048cf340c1e3ec10";
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function createwallet($name, $addresses)
+    {
+        return new Wallet();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function addaddresses($name, $addresses)
+    {
+        return new Wallet();
     }
 }

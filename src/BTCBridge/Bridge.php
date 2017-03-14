@@ -7,6 +7,7 @@ use BTCBridge\ConflictHandler\ConflictHandlerInterface;
 use BTCBridge\ConflictHandler\DefaultConflictHandler;
 use BTCBridge\Api\Transaction;
 use BTCBridge\Api\Address;
+use BTCBridge\Api\Wallet;
 use Psr\Log\LoggerInterface;
 use Monolog\Logger;
 
@@ -54,7 +55,7 @@ class Bridge
         LoggerInterface $loggerHandler = null
     ) {
         if ([] == $handlers) {
-            throw new \InvalidArgumentException("Handlers error can not be empty.");
+            throw new \InvalidArgumentException("Handlers array can not be empty.");
         }
         foreach ($handlers as $handler) {
             if (!$handler instanceof AbstractHandler) {
@@ -244,7 +245,7 @@ class Bridge
         }
         $results = [];
         foreach ($this->handlers as $handle) {
-            $result = $handle->listunspent($Account,$MinimumConfirmations);
+            $result = $handle->listunspent($Account, $MinimumConfirmations);
             $results [] = $result;
         }
         return $this->conflictHandler->listunspent($results);
@@ -276,6 +277,63 @@ class Bridge
         return $this->conflictHandler->sendrawtransaction($results);
     }
 
-}
+    /**
+     * This Method allows you to create a new wallet, by POSTing a partially filled out Wallet or HDWallet object,
+     * depending on the endpoint.
+     * @link https://www.blockcypher.com/dev/bitcoin/?shell#create-wallet-endpoint
+     *
+     * @param string $name Name of wallet
+     * @param string[] $addresses
+     *
+     * @return Wallet object
+     *
+     * @throws \RuntimeException in case of error of this type
+     * @throws \InvalidArgumentException in case of error of this type
+     *
+     */
+    public function createwallet($name, $addresses)
+    {
+        if ("string" != gettype($name) || ("" == $name)) {
+            throw new \InvalidArgumentException("Account variable must be non empty string.");
+        }
+        if (!is_array($addresses)) {
+            throw new \InvalidArgumentException("addresses variable must be the array.");
+        }
+        $results = [];
+        foreach ($this->handlers as $handle) {
+            $result = $handle->createwallet($name, $addresses);
+            $results [] = $result;
+        }
+        return $this->conflictHandler->createwallet($results);
+    }
 
-;
+    /**
+     * This Method adds new addresses into a wallet
+     * @link https://www.blockcypher.com/dev/bitcoin/?shell#add-addresses-to-wallet-endpoint
+     *
+     * @param string $name Name of wallet
+     * @param string[] $addresses
+     *
+     * @return Wallet object
+     *
+     * @throws \RuntimeException in case of error of this type
+     * @throws \InvalidArgumentException in case of error of this type
+     *
+     */
+    public function addaddresses($name, $addresses)
+    {
+        if ("string" != gettype($name) || ("" == $name)) {
+            throw new \InvalidArgumentException("Account variable must be non empty string.");
+        }
+        if ((!is_array($addresses)) || (count($addresses) == 0)) {
+            throw new \InvalidArgumentException("addresses variable must be non empty array.");
+        }
+        $results = [];
+        foreach ($this->handlers as $handle) {
+            $result = $handle->addaddresses($name, $addresses);
+            $results [] = $result;
+        }
+        return $this->conflictHandler->addaddresses($results);
+    }
+
+}

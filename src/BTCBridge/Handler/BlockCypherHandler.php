@@ -43,7 +43,7 @@ class BlockCypherHandler extends AbstractHandler
      *
      * @throws \InvalidArgumentException in case of error of this type
      *
-     * @return void
+     * @return $this
      */
     public function setToken($token)
     {
@@ -51,6 +51,7 @@ class BlockCypherHandler extends AbstractHandler
             throw new \InvalidArgumentException("Bad type of token (must be non empty string)");
         }
         $this->token = $token;
+        return $this;
     }
 
     /**
@@ -160,7 +161,7 @@ class BlockCypherHandler extends AbstractHandler
             throw new \RuntimeException("curl error occured (url:\"" . $url . "\")");
         }
         $content = json_decode($content, true);
-        if (false === $content) {
+        if ((false === $content) || (null === $content)) {
             throw new \RuntimeException("curl does not return a json object (url:\"" . $url . "\").");
         }
         if (isset($content['error'])) {
@@ -258,7 +259,7 @@ class BlockCypherHandler extends AbstractHandler
             throw new \RuntimeException("curl error occured (url:\"" . $url . "\")");
         }
         $content = json_decode($content, true);
-        if (false === $content) {
+        if ((false === $content) || (null === $content)) {
             throw new \RuntimeException("curl does not return a json object (url:\"" . $url . "\").");
         }
         if (isset($content['error'])) {
@@ -294,7 +295,7 @@ class BlockCypherHandler extends AbstractHandler
             $output = new TransactionOutput();
             $output->setAddresses($outp["addresses"]);
             $output->setValue($outp["value"]);
-            $output->setScriptType($output["script_type"]);
+            $output->setScriptType($outp["script_type"]);
             $tx->addOutput($output);
         }
         return $tx;
@@ -322,7 +323,7 @@ class BlockCypherHandler extends AbstractHandler
             throw new \RuntimeException("curl error occured (url:\"" . $url . "\")");
         }
         $content = json_decode($content, true);
-        if (false === $content) {
+        if ((false === $content) || (null === $content)) {
             throw new \RuntimeException("curl does not return a json object (url:\"" . $url . "\").");
         }
         if (isset($content['error'])) {
@@ -359,7 +360,7 @@ class BlockCypherHandler extends AbstractHandler
             throw new \RuntimeException("curl error occured (url:\"" . $url . "\")");
         }
         $content = json_decode($content, true);
-        if (false === $content) {
+        if ((false === $content) || (null === $content)) {
             throw new \RuntimeException("curl does not return a json object (url:\"" . $url . "\").");
         }
         if (isset($content['error'])) {
@@ -397,7 +398,7 @@ class BlockCypherHandler extends AbstractHandler
             throw new \RuntimeException("curl error occured (url:\"" . $url . "\")");
         }
         $content = json_decode($content, true);
-        if (false === $content) {
+        if ((false === $content) || (null === $content)) {
             throw new \RuntimeException("curl does not return a json object (url:\"" . $url . "\").");
         }
         if (isset($content['error'])) {
@@ -510,7 +511,7 @@ class BlockCypherHandler extends AbstractHandler
             throw new \RuntimeException("curl error occured (url:\"" . $url . "\", post: \"" . $post_data . "\").");
         }
         $content = json_decode($content, true);
-        if (false === $content) {
+        if ((false === $content) || (null === $content)) {
             throw new \RuntimeException("curl does not return a json object (url:\"" . $url . "\").");
         }
         if (isset($content['error'])) {
@@ -524,6 +525,147 @@ class BlockCypherHandler extends AbstractHandler
         }
         return $content['tx']['hash'];
 
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function createwallet($name, $addresses)
+    {
+        if ("string" != gettype($name) || ("" == $name)) {
+            throw new \InvalidArgumentException("name variable must be non empty string.");
+        }
+        if (!is_array($addresses)) {
+            throw new \InvalidArgumentException("addresses variable must be the array.");
+        }
+        $url = $this->getOption("base_url") . "wallets";
+        if ($this->token) {
+            $url .= "?token=" . $this->token;
+        }
+        $post_data = ["name" => $name];
+        if (count($addresses) > 0) {
+            $post_data["addresses"] = [];
+            foreach ($addresses as $address) {
+                $post_data["addresses"] [] = $address;
+            }
+        }
+        $curl = curl_init();
+        if (!curl_setopt($curl, CURLOPT_URL, $url)) {
+            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
+        }
+        if (!curl_setopt($curl, CURLOPT_USERAGENT, $this->getOption("browser"))) {
+            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
+        }
+        if (!curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1)) {
+            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
+        }
+        if (!curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0)) {
+            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
+        }
+        if (!curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0)) {
+            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
+        }
+        if (!curl_setopt($curl, CURLOPT_POST, 1)) {
+            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
+        }
+        if (!curl_setopt($curl, CURLOPT_HTTPHEADER, ['Content-Type:application/json'])) {
+            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
+        }
+        if (!curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($post_data))) {
+            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
+        }
+        $content = curl_exec($curl);
+        if (false === $content) {
+            throw new \RuntimeException("curl error occured (url:\"" . $url . "\", post: \"" . $post_data . "\").");
+        }
+        $content = json_decode($content, true);
+        if ((false === $content) || (null === $content)) {
+            throw new \RuntimeException("curl does not return a json object (url:\"" . $url . "\").");
+        }
+        if (isset($content['error'])) {
+            throw new \RuntimeException("Error \"" . $content['error'] . "\" returned (url:\"" . $url . "\", post: \"" . json_encode(
+                $post_data
+            ) . "\").");
+        }
+        if (!isset($content['name'])) {
+            throw new \RuntimeException("Answer does not contain \"tx\" field (url:\"" . $url . "\", post: \"" . $post_data . "\").");
+        }
+        $wallet = new Wallet;
+        $wallet->setName($content['name']);
+        $wallet->setAddresses($content["addresses"]);
+        if (isset($content["token"])) {
+            $wallet->setToken($content["token"]);
+        }
+        return $wallet;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function addaddresses($name, $addresses)
+    {
+        if ("string" != gettype($name) || ("" == $name)) {
+            throw new \InvalidArgumentException("name variable must be non empty string.");
+        }
+        if ((!is_array($addresses)) || (count($addresses) == 0)) {
+            throw new \InvalidArgumentException("addresses variable must be non empty array.");
+        }
+        $url = $this->getOption("base_url") . "wallets/" . $name . "/addresses";
+        if ($this->token) {
+            $url .= "?token=" . $this->token;
+        }
+        $post_data["addresses"] = [];
+        foreach ($addresses as $address) {
+            $post_data["addresses"] [] = $address;
+        }
+        $curl = curl_init();
+        if (!curl_setopt($curl, CURLOPT_URL, $url)) {
+            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
+        }
+        if (!curl_setopt($curl, CURLOPT_USERAGENT, $this->getOption("browser"))) {
+            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
+        }
+        if (!curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1)) {
+            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
+        }
+        if (!curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0)) {
+            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
+        }
+        if (!curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0)) {
+            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
+        }
+        if (!curl_setopt($curl, CURLOPT_POST, 1)) {
+            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
+        }
+        if (!curl_setopt($curl, CURLOPT_HTTPHEADER, ['Content-Type:application/json'])) {
+            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
+        }
+        if (!curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($post_data))) {
+            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
+        }
+        $content = curl_exec($curl);
+        if (false === $content) {
+            throw new \RuntimeException("curl error occured (url:\"" . $url . "\", post: \"" . $post_data . "\").");
+        }
+        $content = json_decode($content, true);
+        if ((false === $content) || (null === $content)) {
+            throw new \RuntimeException("curl does not return a json object (url:\"" . $url . "\").");
+        }
+        if (isset($content['error'])) {
+            throw new \RuntimeException("Error \"" . $content['error'] . "\" returned (url:\"" . $url . "\", post: \"" . json_encode(
+                $post_data
+            ) . "\").");
+        }
+        if (!isset($content['name'])) {
+            throw new \RuntimeException("Answer does not contain \"tx\" field (url:\"" . $url . "\", post: \"" . $post_data . "\").");
+        }
+        $wallet = new Wallet;
+        $wallet->setName($content['name']);
+        $wallet->setAddresses($content["addresses"]);
+        if (isset($content["token"])) {
+            $wallet->setToken($content["token"]);
+        }
+        return $wallet;
     }
 
 }

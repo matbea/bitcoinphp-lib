@@ -10,6 +10,7 @@
 
 namespace BTCBridge\Handler;
 
+use BTCBridge\Api\Wallet;
 use \Psr\Log\LoggerInterface;
 use \Monolog\Logger;
 use \BTCBridge\Api\Transaction;
@@ -233,4 +234,33 @@ abstract class AbstractHandler
      */
     abstract public function sendrawtransaction($Transaction);
 
+    /**
+     * This Method Creates a new wallet
+     * @link https://www.blockcypher.com/dev/bitcoin/?shell#create-wallet-endpoint
+     *
+     * @param string $name Name of wallet
+     * @param string[] $addresses
+     *
+     * @return Wallet object
+     *
+     * @throws \RuntimeException in case of error of this type
+     * @throws \InvalidArgumentException in case of error of this type
+     *
+     */
+    abstract public function createwallet($name, $addresses);
+
+    /**
+     * This Method adds new addresses into a wallet
+     * @link https://www.blockcypher.com/dev/bitcoin/?shell#add-addresses-to-wallet-endpoint
+     *
+     * @param string $name Name of wallet
+     * @param string[] $addresses
+     *
+     * @return Wallet object
+     *
+     * @throws \RuntimeException in case of error of this type
+     * @throws \InvalidArgumentException in case of error of this type
+     *
+     */
+    abstract public function addaddresses($name, $addresses);
 }

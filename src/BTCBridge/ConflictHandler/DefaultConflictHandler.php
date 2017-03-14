@@ -26,12 +26,18 @@ class DefaultConflictHandler implements ConflictHandlerInterface
      */
     public function listtransactions($data)
     {
-        $uniq_results = array_map(
-            'unserialize',
-            array_unique(array_map('serialize', $data))
-        ); //$uniq_results = array_unique($results);
-        if (1 != count($uniq_results)) {
-            throw new ConflictHandlerException("No equal results from different services.");
+        //$uniq_results = array_map('unserialize',array_unique(array_map('serialize', $data)) ); //$uniq_results = array_unique($results);
+        for ($i = 0; $i < count($data) - 1; ++$i) {
+            $collection1 = & $data[$i];
+            $collection2 = & $data[$i + 1];
+            if (count($collection1) != count($collection2)) {
+                throw new ConflictHandlerException("No equal results from different services (different size of result arrays).");
+            }
+            for ($j = 0; $j < count($collection1); ++$j) {
+                if ($collection1[$j] != $collection2[$j]) {
+                    throw new ConflictHandlerException("No equal results from different services (different items in the result arrays).");
+                }
+            }
         }
         return $data[0];
     }
@@ -41,9 +47,10 @@ class DefaultConflictHandler implements ConflictHandlerInterface
      */
     public function gettransaction($data)
     {
-        $uniq_results = array_map('unserialize', array_unique(array_map('serialize', $data)));
-        if (1 != count($uniq_results)) {
-            throw new ConflictHandlerException("No equal results from different services.");
+        for ($i = 0; $i < count($data) - 1; ++$i) {
+            if ($data[$i] != $data[$i + 1]) {
+                throw new ConflictHandlerException("No equal results from different services.");
+            }
         }
         return $data[0];
     }
@@ -53,9 +60,10 @@ class DefaultConflictHandler implements ConflictHandlerInterface
      */
     public function getbalance($data)
     {
-        $uniq_results = array_map('unserialize', array_unique(array_map('serialize', $data)));
-        if (1 != count($uniq_results)) {
-            throw new ConflictHandlerException("No equal results from different services.");
+        for ($i = 0; $i < count($data) - 1; ++$i) {
+            if ($data[$i] != $data[$i + 1]) {
+                throw new ConflictHandlerException("No equal results from different services.");
+            }
         }
         return $data[0];
     }
@@ -65,9 +73,10 @@ class DefaultConflictHandler implements ConflictHandlerInterface
      */
     public function getunconfirmedbalance($data)
     {
-        $uniq_results = array_map('unserialize', array_unique(array_map('serialize', $data)));
-        if (1 != count($uniq_results)) {
-            throw new ConflictHandlerException("No equal results from different services.");
+        for ($i = 0; $i < count($data) - 1; ++$i) {
+            if ($data[$i] != $data[$i + 1]) {
+                throw new ConflictHandlerException("No equal results from different services.");
+            }
         }
         return $data[0];
     }
@@ -77,9 +86,17 @@ class DefaultConflictHandler implements ConflictHandlerInterface
      */
     public function listunspent($data)
     {
-        $uniq_results = array_map('unserialize', array_unique(array_map('serialize', $data)));
-        if (1 != count($uniq_results)) {
-            throw new ConflictHandlerException("No equal results from different services.");
+        for ($i = 0; $i < count($data) - 1; ++$i) {
+            $collection1 = & $data[$i];
+            $collection2 = & $data[$i + 1];
+            if (count($collection1) != count($collection2)) {
+                throw new ConflictHandlerException("No equal results from different services (different size of result arrays).");
+            }
+            for ($j = 0; $j < count($collection1); ++$j) {
+                if ($collection1[$j] != $collection2[$j]) {
+                    throw new ConflictHandlerException("No equal results from different services (different items in the result arrays).");
+                }
+            }
         }
         return $data[0];
     }
@@ -89,11 +106,39 @@ class DefaultConflictHandler implements ConflictHandlerInterface
      */
     public function sendrawtransaction($data)
     {
-        $uniq_results = array_map('unserialize', array_unique(array_map('serialize', $data)));
-        if (1 != count($uniq_results)) {
-            throw new ConflictHandlerException("No equal results from different services.");
+        for ($i = 0; $i < count($data) - 1; ++$i) {
+            if ($data[$i] != $data[$i + 1]) {
+                throw new ConflictHandlerException("No equal results from different services.");
+            }
         }
         return $data[0];
     }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function createwallet($data)
+    {
+        for ($i = 0; $i < count($data) - 1; ++$i) {
+            if ($data[$i] != $data[$i + 1]) {
+                throw new ConflictHandlerException("No equal results from different services.");
+            }
+        }
+        return $data[0];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function addaddresses($data)
+    {
+        for ($i = 0; $i < count($data) - 1; ++$i) {
+            if ($data[$i] != $data[$i + 1]) {
+                throw new ConflictHandlerException("No equal results from different services.");
+            }
+        }
+        return $data[0];
+    }
+
 
 }

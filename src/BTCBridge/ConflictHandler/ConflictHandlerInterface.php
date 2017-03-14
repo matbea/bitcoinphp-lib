@@ -14,6 +14,7 @@ namespace BTCBridge\ConflictHandler;
 use BTCBridge\Exception\ConflictHandlerException;
 use BTCBridge\Api\Transaction;
 use BTCBridge\Api\Address;
+use BTCBridge\Api\Wallet;
 
 /**
  * Interface that all BTCBridge ConflictHandlers must implement. Every method can throw Exception in case of any error occured.
@@ -110,6 +111,31 @@ interface ConflictHandlerInterface
      */
     public function sendrawtransaction($data);
 
-}
+    /**
+     * This Method Creates a new wallet
+     * @link https://www.blockcypher.com/dev/bitcoin/?shell#create-wallet-endpoint
+     *
+     * @param array $data  Result from method createwallet (from all handlers)
+     *
+     * @return Wallet object
+     *
+     * @throws ConflictHandlerException in case of any error
+     *
+     */
+    public function createwallet($data);
 
-;
+    /**
+     * This Method adds new addresses into a wallet
+     * @link https://www.blockcypher.com/dev/bitcoin/?shell#add-addresses-to-wallet-endpoint
+     *
+     * @param array $data  Result from method addaddresses (from all handlers)
+     *
+     * @return Wallet object
+     *
+     * @throws ConflictHandlerException in case of any error
+     *
+     */
+    public function addaddresses($data);
+
+
+}
