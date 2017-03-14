@@ -11,7 +11,6 @@ use BTCBridge\Api\Wallet;
 use Psr\Log\LoggerInterface;
 use Monolog\Logger;
 
-
 /**
  * Describes a Bridge instance
  *
@@ -43,8 +42,10 @@ class Bridge
 
     /**
      * @param AbstractHandler[] $handlers         Stack of handlers for calling BTC-methods, $handlers must not be empty
-     * @param ConflictHandlerInterface $conflictHandler  Methods of this objects will be raised for validating results. Parameter is optional, by default DefaultConflictHandler instance will be used
-     * @param LoggerInterface $loggerHandler    Methods of this objects will be raised for validating results. Parameter is optional, by default DefaultConflictHandler instance will be used
+     * @param ConflictHandlerInterface $conflictHandler  Methods of this objects will be raised for validating results.
+     * Parameter is optional, by default DefaultConflictHandler instance will be used
+     * @param LoggerInterface $loggerHandler    Methods of this objects will be raised for validating results.
+     * Parameter is optional, by default DefaultConflictHandler instance will be used
      *
      * @throws \InvalidArgumentException if the provided argument $handlers is empty
      * @throws \RuntimeException if the provided argument $conflictHandler is not instance of HandlerInterface
@@ -335,5 +336,4 @@ class Bridge
         }
         return $this->conflictHandler->addaddresses($results);
     }
-
 }
