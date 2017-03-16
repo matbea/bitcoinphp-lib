@@ -258,7 +258,6 @@ class Bridge
      *
      * @param string $Transaction  The minimum number of confirmations the transaction containing an output
      * must have in order to be returned.
-     * @param integer $handlerIndex  Index of handler which will call this method
      *
      * @return string If the transaction was accepted by the node for broadcast, this will be the TXID
      * of the transaction encoded as hex in RPC byte order.
@@ -267,18 +266,27 @@ class Bridge
      * @throws \InvalidArgumentException if error of this type
      *
      */
-    public function sendrawtransaction($Transaction, $handlerIndex)
+    public function sendrawtransaction($Transaction)
     {
         if ("string" != gettype($Transaction) || ("" == $Transaction)) {
             throw new \InvalidArgumentException("Transaction variable must be non empty string.");
         }
-        if ("integer" != gettype($handlerIndex) || ($handlerIndex < 0 )  || ($handlerIndex>=count($this->handlers))) {
-            throw new \InvalidArgumentException(
-                "handlerIndex variable must non-negative integer (and less then size of handlers collection)."
-            );
+        $result = null;
+        for ($i = 0; $i < count($this->handlers); ++$i) {
+            try {
+                $result = $this->handlers[$i]->sendrawtransaction($Transaction);
+            } catch (\InvalidArgumentException $ex) {
+                $this->loggerHandler->addError($ex->getMessage());
+                continue;
+            } catch (\RuntimeException $ex) {
+                $this->loggerHandler->addError($ex->getMessage());
+                continue;
+            }
+            return $result;
         }
-        $result = $this->handlers[$handlerIndex]->sendrawtransaction($Transaction);
-        return $result;
+        throw new \RuntimeException(
+            "Transaction \"" . $Transaction . "\" was not sent (" . count($this->handlers) . " handlers)."
+        );
     }
 
     /**

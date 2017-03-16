@@ -106,12 +106,11 @@ class TransactionOutput
     public function addAddress($address)
     {
         if (!$this->getAddresses()) {
-            return $this->setAddresses(array($address));
+            $this->setAddresses(array($address));
         } else {
-            return $this->setAddresses(
-                array_merge($this->getAddresses(), array($address))
-            );
+            $this->setAddresses(array_merge($this->getAddresses(), array($address)));
         }
+        return $this->getAddresses();
     }
 
     /**
@@ -122,7 +121,7 @@ class TransactionOutput
      */
     public function getAddresses()
     {
-        return $this->addresses;
+        return isset($this->addresses) ? $this->addresses : [];
     }
 
     /**

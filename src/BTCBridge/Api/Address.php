@@ -195,7 +195,7 @@ class Address
      */
     public function getTxrefs()
     {
-        return (isset($this->txrefs)) ? $this->txrefs : false;
+        return (isset($this->txrefs)) ? $this->txrefs : [];
     }
 
     /**

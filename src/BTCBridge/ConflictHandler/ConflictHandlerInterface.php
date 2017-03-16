@@ -33,7 +33,7 @@ interface ConflictHandlerInterface
      * @link https://bitcoin.org/en/developer-reference#listtransactions Official bitcoin documentation.
      * @link https://www.blockcypher.com/dev/bitcoin/?shell#address-endpoint Official blockcypher documentation
      *
-     * @param array $data  Result from method listtransactions (from all handlers)
+     * @param Address[] $data  Result from method listtransactions (from all handlers)
      *
      * @throws ConflictHandlerException in case of any error
      *
@@ -47,7 +47,7 @@ interface ConflictHandlerInterface
      * @link https://bitcoin.org/en/developer-reference#gettransaction Official bitcoin documentation.
      * @link https://www.blockcypher.com/dev/bitcoin/?php#transaction-hash-endpoint
      *
-     * @param array $data  Result from method gettransaction (from all handlers)
+     * @param Transaction[] $data  Result from method gettransaction (from all handlers)
      *
      * @throws ConflictHandlerException in case of any error
      *
@@ -92,7 +92,8 @@ interface ConflictHandlerInterface
      * @link https://bitcoin.org/en/developer-reference#listunspent Official bitcoin documentation.
      * @link https://www.blockcypher.com/dev/bitcoin/?shell#address-endpoint
      *
-     * @param array $data  Result from method listunspent (from all handlers)
+     * @param TransactionReference[][] $data
+     * Result from method listunspent (from all handlers)
      *
      * @throws ConflictHandlerException in case of any error
      *

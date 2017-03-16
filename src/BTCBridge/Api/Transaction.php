@@ -119,7 +119,7 @@ class Transaction
      */
     public function getAddresses()
     {
-        return $this->addresses;
+        return isset($this->addresses) ? $this->addresses : [];
     }
 
     /**
@@ -131,6 +131,7 @@ class Transaction
     public function setAddresses($addresses)
     {
         $this->addresses = $addresses;
+        sort($this->addresses);
         return $this;
     }
 
@@ -282,12 +283,11 @@ class Transaction
     public function addInput($input)
     {
         if (!$this->getInputs()) {
-            return $this->setInputs(array($input));
+            $this->setInputs(array($input));
         } else {
-            return $this->setInputs(
-                array_merge($this->getInputs(), array($input))
-            );
+            $this->setInputs(array_merge($this->getInputs(), array($input)));
         }
+        return $this->getInputs();
     }
 
     /**
@@ -298,7 +298,7 @@ class Transaction
      */
     public function getInputs()
     {
-        return isset($this->inputs) ? $this->inputs : false;
+        return isset($this->inputs) ? $this->inputs : [];
     }
 
     /**
@@ -323,12 +323,11 @@ class Transaction
     public function addOutput($output)
     {
         if (!$this->getOutputs()) {
-            return $this->setOutputs(array($output));
+            $this->setOutputs(array($output));
         } else {
-            return $this->setOutputs(
-                array_merge($this->getOutputs(), array($output))
-            );
+            $this->setOutputs(array_merge($this->getOutputs(), array($output)));
         }
+        return $this->getOutputs();
     }
 
     /**
@@ -339,7 +338,7 @@ class Transaction
      */
     public function getOutputs()
     {
-        return isset($this->outputs) ? $this->outputs : false; //property_exists may be help too
+        return isset($this->outputs) ? $this->outputs : []; //property_exists may be help too
     }
 
     /**
