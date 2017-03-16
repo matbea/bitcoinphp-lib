@@ -11,6 +11,7 @@
 
 namespace BTCBridge\ConflictHandler;
 
+use BTCBridge\Api\TransactionReference;
 use BTCBridge\Exception\ConflictHandlerException;
 use BTCBridge\Api\Transaction;
 use BTCBridge\Api\Address;
@@ -95,7 +96,7 @@ interface ConflictHandlerInterface
      *
      * @throws ConflictHandlerException in case of any error
      *
-     * @return array        The list of unspent outputs
+     * @return TransactionReference[] The list of unspent outputs
      */
     public function listunspent($data);
 
@@ -110,7 +111,7 @@ interface ConflictHandlerInterface
      * @return string If the transaction was accepted by the node for broadcast, this will be the TXID of the
      * transaction encoded as hex in RPC byte order.
      */
-    public function sendrawtransaction($data);
+    //public function sendrawtransaction($data);
 
     /**
      * This Method Creates a new wallet

@@ -24,6 +24,7 @@ use \BTCBridge\Api\TransactionReference;
  */
 class BlockCypherHandler extends AbstractHandler
 {
+    const OPT_BASE_URL = "https://api.blockcypher.com/v1/btc/main/";
 
     protected $token = "";
 
@@ -33,7 +34,7 @@ class BlockCypherHandler extends AbstractHandler
     public function __construct()
     {
         parent::__construct();
-        $this->setOption("base_url", "https://api.blockcypher.com/v1/btc/main/");
+        $this->setOption("base_url", self::OPT_BASE_URL);
     }
 
     /**
@@ -410,53 +411,34 @@ class BlockCypherHandler extends AbstractHandler
             return [];
         }
 
-        $necessary_fields = ['tx_output_n', 'tx_hash', 'value', 'confirmations'];
-
         $result = [];
 
         if ((0 == $MinimumConfirmations) && isset($content["unconfirmed_txrefs"])) {
             foreach ($content["unconfirmed_txrefs"] as $rec) {
-                foreach ($necessary_fields as $f) {
-                    if (!isset($rec[$f])) {
-                        throw new \RuntimeException(
-                            "Item of unconfirmed_txrefs array does not contain \""
-                            . $f . "\" field (url:\"" . $url . "\")."
-                        );
-                    }
-                }
                 if (intval($rec['tx_output_n']) < 0) {
                     //according to https://www.blockcypher.com/dev/bitcoin/?shell#txref
                     //if tx_output_n is negative then this is input, we look for outputs only
                     continue;
                 }
-                $item = [];
-                $item["txid"] = $rec['tx_hash'];
-                $item["vout"] = $rec['tx_output_n'];
-                $item["address"] = $Account;
-                $item["scriptPubey"] = "demo"; //HUERAGA
-                $item["amount"] = floatval($rec['value']) / 100000000;
-                $item["confirmations"] = $rec['confirmations'];
-                $item["spendable"] = false;
-                $result [] = $item;
+                $txr = new TransactionReference();
+                $txr->setBlockHeight($rec["block_height"]);
+                $txr->setConfirmations($rec["confirmations"]);
+                $txr->setDoubleSpend($rec["double_spend"]);
+                $txr->setSpent($rec["spent"]);
+                $txr->setTxHash($rec["tx_hash"]);
+                $txr->setTxInputN($rec["tx_input_n"]);
+                $txr->setTxOutputN($rec["tx_output_n"]);
+                $txr->setValue($rec["value"]);
             }
         }
 
         if (isset($content["txrefs"])) {
             foreach ($content["txrefs"] as $txref) {
-                foreach ($necessary_fields as $f) {
-                    if (!isset($txref[$f])) {
-                        throw new \RuntimeException(
-                            "Item of txrefs array does not contain \"" . $f . "\" field (url:\"" . $url . "\")."
-                        );
-                    }
-                }
                 if (intval($txref['tx_output_n']) < 0) {
                     //according to https://www.blockcypher.com/dev/bitcoin/?shell#txref
                     //if tx_output_n is negative then this is input, we look for outputs only
                     continue;
                 }
-
-
                 $txr = new TransactionReference();
                 $txr->setBlockHeight($txref["block_height"]);
                 $txr->setConfirmations($txref["confirmations"]);
@@ -467,16 +449,6 @@ class BlockCypherHandler extends AbstractHandler
                 $txr->setTxOutputN($txref["tx_output_n"]);
                 $txr->setValue($txref["value"]);
                 $result [] = $txr;
-
-                /*$item = [];
-                $item["txid"] = $rec['tx_hash'];
-                $item["vout"] = $rec['tx_output_n'];
-                $item["address"] = $Account;
-                $item["scriptPubkey"] = "demo"; //HUERAGA
-                $item["amount"] = floatval($rec['value']) / 100000000;
-                $item["confirmations"] = intval($rec['confirmations']);
-                $item["spendable"] = false;
-                $result [] = $item;*/
             }
         }
         return $result;
@@ -547,9 +519,9 @@ class BlockCypherHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function createwallet($name, $addresses)
+    public function createwallet($walletName, $addresses)
     {
-        if ("string" != gettype($name) || ("" == $name)) {
+        if ("string" != gettype($walletName) || ("" == $walletName)) {
             throw new \InvalidArgumentException("name variable must be non empty string.");
         }
         if (!is_array($addresses)) {
@@ -559,7 +531,7 @@ class BlockCypherHandler extends AbstractHandler
         if ($this->token) {
             $url .= "?token=" . $this->token;
         }
-        $post_data = ["name" => $name];
+        $post_data = ["name" => $walletName];
         if (count($addresses) > 0) {
             $post_data["addresses"] = [];
             foreach ($addresses as $address) {
@@ -623,15 +595,15 @@ class BlockCypherHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function addaddresses($name, $addresses)
+    public function addaddresses($walletName, $addresses)
     {
-        if ("string" != gettype($name) || ("" == $name)) {
+        if ("string" != gettype($walletName) || ("" == $walletName)) {
             throw new \InvalidArgumentException("name variable must be non empty string.");
         }
         if ((!is_array($addresses)) || (count($addresses) == 0)) {
             throw new \InvalidArgumentException("addresses variable must be non empty array.");
         }
-        $url = $this->getOption("base_url") . "wallets/" . $name . "/addresses";
+        $url = $this->getOption("base_url") . "wallets/" . $walletName . "/addresses";
         if ($this->token) {
             $url .= "?token=" . $this->token;
         }

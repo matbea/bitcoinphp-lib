@@ -10,18 +10,58 @@ namespace BTCBridge\Api;
  *
  * @package BTCBridge\Api
  *
- * @property int block_height
- * @property string tx_hash
- * @property int tx_input_n
- * @property int tx_output_n
- * @property int value
- * @property bool spent
- * @property int confirmations
- * @property string confirmed
- * @property bool double_spend
  */
 class TransactionReference
 {
+    /**
+     * Height of the block for the transaction.
+     * @var int
+     */
+    protected $blockHeight = null;
+
+    /**
+     * One of the transaction hashes for the specified address.
+     * @var string
+     */
+    protected $txHash = null;
+
+    /**
+     * Index of the input in the transaction. It's a negative number for an output.
+     * @var int
+     */
+    protected $txInputN = null;
+
+    /**
+     * Index of the output in the transaction. It's a negative number for an input.
+     * @var int
+     */
+    protected $txOutputN = null;
+
+    /**
+     * The value transferred by the particular input or output.
+     * @var int
+     */
+    protected $value = null;
+
+    /**
+     * Is 'true' if the output was spent.
+     * @var bool
+     */
+    protected $spent = null;
+
+    /**
+     * Number of confirmations for the transaction.
+     * @var int
+     */
+    protected $confirmations = null;
+
+    /**
+     * Whether the transaction is a double spend (see Zero Confirmations).
+     * @var bool
+     */
+    protected $doubleSpend = null;
+
+
     /**
      * Whether the transaction is a double spend (see Zero Confirmations).
      *
@@ -29,18 +69,18 @@ class TransactionReference
      */
     public function getDoubleSpend()
     {
-        return $this->double_spend;
+        return $this->doubleSpend;
     }
 
     /**
      * Whether the transaction is a double spend (see Zero Confirmations).
      *
-     * @param boolean $double_spend
+     * @param boolean $doubleSpend
      * @return $this
      */
-    public function setDoubleSpend($double_spend)
+    public function setDoubleSpend($doubleSpend)
     {
-        $this->double_spend = $double_spend;
+        $this->doubleSpend = $doubleSpend;
         return $this;
     }
 
@@ -51,18 +91,18 @@ class TransactionReference
      */
     public function getTxHash()
     {
-        return $this->tx_hash;
+        return $this->txHash;
     }
 
     /**
      * One of the transaction hashes for the specified address.
      *
-     * @param string $tx_hash
+     * @param string $txHash
      * @return $this
      */
-    public function setTxHash($tx_hash)
+    public function setTxHash($txHash)
     {
-        $this->tx_hash = $tx_hash;
+        $this->txHash = $txHash;
         return $this;
     }
 
@@ -73,18 +113,18 @@ class TransactionReference
      */
     public function getBlockHeight()
     {
-        return $this->block_height;
+        return $this->blockHeight;
     }
 
     /**
      * Height of the block for the transaction.
      *
-     * @param int $block_height
+     * @param int $blockHeight
      * @return $this
      */
-    public function setBlockHeight($block_height)
+    public function setBlockHeight($blockHeight)
     {
-        $this->block_height = $block_height;
+        $this->blockHeight = $blockHeight;
         return $this;
     }
 
@@ -95,18 +135,18 @@ class TransactionReference
      */
     public function getTxInputN()
     {
-        return $this->tx_input_n;
+        return $this->txInputN;
     }
 
     /**
      * Index of the input in the transaction. It's a negative number for an output.
      *
-     * @param int $tx_input_n
+     * @param int $txInputN
      * @return $this
      */
-    public function setTxInputN($tx_input_n)
+    public function setTxInputN($txInputN)
     {
-        $this->tx_input_n = $tx_input_n;
+        $this->txInputN = $txInputN;
         return $this;
     }
 
@@ -117,18 +157,18 @@ class TransactionReference
      */
     public function getTxOutputN()
     {
-        return $this->tx_output_n;
+        return $this->txOutputN;
     }
 
     /**
      * Index of the output in the transaction. It's a negative number for an input.
      *
-     * @param int $tx_output_n
+     * @param int $txOutputN
      * @return $this
      */
-    public function setTxOutputN($tx_output_n)
+    public function setTxOutputN($txOutputN)
     {
-        $this->tx_output_n = $tx_output_n;
+        $this->txOutputN = $txOutputN;
         return $this;
     }
 

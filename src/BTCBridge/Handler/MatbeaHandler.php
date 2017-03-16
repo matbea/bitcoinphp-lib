@@ -16,7 +16,8 @@ use BTCBridge\Api\Wallet;
 
 //use BTCBridge\Api\TransactionInput;
 //use BTCBridge\Api\TransactionOutput;
-//use BTCBridge\Api\Address;
+use BTCBridge\Api\Address;
+
 //use BTCBridge\Api\Wallet;
 //use \BTCBridge\Api\TransactionReference;
 
@@ -92,7 +93,7 @@ class MatbeaHandler extends AbstractHandler
      */
     public function listtransactions($address, array $options = array())
     {
-        return [];
+        return new Address();
     }
 
     /**
@@ -132,13 +133,14 @@ class MatbeaHandler extends AbstractHandler
      */
     public function sendrawtransaction($Transaction)
     {
-        return "721dca6852f828af1057d5bf5f324a6d2b27328a27882229048cf340c1e3ec10";
+        /** @noinspection PhpUnusedLocalVariableInspection */
+        return "721dca6852f828af1057d5bf5f324a6d2b27328a27882229048cf340c1e3ec10" ;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function createwallet($name, $addresses)
+    public function createwallet($walletName, $addresses)
     {
         return new Wallet();
     }
@@ -146,7 +148,7 @@ class MatbeaHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function addaddresses($name, $addresses)
+    public function addaddresses($walletName, $addresses)
     {
         return new Wallet();
     }

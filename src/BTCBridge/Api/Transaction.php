@@ -10,30 +10,94 @@ namespace BTCBridge\Api;
  *
  * @package BTCBridge\Api
  *
- * @property string block_hash
- * @property int block_height
- * @property string hash
- * @property string[] addresses
- * @property string confirmed
- * @property int lock_time
- * @property bool double_spend
- * @property integer vin_sz
- * @property integer vout_sz
- * @property int confirmations
- * @property \BTCBridge\Api\TransactionInput[] inputs
- * @property \BTCBridge\Api\TransactionOutput[] outputs
  */
 class Transaction
 {
     /**
      * BlockHash of the block the transaction is in. Only exists for confirmed transactions.
+     * @var string
+     */
+    protected $blockHash = null;
+
+    /**
+     * Height of the block the transaction is in. Only exists for confirmed transactions.
+     * @var int
+     */
+    protected $blockHeight = null;
+
+    /**
+     * Hash of the transaction.
+     * @var string
+     */
+    protected $hash = null;
+
+    /**
+     * Array of Bitcoin addresses involved in the transaction.
+     * @var string[]
+     */
+    protected $addresses = null;
+
+    /**
+     * Time at which transaction was included in a block; only present for confirmed transactions.
+     * @var string
+     */
+    protected $confirmed = null;
+
+    /**
+     * Lock time of transaction
+     * @var int
+     */
+    protected $lockTime = null;
+
+    /**
+     * Whether the transaction is a double spend.
+     * @var bool
+     */
+    protected $doubleSpend = null;
+
+    /**
+     * Total number of inputs
+     * @var int
+     */
+    protected $vinSz = null;
+
+    /**
+     * Total number of outputs
+     * @var int
+     */
+    protected $voutSz = null;
+
+    /**
+     * Number of subsequent blocks, including the block the transaction is in.
+     * Unconfirmed transactions have 0 for confirmation.
+     * @var int
+     */
+    protected $confirmations = null;
+
+    /**
+     * Array of inputs, limited to 20. Use paging to get more inputs (see section on blocks) with
+     * instart and limit URL parameters.
+     * @var \BTCBridge\Api\TransactionInput[]
+     */
+    protected $inputs = null;
+
+    /**
+     * Array of outputs, limited to 20. Use paging to get more outputs (see section on blocks) with
+     * outstart and limit URL parameters.
+     * @var \BTCBridge\Api\TransactionOutput[]
+     */
+    protected $outputs = null;
+
+
+    /**
+     * BlockHash of the block the transaction is in. Only exists for confirmed transactions.
      *
-     * @param $block_hash
+     * @param $blockHash
      * @return $this
      */
-    public function setBlockHash($block_hash)
+    public function setBlockHash($blockHash)
     {
-        $this->block_hash = $block_hash;
+        $this->blockHash = $blockHash;
         return $this;
     }
 
@@ -44,7 +108,7 @@ class Transaction
      */
     public function getBlockHash()
     {
-        return $this->block_hash;
+        return $this->blockHash;
     }
 
 
@@ -97,16 +161,16 @@ class Transaction
      */
     public function getLockTime()
     {
-        return $this->lock_time;
+        return $this->lockTime;
     }
 
     /**
-     * @param int $lock_time
+     * @param int $lockTime
      * @return $this
      */
-    public function setLockTime($lock_time)
+    public function setLockTime($lockTime)
     {
-        $this->lock_time = $lock_time;
+        $this->lockTime = $lockTime;
         return $this;
     }
 
@@ -115,7 +179,7 @@ class Transaction
      */
     public function isDoubleSpend()
     {
-        return $this->double_spend;
+        return $this->doubleSpend;
     }
 
     /**
@@ -125,18 +189,18 @@ class Transaction
      */
     public function getDoubleSpend()
     {
-        return $this->double_spend;
+        return $this->doubleSpend;
     }
 
     /**
      * Whether the transaction is a double spend (see Zero Confirmations).
      *
-     * @param boolean $double_spend
+     * @param boolean $doubleSpend
      * @return $this
      */
-    public function setDoubleSpend($double_spend)
+    public function setDoubleSpend($doubleSpend)
     {
-        $this->double_spend = $double_spend;
+        $this->doubleSpend = $doubleSpend;
         return $this;
     }
 
@@ -147,18 +211,18 @@ class Transaction
      */
     public function getVinSz()
     {
-        return $this->vin_sz;
+        return $this->vinSz;
     }
 
     /**
      * Total number of inputs
      *
-     * @param int $vin_sz
+     * @param int $vinSz
      * @return $this
      */
-    public function setVinSz($vin_sz)
+    public function setVinSz($vinSz)
     {
-        $this->vin_sz = $vin_sz;
+        $this->vinSz = $vinSz;
         return $this;
     }
 
@@ -169,18 +233,18 @@ class Transaction
      */
     public function getVoutSz()
     {
-        return $this->vout_sz;
+        return $this->voutSz;
     }
 
     /**
      * Total number of outputs
      *
-     * @param int $vout_sz
+     * @param int $voutSz
      * @return $this
      */
-    public function setVoutSz($vout_sz)
+    public function setVoutSz($voutSz)
     {
-        $this->vout_sz = $vout_sz;
+        $this->voutSz = $voutSz;
         return $this;
     }
 
@@ -294,12 +358,12 @@ class Transaction
     /**
      * Height of the block the transaction is in. Only exists for confirmed transactions.
      *
-     * @param $block_height
+     * @param $blockHeight
      * @return $this
      */
-    public function setBlockHeight($block_height)
+    public function setBlockHeight($blockHeight)
     {
-        $this->block_height = $block_height;
+        $this->blockHeight = $blockHeight;
         return $this;
     }
 
@@ -310,7 +374,7 @@ class Transaction
      */
     public function getBlockHeight()
     {
-        return $this->block_height;
+        return $this->blockHeight;
     }
 
     /**

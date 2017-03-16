@@ -10,16 +10,54 @@ namespace BTCBridge\Api;
  *
  * @package BTCBridge\Api
  *
- * @property string address Only present when object represents an address
- * @property \BTCBridge\Api\Wallet wallet Only present when object represents a wallet
- * @property int balance
- * @property int unconfirmed_balance
- * @property int final_balance
- * @property \BTCBridge\Api\TransactionReference[] txrefs
- * @property \BTCBridge\Api\TransactionReference[] unconfirmed_txrefs
  */
 class Address
 {
+
+    /**
+     * Only present when object represents an address
+     * @var string
+     */
+    protected $address = null;
+
+    /**
+     * Only present when object represents a wallet
+     * @var \BTCBridge\Api\Wallet
+     */
+    protected $wallet = null;
+
+    /**
+     * Balance on the specified address, in satoshi. This is the difference between outputs and inputs on this address,
+     * for transactions that have been included into a block (confirmations > 0)
+     * @var int
+     */
+    protected $balance = null;
+
+    /**
+     * Balance of unconfirmed transactions for this address, in satoshi. Can be negative
+     * (if unconfirmed transactions are just spending.). Only unconfirmed transactions (haven't made it into a block)
+     * @var int
+     */
+    protected $unconfirmedBalance = null;
+
+    /**
+     * Balance including confirmed and unconfirmed transactions for this address, in satoshi.
+     * @var int
+     */
+    protected $finalBalance = null;
+
+    /**
+     * All transaction inputs and outputs for the specified address.
+     * @var \BTCBridge\Api\TransactionReference[]
+     */
+    protected $txrefs = []; //
+
+    /**
+     * All unconfirmed transaction inputs and outputs for the specified address.
+     * @var \BTCBridge\Api\TransactionReference[]
+     */
+    protected $unconfirmedTxrefs = [];
+
 
     /**
      * The requested address.
@@ -93,7 +131,7 @@ class Address
      */
     public function getUnconfirmedBalance()
     {
-        return $this->unconfirmed_balance;
+        return $this->unconfirmedBalance;
     }
 
     /**
@@ -101,12 +139,12 @@ class Address
      * (if unconfirmed transactions are just spending.). Only unconfirmed transactions (haven't made it into a block)
      * are included.
      *
-     * @param int $unconfirmed_balance
+     * @param int $unconfirmedBalance
      * @return $this
      */
-    public function setUnconfirmedBalance($unconfirmed_balance)
+    public function setUnconfirmedBalance($unconfirmedBalance)
     {
-        $this->unconfirmed_balance = $unconfirmed_balance;
+        $this->unconfirmedBalance = $unconfirmedBalance;
         return $this;
     }
 
@@ -117,18 +155,18 @@ class Address
      */
     public function getFinalBalance()
     {
-        return $this->final_balance;
+        return $this->finalBalance;
     }
 
     /**
      * Balance including confirmed and unconfirmed transactions for this address, in satoshi.
      *
-     * @param int $final_balance
+     * @param int $finalBalance
      * @return $this
      */
-    public function setFinalBalance($final_balance)
+    public function setFinalBalance($finalBalance)
     {
-        $this->final_balance = $final_balance;
+        $this->finalBalance = $finalBalance;
         return $this;
     }
 
@@ -197,18 +235,18 @@ class Address
      */
     public function getUnconfirmedTxrefs()
     {
-        return $this->unconfirmed_txrefs;
+        return $this->unconfirmedTxrefs;
     }
 
     /**
      * All unconfirmed transaction inputs and outputs for the specified address.
      *
-     * @param \BTCBridge\Api\TransactionReference[] $unconfirmed_txrefs
+     * @param \BTCBridge\Api\TransactionReference[] $unconfirmedTxrefs
      * @return $this
      */
-    public function setUnconfirmedTxrefs($unconfirmed_txrefs)
+    public function setUnconfirmedTxrefs($unconfirmedTxrefs)
     {
-        $this->unconfirmed_txrefs = $unconfirmed_txrefs;
+        $this->unconfirmedTxrefs = $unconfirmedTxrefs;
         return $this;
     }
 
@@ -223,8 +261,8 @@ class Address
         if (is_array($this->txrefs)) {
             $allTxrefs = array_merge($allTxrefs, $this->txrefs);
         }
-        if (is_array($this->unconfirmed_txrefs)) {
-            $allTxrefs = array_merge($allTxrefs, $this->unconfirmed_txrefs);
+        if (is_array($this->unconfirmedTxrefs)) {
+            $allTxrefs = array_merge($allTxrefs, $this->unconfirmedTxrefs);
         }
 
         if (count($allTxrefs) == 0) {

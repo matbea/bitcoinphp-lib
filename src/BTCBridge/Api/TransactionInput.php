@@ -10,14 +10,40 @@ namespace BTCBridge\Api;
  *
  * @package BTCBridge\Api
  *
- * @property string prev_hash
- * @property int output_index
- * @property int output_value
- * @property string[] addresses
- * @property string script_type
  */
 class TransactionInput
 {
+    /**
+     * Hash of the transaction for which an output is being spent by this input.
+     * Does not exist for coinbase transactions.
+     * @var string
+     */
+    protected $prevHash = null;
+
+    /**
+     * Index in the previous transaction of the output being spent. Does not exist for coinbase transactions.
+     * @var int
+     */
+    protected $outputIndex = null;
+
+    /**
+     * Value of the output being spent. Does not exist for coinbase transactions.
+     * @var int
+     */
+    protected $outputValue = null;
+
+    /**
+     * Addresses referenced in the transaction output being spent.
+     * @var string[]
+     */
+    protected $addresses = [];
+
+    /**
+     * Script type in the transaction output being spent.
+     * @var string
+     */
+    protected $scriptType = null;
+
 
     /**
      * Hash of the transaction for which an output is being spent by this input.
@@ -27,19 +53,19 @@ class TransactionInput
      */
     public function getPrevHash()
     {
-        return $this->prev_hash;
+        return $this->prevHash;
     }
 
     /**
      * Hash of the transaction for which an output is being spent by this input.
      * Does not exist for coinbase transactions.
      *
-     * @param string $prev_hash
+     * @param string $prevHash
      * @return $this
      */
-    public function setPrevHash($prev_hash)
+    public function setPrevHash($prevHash)
     {
-        $this->prev_hash = $prev_hash;
+        $this->prevHash = $prevHash;
         return $this;
     }
 
@@ -50,18 +76,18 @@ class TransactionInput
      */
     public function getOutputIndex()
     {
-        return $this->output_index;
+        return $this->outputIndex;
     }
 
     /**
      * Index in the previous transaction of the output being spent. Does not exist for coinbase transactions.
      *
-     * @param int $output_index
+     * @param int $outputIndex
      * @return $this
      */
-    public function setOutputIndex($output_index)
+    public function setOutputIndex($outputIndex)
     {
-        $this->output_index = $output_index;
+        $this->outputIndex = $outputIndex;
         return $this;
     }
 
@@ -72,18 +98,18 @@ class TransactionInput
      */
     public function getOutputValue()
     {
-        return $this->output_value;
+        return $this->outputValue;
     }
 
     /**
      * Value of the output being spent. Does not exist for coinbase transactions.
      *
-     * @param int $output_value
+     * @param int $outputValue
      * @return $this
      */
-    public function setOutputValue($output_value)
+    public function setOutputValue($outputValue)
     {
-        $this->output_value = $output_value;
+        $this->outputValue = $outputValue;
         return $this;
     }
 
@@ -123,20 +149,8 @@ class TransactionInput
     public function setAddresses($addresses)
     {
         $this->addresses = $addresses;
+        sort($this->addresses);
         return $this;
-    }
-
-    /**
-     * Remove Address from the list.
-     *
-     * @param string $address
-     * @return $this
-     */
-    public function removeAddress($address)
-    {
-        return $this->setAddresses(
-            array_diff($this->getAddresses(), array($address))
-        );
     }
 
     /**
@@ -146,18 +160,18 @@ class TransactionInput
      */
     public function getScriptType()
     {
-        return $this->script_type;
+        return $this->scriptType;
     }
 
     /**
      * Script type in the transaction output being spent.
      *
-     * @param string $script_type
+     * @param string $scriptType
      * @return $this
      */
-    public function setScriptType($script_type)
+    public function setScriptType($scriptType)
     {
-        $this->script_type = $script_type;
+        $this->scriptType = $scriptType;
         return $this;
     }
 }

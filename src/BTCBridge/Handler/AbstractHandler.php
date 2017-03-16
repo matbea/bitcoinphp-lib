@@ -226,6 +226,7 @@ abstract class AbstractHandler
      *
      * @param string $Transaction  The minimum number of confirmations the transaction containing an output
      * must have in order to be returned.
+     *
      * @return string If the transaction was accepted by the node for broadcast, this will be the TXID
      * of the transaction encoded as hex in RPC byte order.
      *
@@ -239,7 +240,7 @@ abstract class AbstractHandler
      * This Method Creates a new wallet
      * @link https://www.blockcypher.com/dev/bitcoin/?shell#create-wallet-endpoint
      *
-     * @param string $name Name of wallet
+     * @param string $walletName Name of wallet
      * @param string[] $addresses
      *
      * @return Wallet object
@@ -248,13 +249,13 @@ abstract class AbstractHandler
      * @throws \InvalidArgumentException in case of error of this type
      *
      */
-    abstract public function createwallet($name, $addresses);
+    abstract public function createwallet($walletName, $addresses);
 
     /**
      * This Method adds new addresses into a wallet
      * @link https://www.blockcypher.com/dev/bitcoin/?shell#add-addresses-to-wallet-endpoint
      *
-     * @param string $name Name of wallet
+     * @param string $walletName Name of wallet
      * @param string[] $addresses
      *
      * @return Wallet object
@@ -263,5 +264,5 @@ abstract class AbstractHandler
      * @throws \InvalidArgumentException in case of error of this type
      *
      */
-    abstract public function addaddresses($name, $addresses);
+    abstract public function addaddresses($walletName, $addresses);
 }
