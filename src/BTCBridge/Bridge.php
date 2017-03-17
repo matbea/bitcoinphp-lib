@@ -10,6 +10,11 @@ use BTCBridge\Api\Address;
 use BTCBridge\Api\Wallet;
 use Psr\Log\LoggerInterface;
 use Monolog\Logger;
+use BitWasp\Bitcoin\Bitcoin;
+use BitWasp\Bitcoin\Script\ScriptFactory;
+use BitWasp\Bitcoin\Key\PrivateKeyFactory;
+use BitWasp\Bitcoin\Address\AddressFactory;
+use BitWasp\Bitcoin\Exceptions\Base58ChecksumFailure;
 
 /**
  * Describes a Bridge instance
@@ -19,6 +24,15 @@ use Monolog\Logger;
  */
 class Bridge
 {
+
+    const OPT_LOCALPATH2WALLETDATA= 1;
+    const DEFAULTLOCALPATH2WALLETDATA = "wallet.dat";
+
+    const DATASEPARATOR = "";
+
+    /** @var array options */
+    protected $options = [];
+
     /**
      * The handler stack
      *
@@ -74,6 +88,48 @@ class Bridge
         } else {
             $this->loggerHandler = new Logger('BTCBridge');
         }
+        $this->setOption(self::OPT_LOCALPATH2WALLETDATA, __DIR__."/".self::DEFAULTLOCALPATH2WALLETDATA);
+    }
+
+    /**
+     * Sets the option
+     *
+     * @param int $optionName a constant describying name of the option
+     * @param string $optionValue a value of the option
+     *
+     * @throws \InvalidArgumentException if error of this type
+     *
+     */
+    public function setOption($optionName, $optionValue)
+    {
+        if ((gettype($optionName) != "integer") || (!in_array($optionName, [self::OPT_LOCALPATH2WALLETDATA]))) {
+            throw new \InvalidArgumentException("Bad type of option (".$optionName.")");
+        }
+        if (gettype($optionValue) != "string" || "" == $optionValue) {
+            throw new \InvalidArgumentException("Bad type of option value (must be non empty string)");
+        }
+        $this->options[$optionName] = $optionValue;
+    }
+
+    /**
+     * Gets the option
+     *
+     * @param int $optionName a constant, which describes the name of the option
+     *
+     * @throws \InvalidArgumentException if error of this type
+     * @throws \RuntimeException in case if this option is not exists
+     *
+     * @return string Option
+     */
+    protected function getOption($optionName)
+    {
+        if ((gettype($optionName) != "integer") || (!in_array($optionName, [self::OPT_LOCALPATH2WALLETDATA]))) {
+            throw new \InvalidArgumentException("Bad type of option (".$optionName.")");
+        }
+        if (!isset($this->options[$optionName])) {
+            throw new \RuntimeException("No option with name \"" . $optionName . "\" exists in the class)");
+        }
+        return $this->options[$optionName];
     }
 
     /**
@@ -294,7 +350,7 @@ class Bridge
      * depending on the endpoint.
      * @link https://www.blockcypher.com/dev/bitcoin/?shell#create-wallet-endpoint
      *
-     * @param string $name Name of wallet
+     * @param string $walletName
      * @param string[] $addresses
      *
      * @return Wallet
@@ -303,17 +359,23 @@ class Bridge
      * @throws \InvalidArgumentException in case of error of this type
      *
      */
-    public function createwallet($name, $addresses)
+    public function createwallet($walletName, $addresses)
     {
-        if ("string" != gettype($name) || ("" == $name)) {
-            throw new \InvalidArgumentException("Account variable must be non empty string.");
+        if ("string" != gettype($walletName) || ("" == $walletName)) {
+            throw new \InvalidArgumentException("Wallet name variable must be non empty string.");
+        }
+        if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
+            throw new \InvalidArgumentException(
+                "Wallet name have to contain only alphanumeric, underline and dash symbols (\"" .
+                $walletName . "\" passed)."
+            );
         }
         if (!is_array($addresses)) {
             throw new \InvalidArgumentException("addresses variable must be the array.");
         }
         $results = [];
         foreach ($this->handlers as $handle) {
-            $result = $handle->createwallet($name, $addresses);
+            $result = $handle->createwallet($walletName, $addresses);
             $results [] = $result;
         }
         return $this->conflictHandler->createwallet($results);
@@ -346,5 +408,91 @@ class Bridge
             $results [] = $result;
         }
         return $this->conflictHandler->addaddresses($results);
+    }
+
+    /**
+     * The getnewaddress RPC returns a new Bitcoin address for receiving payments.
+     * If an account is specified, payments received with the address will be credited to that account.
+     * @link https://bitcoin.org/en/developer-reference#getnewaddress
+     *
+     * @param string $walletName Name of wallet
+     *
+     * @return \string
+     *
+     * @throws \RuntimeException in case of error of this type
+     * @throws \InvalidArgumentException in case of error of this type
+     *
+     */
+    public function getnewaddress($walletName)
+    {
+        if ("string" != gettype($walletName) || ("" == $walletName)) {
+            throw new \InvalidArgumentException("wallet Name must be non empty string.");
+        }
+        try {
+            $privateKey = PrivateKeyFactory::create();
+            $address = $privateKey->getPublicKey()->getAddress();
+            $address = $address->getAddress();
+            $network = Bitcoin::getNetwork();
+            $wif = $privateKey->toWif($network);
+        } catch (Base58ChecksumFailure $ex) {
+            throw new \RuntimeException($ex->getMessage());
+        } //May be \RuntimeException will raised in the BitWASP library - we'll not change this
+        if (!file_put_contents(
+            $this->getOption(Bridge::OPT_LOCALPATH2WALLETDATA),
+            ($walletName.";".$wif.";".$address.PHP_EOL),
+            FILE_APPEND
+        ) ) {
+            throw new \RuntimeException(
+                "Write data into the file " . $this->getOption(Bridge::OPT_LOCALPATH2WALLETDATA) . " failed."
+            );
+        }
+        return $address;
+    }
+
+    /**
+     * The dumpprivkey RPC returns the wallet-import-format (WIP) private key corresponding to an address.
+     * (But does not remove it from the wallet.)
+     * @link https://bitcoin.org/en/developer-reference#dumpprivkey
+     *
+     * @param string $walletName Name of wallet
+     * @param string $address
+     *
+     * @return \string|null WIF or null (if didn't found)
+     *
+     * @throws \RuntimeException in case of error of this type
+     * @throws \InvalidArgumentException in case of error of this type
+     *
+     */
+    public function dumpprivkey($walletName, $address)
+    {
+        if ("string" != gettype($address) || ("" == $address)) {
+            throw new \InvalidArgumentException("wallet Name must be non empty string.");
+        }
+
+        $path = $this->getOption(Bridge::OPT_LOCALPATH2WALLETDATA);
+
+        $handle = fopen($path, "r");
+        if (false === $handle) {
+            throw new \RuntimeException(
+                "Read data from the file " . $path . " failed."
+            );
+        }
+        $i = 0;
+        while (($data = fgetcsv($handle, 1000, ";")) !== false) {
+            ++$i;
+            $num = count($data);
+            if (3 != $num) {
+                throw new \RuntimeException(
+                    "Line #" . $i . " in the file " . $path . " contains " .
+                    $num . " fields, must contain 3 fields only."
+                );
+            }
+            if (( $address == $data[2] ) && ( $walletName == $data[0] )) {
+                fclose($handle);
+                return $data[1];
+            }
+        }
+        fclose($handle);
+        return null;
     }
 }

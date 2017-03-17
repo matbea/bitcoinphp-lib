@@ -101,7 +101,7 @@ class TransactionOutput
      * Append Address to the list.
      *
      * @param string $address
-     * @return $this
+     * @return \string[]
      */
     public function addAddress($address)
     {
