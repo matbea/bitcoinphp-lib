@@ -24,6 +24,9 @@ use \BTCBridge\Api\TransactionReference;
  */
 abstract class AbstractHandler
 {
+    /** This group of constants are options */
+    const OPT_BASE_URL = 1;
+    const OPT_BASE_BROWSER = 2;
 
     /** @var LoggerInterface logger handler */
     protected $logger;
@@ -38,7 +41,7 @@ abstract class AbstractHandler
     {
         $this->setLogger(new Logger('BTCBridge'));
         $this->setOption(
-            "browser",
+            self::OPT_BASE_BROWSER,
             'Mozilla/5.0 (Windows NT 6.1; WOW64) '
             . 'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/36.0.1985.125 Safari/537.36'
         );
@@ -69,7 +72,7 @@ abstract class AbstractHandler
      */
     protected function setOption($optionname, $optionvalue)
     {
-        if (gettype($optionname) != "string" || "" == $optionname) {
+        if (gettype($optionname) != "integer") {
             throw new \InvalidArgumentException("Bad type of option name (must be non empty string)");
         }
         if (gettype($optionvalue) != "string" || "" == $optionvalue) {
@@ -90,7 +93,7 @@ abstract class AbstractHandler
      */
     protected function getOption($optionname)
     {
-        if (gettype($optionname) != "string" || "" == $optionname) {
+        if (gettype($optionname) != "integer") {
             throw new \InvalidArgumentException("Bad type of option name (must be non empty string)");
         }
         if (!isset($this->options[$optionname])) {
@@ -98,7 +101,6 @@ abstract class AbstractHandler
         }
         return $this->options[$optionname];
     }
-
 
     /**
      * The listtransactions RPC returns the most recent transactions that affect the wallet.
@@ -174,7 +176,7 @@ abstract class AbstractHandler
      * @link https://bitcoin.org/en/developer-reference#getbalance Official bitcoin documentation.
      * @link https://www.blockcypher.com/dev/bitcoin/?shell#address-endpoint
      *
-     * @param string $Account            An account name to get balance from
+     * @param string $walletName            An account name to get balance from
      * @param int $Confirmations         The minimum number of confirmations an externally-generated transaction
      * must have before it is counted towards the balance.
      * @param boolean $IncludeWatchOnly  Whether to include watch-only addresses in details and calculations
@@ -184,7 +186,7 @@ abstract class AbstractHandler
      *
      * @return integer                            The balance in satoshi
      */
-    abstract public function getbalance($Account, $Confirmations = 1, $IncludeWatchOnly = false);
+    abstract public function getbalance($walletName, $Confirmations = 1, $IncludeWatchOnly = false);
 
     /**
      * Returns the wallet’s total unconfirmed balance.
@@ -253,10 +255,10 @@ abstract class AbstractHandler
 
     /**
      * This Method adds new addresses into a wallet
-     * @link https://www.blockcypher.com/dev/bitcoin/?shell#add-addresses-to-wallet-endpoint
+     * @link https://www.blockcypher.com/dev/bitcoin/?shell#remove-addresses-from-wallet-endpoint
      *
      * @param string $walletName Name of wallet
-     * @param string[] $addresses
+     * @param string $address
      *
      * @return Wallet object
      *
@@ -264,5 +266,47 @@ abstract class AbstractHandler
      * @throws \InvalidArgumentException in case of error of this type
      *
      */
+    abstract public function removeAddress($walletName, $address);
+
+    /**
+     * This Method adds new addresses into a wallet
+     * @link https://www.blockcypher.com/dev/bitcoin/?shell#add-addresses-to-wallet-endpoint
+     *
+     * @param string $walletName Name of wallet
+     * @param string[] $addresses
+     *
+     * @return bool
+     *
+     * @throws \RuntimeException in case of error of this type
+     * @throws \InvalidArgumentException in case of error of this type
+     *
+     */
     abstract public function addaddresses($walletName, $addresses);
+
+
+    /**
+     * This Method deletes a passed wallet
+     * https://www.blockcypher.com/dev/bitcoin/?shell#delete-wallet-endpoint
+     *
+     * @param string $walletName Name of wallet
+     *
+     * @throws \RuntimeException in case of error of this type
+     * @throws \InvalidArgumentException in case of error of this type
+     *
+     */
+    abstract public function deletewallet($walletName);
+
+    /**
+     * This method returns addresses from the passed wallet
+     * @link https://bitcoin.org/en/developer-reference#getaddressesbyaccount
+     * @link https://www.blockcypher.com/dev/bitcoin/?shell#get-wallet-addresses-endpoint
+     *
+     * @param string $walletName
+     *
+     * @throws \RuntimeException in case of any error of this type
+     * @throws \InvalidArgumentException in case of any error of this type
+     *
+     * @return \string[] addresses
+     */
+    abstract public function getAddresses($walletName);
 }

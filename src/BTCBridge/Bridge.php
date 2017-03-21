@@ -4,6 +4,7 @@ namespace BTCBridge;
 
 use BTCBridge\Handler\AbstractHandler;
 use BTCBridge\ConflictHandler\ConflictHandlerInterface;
+use BTCBridge\Exception\HandlerErrorException;
 use BTCBridge\ConflictHandler\DefaultConflictHandler;
 use BTCBridge\Api\Transaction;
 use BTCBridge\Api\Address;
@@ -25,10 +26,8 @@ use BitWasp\Bitcoin\Exceptions\Base58ChecksumFailure;
 class Bridge
 {
 
-    const OPT_LOCALPATH2WALLETDATA= 1;
-    const DEFAULTLOCALPATH2WALLETDATA = "wallet.dat";
-
-    const DATASEPARATOR = "";
+    /** This group of constants are bridge options */
+    const OPT_LOCAL_PATH_OF_WALLET_DATA = 1;
 
     /** @var array options */
     protected $options = [];
@@ -88,7 +87,7 @@ class Bridge
         } else {
             $this->loggerHandler = new Logger('BTCBridge');
         }
-        $this->setOption(self::OPT_LOCALPATH2WALLETDATA, __DIR__."/".self::DEFAULTLOCALPATH2WALLETDATA);
+        $this->setOption(self::OPT_LOCAL_PATH_OF_WALLET_DATA, __DIR__."/wallet.dat");
     }
 
     /**
@@ -102,7 +101,7 @@ class Bridge
      */
     public function setOption($optionName, $optionValue)
     {
-        if ((gettype($optionName) != "integer") || (!in_array($optionName, [self::OPT_LOCALPATH2WALLETDATA]))) {
+        if ((gettype($optionName) != "integer") || (!in_array($optionName, [self::OPT_LOCAL_PATH_OF_WALLET_DATA]))) {
             throw new \InvalidArgumentException("Bad type of option (".$optionName.")");
         }
         if (gettype($optionValue) != "string" || "" == $optionValue) {
@@ -123,7 +122,7 @@ class Bridge
      */
     protected function getOption($optionName)
     {
-        if ((gettype($optionName) != "integer") || (!in_array($optionName, [self::OPT_LOCALPATH2WALLETDATA]))) {
+        if ((gettype($optionName) != "integer") || (!in_array($optionName, [self::OPT_LOCAL_PATH_OF_WALLET_DATA]))) {
             throw new \InvalidArgumentException("Bad type of option (".$optionName.")");
         }
         if (!isset($this->options[$optionName])) {
@@ -228,7 +227,7 @@ class Bridge
      * @link https://bitcoin.org/en/developer-reference#getbalance Official bitcoin documentation.
      * @link https://www.blockcypher.com/dev/bitcoin/?shell#address-endpoint
      *
-     * @param string $Account            An account name to get balance from
+     * @param string $walletName            An account name to get balance from
      * @param int $Confirmations         The minimum number of confirmations an externally-generated transaction
      * must have before it is counted towards the balance.
      * @param boolean $IncludeWatchOnly  Whether to include watch-only addresses in details and calculations
@@ -238,14 +237,20 @@ class Bridge
      *
      * @return integer                   The balance in bitcoins (in satoshi)
      */
-    public function getbalance($Account, $Confirmations = 1, $IncludeWatchOnly = false)
+    public function getbalance($walletName, $Confirmations = 1, $IncludeWatchOnly = false)
     {
-        if ("string" != gettype($Account) || ("" == $Account)) {
+        if ("string" != gettype($walletName) || ("" == $walletName)) {
             throw new \InvalidArgumentException("Account variable must be non empty string.");
+        }
+        if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
+            throw new \InvalidArgumentException(
+                "Wallet name have to contain only alphanumeric, underline and dash symbols (\"" .
+                $walletName . "\" passed)."
+            );
         }
         $results = [];
         foreach ($this->handlers as $handle) {
-            $result = $handle->getbalance($Account, $Confirmations, $IncludeWatchOnly);
+            $result = $handle->getbalance($walletName, $Confirmations, $IncludeWatchOnly);
             $results [] = $result;
         }
         return $this->conflictHandler->getbalance($results);
@@ -258,22 +263,28 @@ class Bridge
      * @link https://bitcoin.org/en/developer-reference#getunconfirmedbalance Official bitcoin documentation.
      * @link https://www.blockcypher.com/dev/bitcoin/?shell#address-endpoint
      *
-     * @param string $Account An account name to get unconfirmed balance from
+     * @param string $walletName An account name to get unconfirmed balance from
      *
      * @throws \RuntimeException in case of any error
      * @throws \InvalidArgumentException if error of this type
      *
      * @return integer The total number of bitcoins paid to the passed wallet in unconfirmed transactions (in satoshi)
      */
-    public function getunconfirmedbalance($Account)
+    public function getunconfirmedbalance($walletName)
     {
-        if ("string" != gettype($Account) || ("" == $Account)) {
+        if ("string" != gettype($walletName) || ("" == $walletName)) {
             throw new \InvalidArgumentException("Account variable must be non empty string.");
+        }
+        if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
+            throw new \InvalidArgumentException(
+                "Wallet name have to contain only alphanumeric, underline and dash symbols (\"" .
+                $walletName . "\" passed)."
+            );
         }
         $results = [];
         foreach ($this->handlers as $handle) {
             //$result = call_user_func_array([$handle, "getunconfirmedbalance"], [$Account]);
-            $result = $handle->getunconfirmedbalance($Account);
+            $result = $handle->getunconfirmedbalance($walletName);
             $results [] = $result;
         }
         return $this->conflictHandler->getunconfirmedbalance($results);
@@ -286,7 +297,7 @@ class Bridge
      * @link https://bitcoin.org/en/developer-reference#listunspent Official bitcoin documentation.
      * @link https://www.blockcypher.com/dev/bitcoin/?shell#address-endpoint
      *
-     * @param string $Account An account name to get unconfirmed balance from
+     * @param string $walletName An account name to get unconfirmed balance from
      * @param int $MinimumConfirmations  The minimum number of confirmations the transaction containing an output
      * must have in order to be returned.
      *
@@ -295,14 +306,20 @@ class Bridge
      *
      * @return array The list of unspent outputs
      */
-    public function listunspent($Account, $MinimumConfirmations = 1)
+    public function listunspent($walletName, $MinimumConfirmations = 1)
     {
-        if ("string" != gettype($Account) || ("" == $Account)) {
+        if ("string" != gettype($walletName) || ("" == $walletName)) {
             throw new \InvalidArgumentException("Account variable must be non empty string.");
+        }
+        if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
+            throw new \InvalidArgumentException(
+                "Wallet name have to contain only alphanumeric, underline and dash symbols (\"" .
+                $walletName . "\" passed)."
+            );
         }
         $results = [];
         foreach ($this->handlers as $handle) {
-            $result = $handle->listunspent($Account, $MinimumConfirmations);
+            $result = $handle->listunspent($walletName, $MinimumConfirmations);
             $results [] = $result;
         }
         return $this->conflictHandler->listunspent($results);
@@ -357,6 +374,7 @@ class Bridge
      *
      * @throws \RuntimeException in case of error of this type
      * @throws \InvalidArgumentException in case of error of this type
+     * @throws HandlerErrorException in case of any error with Handler occured
      *
      */
     public function createwallet($walletName, $addresses)
@@ -374,9 +392,30 @@ class Bridge
             throw new \InvalidArgumentException("addresses variable must be the array.");
         }
         $results = [];
-        foreach ($this->handlers as $handle) {
-            $result = $handle->createwallet($walletName, $addresses);
+
+        /** @var $successHandlers AbstractHandler[] */
+        $successHandlers = [];
+        /** @var $errorHandlers AbstractHandler[] */
+        $errorHandlers = [];
+
+        for ($i = 0; $i < count($this->handlers); ++$i) {
+            try {
+                $result = $this->handlers[$i]->createwallet($walletName, $addresses);
+            } catch (\RuntimeException $ex) {
+                $this->loggerHandler->error($ex->getMessage());
+                $errorHandlers [] = $this->handlers[$i];
+                continue;
+            }
+            $successHandlers [] = $this->handlers[$i];
             $results [] = $result;
+        }
+
+        if ([] != $errorHandlers) {
+            throw new HandlerErrorException(
+                $successHandlers,
+                $errorHandlers,
+                "Some handler(s) raised error (method createwallet)"
+            );
         }
         return $this->conflictHandler->createwallet($results);
     }
@@ -385,29 +424,184 @@ class Bridge
      * This Method adds new addresses into a wallet
      * @link https://www.blockcypher.com/dev/bitcoin/?shell#add-addresses-to-wallet-endpoint
      *
-     * @param string $name Name of wallet
+     * @param string $walletName Name of wallet
      * @param string[] $addresses
      *
      * @return Wallet
      *
      * @throws \RuntimeException in case of error of this type
      * @throws \InvalidArgumentException in case of error of this type
+     * @throws HandlerErrorException in case of any error with Handler occured
      *
      */
-    public function addaddresses($name, $addresses)
+    public function addaddresses($walletName, $addresses)
     {
-        if ("string" != gettype($name) || ("" == $name)) {
+        if ("string" != gettype($walletName) || ("" == $walletName)) {
             throw new \InvalidArgumentException("Account variable must be non empty string.");
         }
         if ((!is_array($addresses)) || (count($addresses) == 0)) {
             throw new \InvalidArgumentException("addresses variable must be non empty array.");
         }
+
+        /** @var $successHandlers AbstractHandler[] */
+        $successHandlers = [];
+        /** @var $errorHandlers AbstractHandler[] */
+        $errorHandlers = [];
         $results = [];
-        foreach ($this->handlers as $handle) {
-            $result = $handle->addaddresses($name, $addresses);
+
+        for ($i = 0; $i < count($this->handlers); ++$i) {
+            try {
+                $result = $this->handlers[$i]->addaddresses($walletName, $addresses);
+            } catch (\RuntimeException $ex) {
+                $this->loggerHandler->error($ex->getMessage());
+                $errorHandlers [] = $this->handlers[$i];
+                continue;
+            }
+            $successHandlers [] = $this->handlers[$i];
             $results [] = $result;
         }
+
+        if ([] != $errorHandlers) {
+            throw new HandlerErrorException(
+                $successHandlers,
+                $errorHandlers,
+                "Some handler(s) raised error (method addaddresses)"
+            );
+        }
         return $this->conflictHandler->addaddresses($results);
+    }
+
+    /**
+     * This Method adds new addresses into a wallet
+     * @link https://www.blockcypher.com/dev/bitcoin/?shell#remove-addresses-from-wallet-endpoint
+     *
+     * @param string $walletName Name of wallet
+     * @param string $address
+     *
+     * @return Wallet object
+     *
+     * @throws \RuntimeException in case of error of this type
+     * @throws \InvalidArgumentException in case of error of this type
+     * @throws HandlerErrorException in case of any error with Handler occured
+     *
+     */
+    public function removeAddress($walletName, $address)
+    {
+        if ("string" != gettype($walletName) || ("" == $walletName)) {
+            throw new \InvalidArgumentException("Account variable must be non empty string.");
+        }
+        if ("string" != gettype($address) || ("" == $address)) {
+            throw new \InvalidArgumentException("address variable must be non empty string.");
+        }
+
+        /** @var $successHandlers AbstractHandler[] */
+        $successHandlers = [];
+        /** @var $errorHandlers AbstractHandler[] */
+        $errorHandlers = [];
+        $results = [];
+
+        for ($i = 0; $i < count($this->handlers); ++$i) {
+            try {
+                $result = $this->handlers[$i]->removeaddress($walletName, $address);
+            } catch (\RuntimeException $ex) {
+                $this->loggerHandler->error($ex->getMessage());
+                $errorHandlers [] = $this->handlers[$i];
+                continue;
+            }
+            $successHandlers [] = $this->handlers[$i];
+            $results [] = $result;
+        }
+
+        if ([] != $errorHandlers) {
+            throw new HandlerErrorException(
+                $successHandlers,
+                $errorHandlers,
+                "Some handler(s) raised error (method removeaddress)"
+            );
+        }
+        return $this->conflictHandler->removeaddress($results);
+    }
+
+
+    /**
+     * This Method deletes a passed wallet
+     * https://www.blockcypher.com/dev/bitcoin/?shell#delete-wallet-endpoint
+     *
+     * @param string $walletName Name of wallet
+     *
+     * @return boolean result
+     *
+     * @throws \RuntimeException in case of error of this type
+     * @throws \InvalidArgumentException in case of error of this type
+     * @throws HandlerErrorException in case of any error with Handler occured
+     *
+     */
+    public function deletewallet($walletName)
+    {
+        if ("string" != gettype($walletName) || ("" == $walletName)) {
+            throw new \InvalidArgumentException("Wallet name variable must be non empty string.");
+        }
+        if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
+            throw new \InvalidArgumentException(
+                "Wallet name have to contain only alphanumeric, underline and dash symbols (\"" .
+                $walletName . "\" passed)."
+            );
+        }
+
+        /** @var $successHandlers AbstractHandler[] */
+        $successHandlers = [];
+        /** @var $errorHandlers AbstractHandler[] */
+        $errorHandlers = [];
+
+        for ($i = 0; $i < count($this->handlers); ++$i) {
+            try {
+                $this->handlers[$i]->deletewallet($walletName);
+            } catch (\RuntimeException $ex) {
+                $this->loggerHandler->error($ex->getMessage());
+                $errorHandlers [] = $this->handlers[$i];
+                continue;
+            }
+            $successHandlers [] = $this->handlers[$i];
+        }
+        if ([] != $errorHandlers) {
+            throw new HandlerErrorException(
+                $successHandlers,
+                $errorHandlers,
+                "Some handler(s) raised error (method deleteWallet)"
+            );
+        }
+        return true;
+    }
+
+    /**
+     * This method returns addresses from the passed wallet
+     * @link https://bitcoin.org/en/developer-reference#getaddressesbyaccount
+     * @link https://www.blockcypher.com/dev/bitcoin/?shell#get-wallet-addresses-endpoint
+     *
+     * @param string $walletName
+     *
+     * @throws \RuntimeException in case of any error of this type
+     * @throws \InvalidArgumentException in case of any error of this type
+     *
+     * @return \string[] addesses
+     */
+    public function getAddresses($walletName)
+    {
+        if ("string" != gettype($walletName) || ("" == $walletName)) {
+            throw new \InvalidArgumentException("address variable must be non empty string.");
+        }
+        if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
+            throw new \InvalidArgumentException(
+                "Wallet name have to contain only alphanumeric, underline and dash symbols (\"" .
+                $walletName . "\" passed)."
+            );
+        }
+        $results = [];
+        foreach ($this->handlers as $handle) {
+            $result = $handle->getAddresses($walletName);
+            $results [] = $result;
+        }
+        return $this->conflictHandler->getAddresses($results);
     }
 
     /**
@@ -438,12 +632,12 @@ class Bridge
             throw new \RuntimeException($ex->getMessage());
         } //May be \RuntimeException will raised in the BitWASP library - we'll not change this
         if (!file_put_contents(
-            $this->getOption(Bridge::OPT_LOCALPATH2WALLETDATA),
+            $this->getOption(Bridge::OPT_LOCAL_PATH_OF_WALLET_DATA),
             ($walletName.";".$wif.";".$address.PHP_EOL),
             FILE_APPEND
         ) ) {
             throw new \RuntimeException(
-                "Write data into the file " . $this->getOption(Bridge::OPT_LOCALPATH2WALLETDATA) . " failed."
+                "Write data into the file " . $this->getOption(Bridge::OPT_LOCAL_PATH_OF_WALLET_DATA) . " failed."
             );
         }
         return $address;
@@ -469,7 +663,7 @@ class Bridge
             throw new \InvalidArgumentException("wallet Name must be non empty string.");
         }
 
-        $path = $this->getOption(Bridge::OPT_LOCALPATH2WALLETDATA);
+        $path = $this->getOption(Bridge::OPT_LOCAL_PATH_OF_WALLET_DATA);
 
         $handle = fopen($path, "r");
         if (false === $handle) {

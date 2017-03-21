@@ -152,4 +152,27 @@ class MatbeaHandler extends AbstractHandler
     {
         return new Wallet();
     }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function removeaddress($walletName, $address)
+    {
+        return true;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function deletewallet($walletName)
+    {
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getAddresses($walletName)
+    {
+        return [];
+    }
 }

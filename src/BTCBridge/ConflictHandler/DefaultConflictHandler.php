@@ -16,6 +16,7 @@ use BTCBridge\Api\Transaction;
 use BTCBridge\Api\Address;
 use \BTCBridge\Api\TransactionReference;
 //use BTCBridge\Api\Wallet;
+use BTCBridge\Api\Wallet;
 use BTCBridge\Exception\ConflictHandlerException;
 
 /**
@@ -370,10 +371,32 @@ class DefaultConflictHandler implements ConflictHandlerInterface
      */
     public function createwallet($data)
     {
-        for ($i = 0; $i < count($data) - 1; ++$i) {
-            if ($data[$i] != $data[$i + 1]) {
-                throw new ConflictHandlerException("No equal results from different services.");
-            }
+        if (1 == count($data)) {
+            return $data[0];
+        }
+        if (2 != count($data)) {
+            throw new \InvalidArgumentException("Data array for verification must have size 1 or 2.");
+        }
+        /** @var $wallet1 Wallet */
+        $wallet1 = & $data[0];
+        /** @var $wallet2 Wallet */
+        $wallet2 = & $data[1];
+
+        if ((!$wallet1 instanceof Wallet) || (!$wallet2 instanceof Wallet)) {
+            throw new \InvalidArgumentException("Elements of Data array must be instances of Wallet class.");
+        }
+        if ($wallet1->getName() != $wallet2->getName()) {
+            throw new ConflictHandlerException(
+                "Different names of wallets ( \"" . $wallet1->getName() . "\" and \"" . $wallet2->getName() . "\" )."
+            );
+        }
+        $addressesArr1 = $wallet1->getAddresses();
+        $addressesArr2 = $wallet2->getAddresses();
+        if ($addressesArr1 != $addressesArr2) {
+            throw new ConflictHandlerException(
+                "Different addresses ( " . implode(",", $addressesArr1)
+                . " and " . implode(",", $addressesArr2) . " )."
+            );
         }
         return $data[0];
     }
@@ -383,11 +406,82 @@ class DefaultConflictHandler implements ConflictHandlerInterface
      */
     public function addaddresses($data)
     {
-        for ($i = 0; $i < count($data) - 1; ++$i) {
-            if ($data[$i] != $data[$i + 1]) {
-                throw new ConflictHandlerException("No equal results from different services.");
-            }
+        if (1 == count($data)) {
+            return $data[0];
         }
-        return $data[0];
+        if (2 != count($data)) {
+            throw new \InvalidArgumentException("Data array for verification must have size 1 or 2.");
+        }
+        /** @var $wallet1 Wallet */
+        $wallet1 = & $data[0];
+        /** @var $wallet2 Wallet */
+        $wallet2 = & $data[1];
+
+        if ((!$wallet1 instanceof Wallet) || (!$wallet2 instanceof Wallet)) {
+            throw new \InvalidArgumentException("Elements of Data array must be instances of Wallet class.");
+        }
+        $addressesArr1 = $wallet1->getAddresses();
+        $addressesArr2 = $wallet2->getAddresses();
+        if ($addressesArr1 != $addressesArr2) {
+            throw new ConflictHandlerException(
+                "Different addresses ( " . implode(",", $addressesArr1)
+                . " and " . implode(",", $addressesArr2) . " )."
+            );
+        }
+        return $wallet1;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function removeaddress($data)
+    {
+        if (1 == count($data)) {
+            return $data[0];
+        }
+        if (2 != count($data)) {
+            throw new \InvalidArgumentException("Data array for verification must have size 1 or 2.");
+        }
+        /** @var $result1 bool */
+        $result1 = & $data[0];
+        /** @var $result2 bool */
+        $result2 = & $data[1];
+
+        if ((gettype($result1) != 'boolean') || (gettype($result2) != 'boolean')) {
+            throw new \InvalidArgumentException("Elements of Data array must be instances of boolean type.");
+        }
+        if ($result1 != $result2) {
+            throw new ConflictHandlerException(
+                "Different results from method \"removeaddress\"."
+            );
+        }
+        return $result1;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getaddresses($data)
+    {
+        if (1 == count($data)) {
+            return $data[0];
+        }
+        if (2 != count($data)) {
+            throw new \InvalidArgumentException("Data array for verification must have size 1 or 2.");
+        }
+        /** @var $result1 string[] */
+        $result1 = & $data[0];
+        /** @var $result2 string[] */
+        $result2 = & $data[1];
+
+        if ((gettype($result1) != 'array') || (gettype($result2) != 'array')) {
+            throw new \InvalidArgumentException("Elements of Data array must be arrays of string.");
+        }
+        if ($result1 != $result2) {
+            throw new ConflictHandlerException(
+                "Different results from method \"getaddresses\"."
+            );
+        }
+        return $result1;
     }
 }

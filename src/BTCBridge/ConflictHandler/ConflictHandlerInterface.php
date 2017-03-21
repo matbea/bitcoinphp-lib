@@ -138,5 +138,32 @@ interface ConflictHandlerInterface
      * @throws ConflictHandlerException in case of any error
      *
      */
+    public function removeaddress($data);
+
+    /**
+     * This Method adds new addresses into a wallet
+     * @link https://www.blockcypher.com/dev/bitcoin/?shell#add-addresses-to-wallet-endpoint
+     *
+     * @param array $data  Result from method addaddresses (from all handlers)
+     *
+     * @return bool result
+     *
+     * @throws ConflictHandlerException in case of any error
+     *
+     */
     public function addaddresses($data);
+
+    /**
+     * This method returns addresses from the passed wallet
+     * @link https://bitcoin.org/en/developer-reference#getaddressesbyaccount
+     * @link https://www.blockcypher.com/dev/bitcoin/?shell#get-wallet-addresses-endpoint
+     *
+     * @param array $data  Result from method addaddresses (from all handlers)
+     *
+     * @throws \RuntimeException in case of any error of this type
+     * @throws \InvalidArgumentException in case of any error of this type
+     *
+     * @return \string[] addresses
+     */
+    public function getaddresses($data);
 }

@@ -14,6 +14,25 @@ namespace BTCBridge\Api;
 class Wallet
 {
 
+    /**
+     * Token of the wallet
+     * @var string
+     */
+    protected $token;
+
+    /**
+     * Name of the wallet
+     * @var string
+     */
+    protected $name;
+
+    /**
+     * Addresses of the wallet
+     * @var string[]
+     */
+    protected $addresses;
+
+
     public function getToken()
     {
         return $this->token;
