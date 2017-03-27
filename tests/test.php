@@ -51,7 +51,10 @@ try {
     //$res = $bridge->sendfrom("tst", "1BdxBor4JG76RKLAwJZfHC58fWbgidYukz", 5500 + 2530);
     //$res = $bridge->sendfrom("tst", "1BdxBor4JG76RKLAwJZfHC58fWbgidYukz", 13894 - 2530);
     //$res = $bridge->sendfrom("tst", "1BdxBor4JG76RKLAwJZfHC58fWbgidYukz", 13894 - 2530 - 0);
-    $res = $bridge->sendfrom("tst", "1MN3cT9Ro927h4kgpSZ5V7SfYjrwTysXv7", 13894 - 2530 - 0);
+    $bridge->settxfee(70000);
+    $smoutput = new \BTCBridge\Api\SMOutput();
+    $smoutput->setAddress("1MN3cT9Ro927h4kgpSZ5V7SfYjrwTysXv7")->setAmount(5500);
+    $res = $bridge->sendmany("tst", [$smoutput]);
 
     $res = $bridge->getAddresses("deadka");
     $res = $bridge->removeAddress("deadka", "12S42ZEw2741DHrivgZHLfX8M58mxb7bFy");

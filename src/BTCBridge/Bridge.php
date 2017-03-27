@@ -13,6 +13,7 @@ use BTCBridge\ConflictHandler\DefaultConflictHandler;
 use BTCBridge\Api\Transaction;
 use BTCBridge\Api\Address;
 use BTCBridge\Api\Wallet;
+use BTCBridge\Api\SMOutput;
 use BitWasp\Buffertools\Buffer;
 use BitWasp\Bitcoin\Transaction\TransactionOutput;
 use BitWasp\Bitcoin\Transaction\OutPoint;
@@ -1020,6 +1021,156 @@ class Bridge
             $transaction = $transaction->spendOutPoint($source->outpoint);
         }
         $transaction = $transaction->payToAddress($amount, AddressFactory::fromString($address));
+        if ($change > $this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT)) {
+            //$addressForChange = $this->getnewaddress($walletName);
+            $addressForChange = $outputsForSpent[0]->getAddress();
+            /** @noinspection PhpUndefinedMethodInspection */
+            $transaction = $transaction->payToAddress($change, AddressFactory::fromString($addressForChange));
+        }
+        /** @noinspection PhpUndefinedMethodInspection */
+        $transaction = $transaction->get();
+
+        $ec = Bitcoin::getEcAdapter();
+        $signer = new Signer($transaction, $ec);
+        for ($i = 0; $i < count($transactionSources); ++$i) {
+            $signer->sign($i, $transactionSources[$i]->privateKey, $transactionSources[$i]->transactionOutput);
+        }
+        $signedTransaction = $signer->get();
+        $raw = $signedTransaction->getHex();
+        return $this->sendrawtransaction($raw);
+        //print $raw . PHP_EOL;
+        /** @noinspection PhpUnusedLocalVariableInspection */
+        //$size = $signedTransaction->getBuffer()->getSize();
+    }
+
+    /**
+     * The sendmany RPC creates and broadcasts a transaction which sends outputs to multiple addresses.
+     * @link https://bitcoin.org/en/developer-reference#sendmany
+     *
+     * @param string $walletName  The wallet, which is source for money
+     * @param SMOutput[] $smoutputs Object containing key/value pairs corresponding to the addresses and amounts to pay
+     * @param int $confirmations  The minimum number of confirmations the transaction containing an output
+     * @param string $comment
+     * A locally-stored (not broadcast) comment assigned to this transaction. Default is no comment
+     *
+     * @return string $transactionId
+     *
+     * @throws \RuntimeException in case of any runtime error
+     * @throws \InvalidArgumentException if error of this type
+     * @throws ConflictHandlerException in case of any error of this type
+     *
+     */
+    public function sendmany($walletName, $smoutputs, $confirmations = 1, $comment = "")
+    {
+        if ("string" != gettype($walletName) || ("" == $walletName)) {
+            throw new \InvalidArgumentException("Account variable must be non empty string.");
+        }
+        if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
+            throw new \InvalidArgumentException(
+                "Wallet name have to contain only alphanumeric, underline and dash symbols (\"" .
+                $walletName . "\" passed)."
+            );
+        }
+        if ("array" != gettype($smoutputs) || ([] == $smoutputs)) {
+            throw new \InvalidArgumentException("\$smoutputs variable must be non empty string.");
+        }
+        $amount = 0;
+        for ($i = 0; $i < count($smoutputs); ++$i) {
+            $amount += $smoutputs[$i]->getAmount();
+        }
+        if ($amount < intval(self::OPT_MINIMAL_AMOUNT_FOR_SENT)) {
+            throw new \InvalidArgumentException(
+                "total amount from outputs must bigger or equal " . self::OPT_MINIMAL_AMOUNT_FOR_SENT . "."
+            );
+        }
+        if ("integer" != gettype($confirmations) || ($confirmations < 0)) {
+            throw new \InvalidArgumentException("confirmation variable must be non negative integer.");
+        }
+        if ("string" != gettype($comment)) {
+            throw new \InvalidArgumentException("comment variable must be a string variable.");
+        }
+
+        $results = [];
+        foreach ($this->handlers as $handle) {
+            $result = $handle->listunspent($walletName, $confirmations);
+            $results [] = $result;
+        }
+        $unspents = $this->conflictHandler->listunspent($results);
+
+        $feePerKb = intval($this->getOption(self::OPT_MINIMAL_FEE_PER_KB));
+        //Ideal case - one input for spend, necessary count of outputs
+        $mimimumRequiredFee = intval(ceil((1*181+(count($smoutputs))*34+10) * $feePerKb / 1024));
+        $requiredCoins = $amount + $mimimumRequiredFee;
+        $sumAmount = null;
+        $requiredFee = null;
+        /** @noinspection PhpUnusedLocalVariableInspection */
+        $change = 0;
+        do {
+            /** @var $outputsForSpent TransactionReference[] */
+            $outputsForSpent = $this->selectOutputsForSpent($unspents, $requiredCoins);
+            if ([] == $outputsForSpent) {
+                return ""; //No possible to create transaction, not enough money on unspent outputs of this wallet
+            }
+            $sumFromOutputs = 0;
+            for ($i = 0; $i < count($outputsForSpent); ++$i) {
+                $sumFromOutputs += $outputsForSpent[$i]->getValue();
+            }
+            //http://bitzuma.com/posts/making-sense-of-bitcoin-transaction-fees/     size = 181 * in + 34 * out + 10
+            $requiredFeeWithChange = intval(
+                ceil((count($outputsForSpent)*181+34*(count($smoutputs)+1)+10) * $feePerKb / 1024)
+            );
+            $change = $sumFromOutputs - $amount - $requiredFeeWithChange;
+            if ($change < 0) {
+                //Let's try to make the transaction without the change
+                $amountWithoutChange = $sumFromOutputs - $amount -
+                    intval(ceil((count($outputsForSpent)*181+34*count($smoutputs)+10) * $feePerKb / 1024));
+                if ($amountWithoutChange >= 0) {
+                    $change = 0; //Anyway this value will not so big so as to make special output for change
+                    break;
+                }
+                $requiredCoins = $amount + $requiredFeeWithChange;
+            } elseif ($change >= 0) {
+                if ($change < intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT))) {
+                    $change = 0;
+                }
+                break;
+            }
+            //throw new \RuntimeException(
+            //"Logic error (\$amount (" . $amount . ") less than \$sumAmount" . $sumAmount . ")."
+            //);
+        } while (true);
+
+        $transactionSources = [];
+        foreach ($outputsForSpent as $output) {
+            $txSource = new \stdClass();
+            $txSource->address = AddressFactory::fromString($output->getAddress());
+            $txSource->privateKey = $this->dumpprivkey($walletName, $output->getAddress());
+            if (!$txSource->privateKey) {
+                throw new \RuntimeException(
+                    "dumpprivkey did not return object on address \"" . $output->getAddress() . "\"."
+                );
+            }
+            $txSource->privateKey = PrivateKeyFactory::fromWif($txSource->privateKey);
+            $txSource->pubKeyHash = $txSource->privateKey->getPubKeyHash(); //Very slow method
+            $txSource->outputScript = ScriptFactory::scriptPubKey()->payToPubKeyHash($txSource->pubKeyHash);
+            $txSource->sourceTxId = $output->getTxHash();
+            $txSource->sourceVout = $output->getTxOutputN();
+            $txSource->amount = $output->getValue();
+            $txSource->outpoint = new OutPoint(Buffer::hex($txSource->sourceTxId), $txSource->sourceVout);
+            $txSource->transactionOutput = new TransactionOutput($txSource->amount, $txSource->outputScript);
+            $transactionSources [] = clone $txSource;
+        }
+
+        $transaction = TransactionFactory::build();
+        foreach ($transactionSources as $source) {
+            $transaction = $transaction->spendOutPoint($source->outpoint);
+        }
+        foreach ($smoutputs as $sendmanyoutput) {
+            $transaction = $transaction->payToAddress(
+                $sendmanyoutput->getAmount(),
+                AddressFactory::fromString($sendmanyoutput->getAddress())
+            );
+        }
         if ($change > $this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT)) {
             //$addressForChange = $this->getnewaddress($walletName);
             $addressForChange = $outputsForSpent[0]->getAddress();
