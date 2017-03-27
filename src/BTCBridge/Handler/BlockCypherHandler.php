@@ -191,6 +191,11 @@ class BlockCypherHandler extends AbstractHandler
                 $txr->setTxInputN($txref["tx_input_n"]);
                 $txr->setTxOutputN($txref["tx_output_n"]);
                 $txr->setValue($txref["value"]);
+                if (isset($txref['address'])) {
+                    $txr->setAddress($content['address']);
+                } else {
+                    $txr->setAddress($address);
+                }
                 $addrObject->addTxref($txr);
             }
         }
@@ -205,6 +210,11 @@ class BlockCypherHandler extends AbstractHandler
                 $txr->setTxInputN($txref["tx_input_n"]);
                 $txr->setTxOutputN($txref["tx_output_n"]);
                 $txr->setValue($txref["value"]);
+                if (isset($txref['address'])) {
+                    $txr->setAddress($content['address']);
+                } else {
+                    $txr->setAddress($address);
+                }
                 $addrObject->addUnconfirmedTxref($txr);
             }
         }
@@ -426,6 +436,7 @@ class BlockCypherHandler extends AbstractHandler
             return [];
         }
 
+        /** @var $result TransactionReference[] */
         $result = [];
 
         if ((0 == $MinimumConfirmations) && isset($content["unconfirmed_txrefs"])) {
@@ -444,6 +455,13 @@ class BlockCypherHandler extends AbstractHandler
                 $txr->setTxInputN($rec["tx_input_n"]);
                 $txr->setTxOutputN($rec["tx_output_n"]);
                 $txr->setValue($rec["value"]);
+                $txr->setAddress($rec['address']);
+                $filteredTxs = array_filter($result, function (TransactionReference $tx) use ($txr) {
+                        return $tx->isEqual($txr);
+                });
+                if ([] == $filteredTxs) {
+                    $result [] = $txr;
+                }
             }
         }
 
@@ -463,7 +481,13 @@ class BlockCypherHandler extends AbstractHandler
                 $txr->setTxInputN($txref["tx_input_n"]);
                 $txr->setTxOutputN($txref["tx_output_n"]);
                 $txr->setValue($txref["value"]);
-                $result [] = $txr;
+                $txr->setAddress($txref['address']);
+                $filteredTxs = array_filter($result, function (TransactionReference $tx) use ($txr) {
+                        return $tx->isEqual($txr);
+                });
+                if ([] == $filteredTxs) {
+                    $result [] = $txr;
+                }
             }
         }
         return $result;
@@ -617,6 +641,9 @@ class BlockCypherHandler extends AbstractHandler
         }
         $wallet = new Wallet;
         $wallet->setName($content['name']);
+        if (!isset($content['addresses'])) {
+            $content["addresses"] = [];
+        }
         $wallet->setAddresses($content["addresses"]);
         if (isset($content["token"])) {
             $wallet->setToken($content["token"]);
@@ -676,7 +703,9 @@ class BlockCypherHandler extends AbstractHandler
         }
         $content = curl_exec($curl);
         if (false === $content) {
-            throw new \RuntimeException("curl error occured (url:\"" . $url . "\", post: \"" . $post_data . "\").");
+            throw new \RuntimeException(
+                "curl error occured (url:\"" . $url . "\", post: \"" . serialize($post_data) . "\")."
+            );
         }
         $content = json_decode($content, true);
         if ((false === $content) || (null === $content)) {
@@ -856,7 +885,11 @@ class BlockCypherHandler extends AbstractHandler
         if (isset($content['error'])) {
             throw new \RuntimeException("Error \"" . $content['error'] . "\" returned (url:\"" . $url . "\").");
         }
-        sort($content['addresses']);
+        if (!isset($content['addresses'])) {
+            $content['addresses'] = [];
+        } else {
+            sort($content['addresses']);
+        }
         return $content['addresses'];
     }
 }

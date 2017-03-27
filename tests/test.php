@@ -36,8 +36,26 @@ try {
         ["1BdxBor4JG76RKLAwJZfHC58fWbgidYukz", "1MN3cT9Ro927h4kgpSZ5V7SfYjrwTysXv7"]
     );*/
 
+    //$res = $bridge->createwallet("tst1", []);
+    //$res = $bridge->getAddresses("tst");
+    //$res = $bridge->addaddresses("tst", ["12S42ZEw2741DHrivgZHLfX8M58mxb7bFy"]);
+    //$res = $bridge->addaddresses("tst", ["1BdxBor4JG76RKLAwJZfHC58fWbgidYukz"]);
+    //$res = $bridge->getAddresses("tst");
+    //$res = $bridge->listunspent("tst");
+
+    //$res = $bridge->getAddresses("deadka");
+    $res = $bridge->getAddresses("tst");
+
+    //$res = $bridge->sendfrom("tst", "1BdxBor4JG76RKLAwJZfHC58fWbgidYukz", 1202384 + 13894 + 5500);
+    //$res = $bridge->sendfrom("tst", "1BdxBor4JG76RKLAwJZfHC58fWbgidYukz", 1202384);
+    //$res = $bridge->sendfrom("tst", "1BdxBor4JG76RKLAwJZfHC58fWbgidYukz", 5500 + 2530);
+    //$res = $bridge->sendfrom("tst", "1BdxBor4JG76RKLAwJZfHC58fWbgidYukz", 13894 - 2530);
+    //$res = $bridge->sendfrom("tst", "1BdxBor4JG76RKLAwJZfHC58fWbgidYukz", 13894 - 2530 - 0);
+    $res = $bridge->sendfrom("tst", "1MN3cT9Ro927h4kgpSZ5V7SfYjrwTysXv7", 13894 - 2530 - 0);
+
     $res = $bridge->getAddresses("deadka");
     $res = $bridge->removeAddress("deadka", "12S42ZEw2741DHrivgZHLfX8M58mxb7bFy");
+    $res = $bridge->getAddresses("deadka");
 
     $res = $bridge->deletewallet("testname1000");
     $res = $bridge->deletewallet("testname1000");

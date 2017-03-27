@@ -14,6 +14,13 @@ namespace BTCBridge\Api;
 class TransactionReference
 {
     /**
+     * Address which received the BTC from this output
+     * @var int
+     */
+    protected $address = null;
+
+
+    /**
      * Height of the block for the transaction.
      * @var int
      */
@@ -61,6 +68,20 @@ class TransactionReference
      */
     protected $doubleSpend = null;
 
+    /**
+     * @return string
+     */
+    public function getAddress()
+    {
+        return $this->address;
+    }
+    /**
+     * @param string $address
+     */
+    public function setAddress($address)
+    {
+        $this->address = $address;
+    }
 
     /**
      * Whether the transaction is a double spend (see Zero Confirmations).
@@ -236,5 +257,34 @@ class TransactionReference
     {
         $this->confirmations = $confirmations;
         return $this;
+    }
+
+    /**
+     Is $o equal current object
+     * @param TransactionReference $o
+     *
+     * @return boolean
+     */
+    public function isEqual(TransactionReference $o)
+    {
+        return
+            ($this->getDoubleSpend() == $o->getDoubleSpend())
+                &&
+            ($this->getTxHash() == $o->getTxHash())
+                &&
+            ($this->getBlockHeight() == $o->getBlockHeight())
+                &&
+            ($this->getTxInputN() == $o->getTxInputN())
+                &&
+            ($this->getTxOutputN() == $o->getTxOutputN())
+                &&
+            ($this->getValue() == $o->getValue())
+                &&
+            ($this->getSpent() == $o->getSpent())
+                &&
+            ($this->getConfirmations() == $o->getConfirmations())
+                &&
+            ($this->getAddress() == $o->getAddress())
+        ;
     }
 }

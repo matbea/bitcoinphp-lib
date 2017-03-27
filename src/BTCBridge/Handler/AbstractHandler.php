@@ -226,8 +226,7 @@ abstract class AbstractHandler
      * The sendrawtransaction RPC validates a transaction and broadcasts it to the peer-to-peer network.
      * @link https://bitcoin.org/en/developer-reference#sendrawtransaction Official bitcoin documentation.
      *
-     * @param string $Transaction  The minimum number of confirmations the transaction containing an output
-     * must have in order to be returned.
+     * @param string $Transaction
      *
      * @return string If the transaction was accepted by the node for broadcast, this will be the TXID
      * of the transaction encoded as hex in RPC byte order.

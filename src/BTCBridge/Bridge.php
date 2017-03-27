@@ -2,20 +2,27 @@
 
 namespace BTCBridge;
 
+use Monolog\Logger;
+use Psr\Log\LoggerInterface;
+use BTCBridge\Api\TransactionReference;
 use BTCBridge\Handler\AbstractHandler;
 use BTCBridge\ConflictHandler\ConflictHandlerInterface;
+use BTCBridge\Exception\ConflictHandlerException;
 use BTCBridge\Exception\HandlerErrorException;
 use BTCBridge\ConflictHandler\DefaultConflictHandler;
 use BTCBridge\Api\Transaction;
 use BTCBridge\Api\Address;
 use BTCBridge\Api\Wallet;
-use Psr\Log\LoggerInterface;
-use Monolog\Logger;
+use BitWasp\Buffertools\Buffer;
+use BitWasp\Bitcoin\Transaction\TransactionOutput;
+use BitWasp\Bitcoin\Transaction\OutPoint;
 use BitWasp\Bitcoin\Bitcoin;
 use BitWasp\Bitcoin\Script\ScriptFactory;
 use BitWasp\Bitcoin\Key\PrivateKeyFactory;
 use BitWasp\Bitcoin\Address\AddressFactory;
 use BitWasp\Bitcoin\Exceptions\Base58ChecksumFailure;
+use BitWasp\Bitcoin\Transaction\TransactionFactory;
+use BitWasp\Bitcoin\Transaction\Factory\Signer;
 
 /**
  * Describes a Bridge instance
@@ -28,6 +35,8 @@ class Bridge
 
     /** This group of constants are bridge options */
     const OPT_LOCAL_PATH_OF_WALLET_DATA = 1;
+    const OPT_MINIMAL_AMOUNT_FOR_SENT = 2;
+    const OPT_MINIMAL_FEE_PER_KB = 3;
 
     /** @var array options */
     protected $options = [];
@@ -88,6 +97,8 @@ class Bridge
             $this->loggerHandler = new Logger('BTCBridge');
         }
         $this->setOption(self::OPT_LOCAL_PATH_OF_WALLET_DATA, __DIR__."/wallet.dat");
+        $this->setOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT, "5500");
+        $this->setOption(self::OPT_MINIMAL_FEE_PER_KB, "10000");
     }
 
     /**
@@ -101,7 +112,15 @@ class Bridge
      */
     public function setOption($optionName, $optionValue)
     {
-        if ((gettype($optionName) != "integer") || (!in_array($optionName, [self::OPT_LOCAL_PATH_OF_WALLET_DATA]))) {
+        if ((gettype($optionName) != "integer") ||
+            (!in_array(
+                $optionName,
+                [
+                    self::OPT_LOCAL_PATH_OF_WALLET_DATA,
+                    self::OPT_MINIMAL_AMOUNT_FOR_SENT,
+                    self::OPT_MINIMAL_FEE_PER_KB
+                ]
+            ))) {
             throw new \InvalidArgumentException("Bad type of option (".$optionName.")");
         }
         if (gettype($optionValue) != "string" || "" == $optionValue) {
@@ -122,7 +141,15 @@ class Bridge
      */
     protected function getOption($optionName)
     {
-        if ((gettype($optionName) != "integer") || (!in_array($optionName, [self::OPT_LOCAL_PATH_OF_WALLET_DATA]))) {
+        if ((gettype($optionName) != "integer") ||
+            (!in_array(
+                $optionName,
+                [
+                    self::OPT_LOCAL_PATH_OF_WALLET_DATA,
+                    self::OPT_MINIMAL_AMOUNT_FOR_SENT,
+                    self::OPT_MINIMAL_FEE_PER_KB
+                ]
+            ))) {
             throw new \InvalidArgumentException("Bad type of option (".$optionName.")");
         }
         if (!isset($this->options[$optionName])) {
@@ -130,6 +157,113 @@ class Bridge
         }
         return $this->options[$optionName];
     }
+
+    /**
+     * The binarySearch method choose the most suitable (equal or more than passed amount)
+     * output from the set of passed outputs.
+     * outputs must be sorted ascending!
+     *
+     * @link http://en.cppreference.com/w/cpp/algorithm/lower_bound
+     *
+     * @param TransactionReference[] $outputs
+     * @param integer $first
+     * @param integer $last
+     * @param integer $searchedValue
+     *
+     * @return integer (index in array or -1 if item was not found)
+     */
+    private function binarySearch(array $outputs, $first, $last, $searchedValue)
+    {
+        if ($outputs[$last-1]->getValue() < $searchedValue) {
+            return -1;
+        }
+        $count = $last - $first;
+        while ($count > 0) {
+            $it = $first;
+            $step = intval(floor($count/2));
+            $it += $step;
+            if ($outputs[$it]->getValue() < $searchedValue) {
+                ++$it;
+                $first = $it;
+                $count -= $step + 1;
+            } else {
+                $count = $step;
+            }
+        }
+        return $first;
+    }
+
+    /**
+     * The selectOutputsForSpent method choose optimal outputs for spent from the set of unspented outputs of wallet.
+     *
+     * @link http://bitcoin.stackexchange.com/questions/1077/what-is-the-coin-selection-algorithm
+     *
+     * @param TransactionReference[] $outputs
+     * @param integer $amount string
+     *
+     * @throws \RuntimeException in case of any error of this type
+     * @throws \InvalidArgumentException in case of any error of this type
+     *
+     * @return TransactionReference[] (if not enouth BTC on passed outputs then ampty array will be returned)
+     */
+    public function selectOutputsForSpent($outputs, $amount)
+    {
+        if ("integer" != gettype($amount) || ($amount < intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT)))) {
+            throw new \InvalidArgumentException(
+                "amount variable must be integer bigger or equal " .
+                $this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT) . "."
+            );
+        }
+        if (!is_array($outputs) || [] == $outputs) {
+            throw new \InvalidArgumentException(
+                "outputs variable must be non empty array of TransactionReference type."
+            );
+        }
+        /** @var $outputs TransactionReference[] */
+
+        //Now we'll check sufficiency of total balance of passed subset of outputs -
+        //and will try to find the output with the same value as needed
+        $sum = 0;
+        for ($i = 0; $i < count($outputs); ++$i) {
+            if ($outputs[$i]->getValue() == $amount) {
+                return [$outputs[$i]];
+            }
+            $sum += $outputs[$i]->getValue();
+        }
+        if ($sum < $amount) {
+            return []; //Not enough BTC
+        }
+
+        //We'll sort $outputs array in ascending order
+        usort(
+            $outputs,
+            function (TransactionReference $a, TransactionReference $b) {
+                if ($a->getValue() == $b->getValue()) {
+                    return 0;
+                }
+                return ($a->getValue() < $b->getValue()) ? -1 : 1;
+            }
+        );
+
+        //No output with the value which is equal to the necessary, so will approximate
+
+        /** @var $result TransactionReference[] */
+        $result = [];
+
+        while (true) {
+            //Firstly we'll try to find 1 output which has enough money
+            $outputIndex =  $this->binarySearch($outputs, 0, count($outputs), $amount);
+            if (-1 != $outputIndex) {
+                $result [] = $outputs[$outputIndex];
+                return $result;
+            }
+            $amountOfBigOutput = $outputs[count($outputs)-1]->getValue();
+            $amount -= $amountOfBigOutput;
+            $result [] = array_pop($outputs);
+        }
+        return $result;
+    }
+
 
     /**
      * The listtransactions RPC returns the most recent transactions that affect the wallet.
@@ -167,8 +301,9 @@ class Bridge
      *   the response will omit address information (useful to speed up the API call for larger wallets).
      * ]
      *
-     * @throws \RuntimeException in case of any error of this type
-     * @throws \InvalidArgumentException in case of any error of this type
+     * @throws \RuntimeException in case of any runtime error
+     * @throws \InvalidArgumentException if error of this type
+     * @throws ConflictHandlerException in case of any error of this type
      *
      * @return Address
      */
@@ -202,8 +337,9 @@ class Bridge
      *   For more info about this figure, check the Confidence Factor documentation.
      * ]
      *
-     * @throws \RuntimeException in case of any error
+     * @throws \RuntimeException in case of any runtime error
      * @throws \InvalidArgumentException if error of this type
+     * @throws ConflictHandlerException in case of any error of this type
      *
      * @return Transaction
      */
@@ -232,8 +368,9 @@ class Bridge
      * must have before it is counted towards the balance.
      * @param boolean $IncludeWatchOnly  Whether to include watch-only addresses in details and calculations
      *
-     * @throws \RuntimeException in case of any error
+     * @throws \RuntimeException in case of any runtime error
      * @throws \InvalidArgumentException if error of this type
+     * @throws ConflictHandlerException in case of any error of this type
      *
      * @return integer                   The balance in bitcoins (in satoshi)
      */
@@ -265,8 +402,9 @@ class Bridge
      *
      * @param string $walletName An account name to get unconfirmed balance from
      *
-     * @throws \RuntimeException in case of any error
+     * @throws \RuntimeException in case of any runtime error
      * @throws \InvalidArgumentException if error of this type
+     * @throws ConflictHandlerException in case of any error of this type
      *
      * @return integer The total number of bitcoins paid to the passed wallet in unconfirmed transactions (in satoshi)
      */
@@ -301,8 +439,9 @@ class Bridge
      * @param int $MinimumConfirmations  The minimum number of confirmations the transaction containing an output
      * must have in order to be returned.
      *
-     * @throws \RuntimeException in case of any error
+     * @throws \RuntimeException in case of any runtime error
      * @throws \InvalidArgumentException if error of this type
+     * @throws ConflictHandlerException in case of any error of this type
      *
      * @return array The list of unspent outputs
      */
@@ -329,14 +468,14 @@ class Bridge
      * The sendrawtransaction RPC validates a transaction and broadcasts it to the peer-to-peer network.
      * @link https://bitcoin.org/en/developer-reference#sendrawtransaction Official bitcoin documentation.
      *
-     * @param string $Transaction  The minimum number of confirmations the transaction containing an output
-     * must have in order to be returned.
+     * @param string $Transaction
      *
      * @return string If the transaction was accepted by the node for broadcast, this will be the TXID
      * of the transaction encoded as hex in RPC byte order.
      *
-     * @throws \RuntimeException in case of any error
+     * @throws \RuntimeException in case of any runtime error
      * @throws \InvalidArgumentException if error of this type
+     * @throws ConflictHandlerException in case of any error of this type
      *
      */
     public function sendrawtransaction($Transaction)
@@ -372,8 +511,9 @@ class Bridge
      *
      * @return Wallet
      *
-     * @throws \RuntimeException in case of error of this type
-     * @throws \InvalidArgumentException in case of error of this type
+     * @throws \RuntimeException in case of any runtime error
+     * @throws \InvalidArgumentException if error of this type
+     * @throws ConflictHandlerException in case of any error of this type
      * @throws HandlerErrorException in case of any error with Handler occured
      *
      */
@@ -429,8 +569,9 @@ class Bridge
      *
      * @return Wallet
      *
-     * @throws \RuntimeException in case of error of this type
-     * @throws \InvalidArgumentException in case of error of this type
+     * @throws \RuntimeException in case of any runtime error
+     * @throws \InvalidArgumentException if error of this type
+     * @throws ConflictHandlerException in case of any error of this type
      * @throws HandlerErrorException in case of any error with Handler occured
      *
      */
@@ -480,8 +621,9 @@ class Bridge
      *
      * @return Wallet object
      *
-     * @throws \RuntimeException in case of error of this type
-     * @throws \InvalidArgumentException in case of error of this type
+     * @throws \RuntimeException in case of any runtime error
+     * @throws \InvalidArgumentException if error of this type
+     * @throws ConflictHandlerException in case of any error of this type
      * @throws HandlerErrorException in case of any error with Handler occured
      *
      */
@@ -489,6 +631,12 @@ class Bridge
     {
         if ("string" != gettype($walletName) || ("" == $walletName)) {
             throw new \InvalidArgumentException("Account variable must be non empty string.");
+        }
+        if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
+            throw new \InvalidArgumentException(
+                "Wallet name have to contain only alphanumeric, underline and dash symbols (\"" .
+                $walletName . "\" passed)."
+            );
         }
         if ("string" != gettype($address) || ("" == $address)) {
             throw new \InvalidArgumentException("address variable must be non empty string.");
@@ -531,8 +679,9 @@ class Bridge
      *
      * @return boolean result
      *
-     * @throws \RuntimeException in case of error of this type
-     * @throws \InvalidArgumentException in case of error of this type
+     * @throws \RuntimeException in case of any runtime error
+     * @throws \InvalidArgumentException if error of this type
+     * @throws ConflictHandlerException in case of any error of this type
      * @throws HandlerErrorException in case of any error with Handler occured
      *
      */
@@ -580,8 +729,9 @@ class Bridge
      *
      * @param string $walletName
      *
-     * @throws \RuntimeException in case of any error of this type
-     * @throws \InvalidArgumentException in case of any error of this type
+     * @throws \RuntimeException in case of any runtime error
+     * @throws \InvalidArgumentException if error of this type
+     * @throws ConflictHandlerException in case of any error of this type
      *
      * @return \string[] addesses
      */
@@ -622,6 +772,12 @@ class Bridge
         if ("string" != gettype($walletName) || ("" == $walletName)) {
             throw new \InvalidArgumentException("wallet Name must be non empty string.");
         }
+        if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
+            throw new \InvalidArgumentException(
+                "Wallet name have to contain only alphanumeric, underline and dash symbols (\"" .
+                $walletName . "\" passed)."
+            );
+        }
         try {
             $privateKey = PrivateKeyFactory::create();
             $address = $privateKey->getPublicKey()->getAddress();
@@ -659,8 +815,17 @@ class Bridge
      */
     public function dumpprivkey($walletName, $address)
     {
-        if ("string" != gettype($address) || ("" == $address)) {
+        if ("string" != gettype($walletName) || ("" == $walletName)) {
             throw new \InvalidArgumentException("wallet Name must be non empty string.");
+        }
+        if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
+            throw new \InvalidArgumentException(
+                "Wallet name have to contain only alphanumeric, underline and dash symbols (\"" .
+                $walletName . "\" passed)."
+            );
+        }
+        if ("string" != gettype($address) || ("" == $address)) {
+            throw new \InvalidArgumentException("address variable must be non empty string.");
         }
 
         $path = $this->getOption(Bridge::OPT_LOCAL_PATH_OF_WALLET_DATA);
@@ -688,5 +853,192 @@ class Bridge
         }
         fclose($handle);
         return null;
+    }
+
+    /**
+     * The settxfee RPC sets the transaction fee per kilobyte paid by transactions created by this wallet.
+     * @link https://bitcoin.org/en/developer-reference#settxfee
+     *
+     * @param integer $fee The transaction fee to pay, in satoshis, for each kilobyte of transaction data.
+     *
+     * @return boolean tru on success
+     *
+     * @throws \RuntimeException in case of any error
+     * @throws \InvalidArgumentException if error of this type
+     *
+     */
+    public function settxfee($fee)
+    {
+        if ((gettype($fee) != "integer") || ($fee <= intval($this->getOption(self::OPT_MINIMAL_FEE_PER_KB)))) {
+            throw new \InvalidArgumentException(
+                "fee variable must be integer and more or  equal than " .
+                $this->getOption(self::OPT_MINIMAL_FEE_PER_KB) . ")."
+            );
+        }
+        $this->setOption(self::OPT_MINIMAL_FEE_PER_KB, strval($fee));
+    }
+
+    /**
+     * Method returns last generated address for change (if this case occured i methods sendfrom, sendmany).
+     *
+     * @return string $address
+     *
+     * @throws \RuntimeException in case of any runtime error
+     * @throws \InvalidArgumentException if error of this type
+     * @throws ConflictHandlerException in case of any error of this type
+     *
+     */
+    /*public function getLastCreatedAddressForChange()
+    {
+
+    }*/
+
+    /**
+     * The sendfrom RPC spends an amount from a local account to a bitcoin address.
+     * @link https://bitcoin.org/en/developer-reference#sendfrom
+     *
+     * @param string $walletName  The wallet, which is source for money
+     * @param string $address     The address to which the bitcoins should be sent
+     * @param integer $amount The amount to spend in satoshis.
+     * @param int $confirmations  The minimum number of confirmations the transaction containing an output
+     * @param string $comment  A locally-stored (not broadcast) comment assigned to this
+     * transaction. Default is no comment
+     * must have in order to be returned.
+     * @param string $commentTo A locally-stored (not broadcast) comment assigned to this transaction.
+     * Meant to be used for describing who the payment was sent to. Default is no comment.
+     *
+     * @return string $transactionId
+     *
+     * @throws \RuntimeException in case of any runtime error
+     * @throws \InvalidArgumentException if error of this type
+     * @throws ConflictHandlerException in case of any error of this type
+     *
+     */
+    public function sendfrom($walletName, $address, $amount, $confirmations = 1, $comment = "", $commentTo = "")
+    {
+        if ("string" != gettype($walletName) || ("" == $walletName)) {
+            throw new \InvalidArgumentException("Account variable must be non empty string.");
+        }
+        if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
+            throw new \InvalidArgumentException(
+                "Wallet name have to contain only alphanumeric, underline and dash symbols (\"" .
+                $walletName . "\" passed)."
+            );
+        }
+        if ("string" != gettype($address) || ("" == $address)) {
+            throw new \InvalidArgumentException("address variable must be non empty string.");
+        }
+        if ("integer" != gettype($amount) || ($amount < intval(self::OPT_MINIMAL_AMOUNT_FOR_SENT))) {
+            throw new \InvalidArgumentException(
+                "amount variable must be integer bigger or equal " . self::OPT_MINIMAL_AMOUNT_FOR_SENT . "."
+            );
+        }
+        if ("integer" != gettype($confirmations) || ($confirmations < 0)) {
+            throw new \InvalidArgumentException("confirmation variable must be non negative integer.");
+        }
+        if ("string" != gettype($comment)) {
+            throw new \InvalidArgumentException("comment variable must be a string variable.");
+        }
+        if ("string" != gettype($commentTo)) {
+            throw new \InvalidArgumentException("commentTo variable must be a string variable.");
+        }
+
+        $results = [];
+        foreach ($this->handlers as $handle) {
+            $result = $handle->listunspent($walletName, $confirmations);
+            $results [] = $result;
+        }
+        $unspents = $this->conflictHandler->listunspent($results);
+
+        $feePerKb = intval($this->getOption(self::OPT_MINIMAL_FEE_PER_KB));
+        //Ideal case - one input for spend, one output
+        $mimimumRequiredFee = intval(ceil((1*181+1*34+10) * $feePerKb / 1024));
+        $requiredCoins = $amount + $mimimumRequiredFee;
+        $sumAmount = null;
+        $requiredFee = null;
+        /** @noinspection PhpUnusedLocalVariableInspection */
+        $change = 0;
+        do {
+            /** @var $outputsForSpent TransactionReference[] */
+            $outputsForSpent = $this->selectOutputsForSpent($unspents, $requiredCoins);
+            if ([] == $outputsForSpent) {
+                return ""; //No possible to create transaction, not enough money on unspent outputs of this wallet
+            }
+            $sumFromOutputs = 0;
+            for ($i = 0; $i < count($outputsForSpent); ++$i) {
+                $sumFromOutputs += $outputsForSpent[$i]->getValue();
+            }
+            //http://bitzuma.com/posts/making-sense-of-bitcoin-transaction-fees/     size = 181 * in + 34 * out + 10
+            //$requiredFeeWithoutChange = intval(ceil((count($outputsForSpent)*181+34+10) * $feePerKb / 1024));
+            $requiredFeeWithChange = intval(ceil((count($outputsForSpent)*181+34*2+10) * $feePerKb / 1024));
+            $change = $sumFromOutputs - $amount - $requiredFeeWithChange;
+            if ($change < 0) {
+                //Let's try to make the transaction without the change
+                $amountWithoutChange = $sumFromOutputs - $amount -
+                    intval(ceil((count($outputsForSpent)*181+34*1+10) * $feePerKb / 1024));
+                if ($amountWithoutChange >= 0) {
+                    $change = 0; //Anyway this value will not so big so as to make special output for change
+                    break;
+                }
+                $requiredCoins = $amount + $requiredFeeWithChange;
+            } elseif ($change >= 0) {
+                if ($change < intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT))) {
+                    $change = 0;
+                }
+                break;
+            }
+            //throw new \RuntimeException(
+                //"Logic error (\$amount (" . $amount . ") less than \$sumAmount" . $sumAmount . ")."
+            //);
+        } while (true);
+        //$sumAmount;
+        //$requiredFee;
+
+        $transactionSources = [];
+        foreach ($outputsForSpent as $output) {
+            $txSource = new \stdClass();
+            $txSource->address = AddressFactory::fromString($output->getAddress());
+            $txSource->privateKey = $this->dumpprivkey($walletName, $output->getAddress());
+            if (!$txSource->privateKey) {
+                throw new \RuntimeException(
+                    "dumpprivkey did not return object on address \"" . $output->getAddress() . "\"."
+                );
+            }
+            $txSource->privateKey = PrivateKeyFactory::fromWif($txSource->privateKey);
+            $txSource->pubKeyHash = $txSource->privateKey->getPubKeyHash(); //Very slow method
+            $txSource->outputScript = ScriptFactory::scriptPubKey()->payToPubKeyHash($txSource->pubKeyHash);
+            $txSource->sourceTxId = $output->getTxHash();
+            $txSource->sourceVout = $output->getTxOutputN();
+            $txSource->amount = $output->getValue();
+            $txSource->outpoint = new OutPoint(Buffer::hex($txSource->sourceTxId), $txSource->sourceVout);
+            $txSource->transactionOutput = new TransactionOutput($txSource->amount, $txSource->outputScript);
+            $transactionSources [] = clone $txSource;
+        }
+
+        $transaction = TransactionFactory::build();
+        foreach ($transactionSources as $source) {
+            $transaction = $transaction->spendOutPoint($source->outpoint);
+        }
+        $transaction = $transaction->payToAddress($amount, AddressFactory::fromString($address));
+        if ($change > $this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT)) {
+            //$addressForChange = $this->getnewaddress($walletName);
+            $addressForChange = $outputsForSpent[0]->getAddress();
+            /** @noinspection PhpUndefinedMethodInspection */
+            $transaction = $transaction->payToAddress($change, AddressFactory::fromString($addressForChange));
+        }
+        /** @noinspection PhpUndefinedMethodInspection */
+        $transaction = $transaction->get();
+
+        $ec = Bitcoin::getEcAdapter();
+        $signer = new Signer($transaction, $ec);
+        for ($i = 0; $i < count($transactionSources); ++$i) {
+            $signer->sign($i, $transactionSources[$i]->privateKey, $transactionSources[$i]->transactionOutput);
+        }
+        $signedTransaction = $signer->get();
+        $raw = $signedTransaction->getHex();
+        return $this->sendrawtransaction($raw);
+        //print $raw . PHP_EOL;
+        /** @noinspection PhpUnusedLocalVariableInspection */
+        //$size = $signedTransaction->getBuffer()->getSize();
     }
 }
