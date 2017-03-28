@@ -259,7 +259,7 @@ abstract class AbstractHandler
      * @param string $walletName Name of wallet
      * @param string $address
      *
-     * @return Wallet object
+     * @return Wallet result object
      *
      * @throws \RuntimeException in case of error of this type
      * @throws \InvalidArgumentException in case of error of this type
@@ -271,16 +271,16 @@ abstract class AbstractHandler
      * This Method adds new addresses into a wallet
      * @link https://www.blockcypher.com/dev/bitcoin/?shell#add-addresses-to-wallet-endpoint
      *
-     * @param string $walletName Name of wallet
+     * @param Wallet $wallet Object to which addresses will be added
      * @param string[] $addresses
      *
-     * @return bool
+     * @return Wallet result object
      *
      * @throws \RuntimeException in case of error of this type
      * @throws \InvalidArgumentException in case of error of this type
      *
      */
-    abstract public function addaddresses($walletName, $addresses);
+    abstract public function addaddresses(Wallet $wallet, $addresses);
 
 
     /**
@@ -308,4 +308,23 @@ abstract class AbstractHandler
      * @return \string[] addresses
      */
     abstract public function getAddresses($walletName);
+
+    /**
+     * This method returns name of current handler
+     *
+     * @return \string[] Name of the handler
+     */
+    abstract public function getHandlerName();
+
+    /**
+     * This method returns system Id from the passed wallet
+     *
+     * @param Wallet $wallet
+     *
+     * @throws \RuntimeException in case of any error of this type
+     * @throws \InvalidArgumentException in case of any error of this type
+     *
+     * @return \array systemdata
+     */
+    abstract public function getSystemDataForWallet(Wallet $wallet);
 }

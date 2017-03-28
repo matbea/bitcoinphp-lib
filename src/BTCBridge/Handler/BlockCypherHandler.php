@@ -648,15 +648,23 @@ class BlockCypherHandler extends AbstractHandler
         if (isset($content["token"])) {
             $wallet->setToken($content["token"]);
         }
+        $wallet->setSystemDataByHandler($this->getHandlerName(), ["name"=>$walletName]);
         return $wallet;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function addaddresses($walletName, $addresses)
+    public function addaddresses(Wallet $wallet, $addresses)
     {
-        if ("string" != gettype($walletName) || ("" == $walletName)) {
+        if (!$this->getSystemDataForWallet($wallet)) {
+            throw new \InvalidArgumentException(
+                "No handlers data (\"" . $this->getHandlerName()
+                . "\") in the passed wallet ( " . serialize($wallet) . ")."
+            );
+        }
+        $walletName = $wallet->getName();
+        if ("" == $walletName) {
             throw new \InvalidArgumentException("name variable must be non empty string.");
         }
         if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
@@ -728,6 +736,7 @@ class BlockCypherHandler extends AbstractHandler
         if (isset($content["token"])) {
             $wallet->setToken($content["token"]);
         }
+        $wallet->setSystemDataByHandler($this->getHandlerName(), ["name"=>$walletName]);
         return $wallet;
     }
 
@@ -891,5 +900,24 @@ class BlockCypherHandler extends AbstractHandler
             sort($content['addresses']);
         }
         return $content['addresses'];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getHandlerName()
+    {
+        return "blockcypher.com";
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getSystemDataForWallet(Wallet $wallet)
+    {
+        if (!$wallet->getName()) {
+            throw new \InvalidArgumentException("No name property in the passed wallet ( " . serialize($wallet) . ")");
+        }
+        return $wallet->getSystemDataByHandler($this->getHandlerName());
     }
 }

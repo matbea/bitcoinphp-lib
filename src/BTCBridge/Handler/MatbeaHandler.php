@@ -36,7 +36,7 @@ class MatbeaHandler extends AbstractHandler
     public function __construct()
     {
         parent::__construct();
-        $this->setOption("base_url", "https://api.matbea.net");
+        $this->setOption(self::OPT_BASE_URL, "https://api.matbea.net");
     }
 
     /**
@@ -142,13 +142,20 @@ class MatbeaHandler extends AbstractHandler
      */
     public function createwallet($walletName, $addresses)
     {
+        if ("todo" == $walletName) {
+            $wallet = new Wallet();
+            $wallet->setAddresses($addresses);
+            $wallet->setName($walletName);
+            $wallet->setSystemDataByHandler($this->getHandlerName(), ["name"=>$walletName, "id"=>123456789]);
+            return $wallet;
+        }
         return new Wallet();
     }
 
     /**
      * {@inheritdoc}
      */
-    public function addaddresses($walletName, $addresses)
+    public function addaddresses(Wallet $wallet, $addresses)
     {
         return new Wallet();
     }
@@ -174,5 +181,24 @@ class MatbeaHandler extends AbstractHandler
     public function getAddresses($walletName)
     {
         return [];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getHandlerName()
+    {
+        return "matbea.net";
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getSystemDataForWallet(Wallet $wallet)
+    {
+        if (!$wallet->getName()) {
+            throw new \InvalidArgumentException("No name property in the passed wallet ( " . serialize($wallet) . ")");
+        }
+        return $wallet->getSystemDataByHandler($this->getHandlerName());
     }
 }

@@ -371,7 +371,14 @@ class DefaultConflictHandler implements ConflictHandlerInterface
      */
     public function createwallet($data)
     {
+        if (!is_array($data)) {
+            throw new \InvalidArgumentException("\$data variable must be the array of instances of Wallet class.");
+        }
+
         if (1 == count($data)) {
+            if (!$data[0] instanceof Wallet) {
+                throw new \InvalidArgumentException("Elements of Data array must be instances of Wallet class.");
+            }
             return $data[0];
         }
         if (2 != count($data)) {
@@ -398,7 +405,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                 . " and " . implode(",", $addressesArr2) . " )."
             );
         }
-        return $data[0];
+        return true;
     }
 
     /**
@@ -428,7 +435,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                 . " and " . implode(",", $addressesArr2) . " )."
             );
         }
-        return $wallet1;
+        return true;
     }
 
     /**

@@ -10,8 +10,8 @@ try {
     $bridge = new \BTCBridge\Bridge(
         [
             (new \BTCBridge\Handler\BlockCypherHandler())->setToken("dc20a175f3594965a8f4707cdcf58a32")
-            //,
-            //new \BTCBridge\Handler\MatbeaHandler()
+            ,
+            new \BTCBridge\Handler\MatbeaHandler()
             //,
             //(new \BTCBridge\Handler\BlockCypherHandler())->setToken("dc20a175f3594965a8f4707cdcf58a32")
         ],
@@ -36,7 +36,8 @@ try {
         ["1BdxBor4JG76RKLAwJZfHC58fWbgidYukz", "1MN3cT9Ro927h4kgpSZ5V7SfYjrwTysXv7"]
     );*/
 
-    //$res = $bridge->createwallet("tst1", []);
+    $res = $bridge->deletewallet("todo");
+    $res = $bridge->createwallet("todo", ["1BdxBor4JG76RKLAwJZfHC58fWbgidYukz"]);
     //$res = $bridge->getAddresses("tst");
     //$res = $bridge->addaddresses("tst", ["12S42ZEw2741DHrivgZHLfX8M58mxb7bFy"]);
     //$res = $bridge->addaddresses("tst", ["1BdxBor4JG76RKLAwJZfHC58fWbgidYukz"]);
@@ -63,7 +64,7 @@ try {
     $res = $bridge->deletewallet("testname1000");
     $res = $bridge->deletewallet("testname1000");
 
-    $res = $bridge->addaddresses("testname1000", ["12S42ZEw2741DHrivgZHLfX8M58mxb7bFy"]);
+    //$res = $bridge->addaddresses("testname1000", ["12S42ZEw2741DHrivgZHLfX8M58mxb7bFy"]);
 
     $res = $bridge->gettransaction("721dca6852f828af1057d5bf5f324a6d2b27328a27882229048cf340c1e3ec10");
     $res = $bridge->gettransaction("a1405d6b266b63a2d1a5af6b3dee1af9ae60124be16f81b4774059c7dd43aa27");

@@ -10,6 +10,7 @@ namespace BTCBridge\Api;
  * @property string token
  * @property string name
  * @property string[] addresses
+ * @property array systemData
  */
 class Wallet
 {
@@ -32,7 +33,15 @@ class Wallet
      */
     protected $addresses;
 
+    /**
+     * SystemData - something like name, id or guid - it depends of type of BTC-data provider
+     * @var array
+     */
+    protected $systemData;
 
+    /**
+     * @return string
+     */
     public function getToken()
     {
         return $this->token;
@@ -99,6 +108,31 @@ class Wallet
     {
         $this->addresses = $addresses;
         sort($this->addresses);
+        return $this;
+    }
+
+    /**
+     * @param \string $handlerId Name of BTC data provider
+     *
+     * @return \array
+     */
+    public function getSystemDataByHandler($handlerId)
+    {
+        if (!isset($this->systemData[$handlerId])) {
+            return [];
+        }
+        return $this->systemData[$handlerId];
+    }
+
+    /**
+     * @param \string $handlerId Name of BTC data provider
+     * @param \array $data
+     *
+     * @return $this
+     */
+    public function setSystemDataByHandler($handlerId, $data)
+    {
+        $this->systemData[$handlerId] = $data;
         return $this;
     }
 }

@@ -532,7 +532,8 @@ class Bridge
         if (!is_array($addresses)) {
             throw new \InvalidArgumentException("addresses variable must be the array.");
         }
-        $results = [];
+        /** @var $resultWallets Wallet[] */
+        $resultWallets = [];
 
         /** @var $successHandlers AbstractHandler[] */
         $successHandlers = [];
@@ -541,14 +542,18 @@ class Bridge
 
         for ($i = 0; $i < count($this->handlers); ++$i) {
             try {
-                $result = $this->handlers[$i]->createwallet($walletName, $addresses);
+                $resultWallet = $this->handlers[$i]->createwallet($walletName, $addresses);
+                /*$resultWallet->setSystemDataByHandler(
+                    $this->handlers[$i]->getHandlerName(),
+                    $this->handlers[$i]->getSystemDataForWallet($resultWallet)
+                );*/
             } catch (\RuntimeException $ex) {
                 $this->loggerHandler->error($ex->getMessage());
                 $errorHandlers [] = $this->handlers[$i];
                 continue;
             }
             $successHandlers [] = $this->handlers[$i];
-            $results [] = $result;
+            $resultWallets [] = $resultWallet;
         }
 
         if ([] != $errorHandlers) {
@@ -558,14 +563,28 @@ class Bridge
                 "Some handler(s) raised error (method createwallet)"
             );
         }
-        return $this->conflictHandler->createwallet($results);
+        $this->conflictHandler->createwallet($resultWallets); //In case of error throw will be raised
+        /** @var $resultWallet Wallet */
+        $resultWallet = $resultWallets[0];
+
+        for ($i = 0; $i < count($resultWallets); ++$i) {
+            $systemData = $this->handlers[$i]->getSystemDataForWallet($resultWallets[$i]);
+            if ( !$systemData ) {
+                throw new \RuntimeException("No handlers data (\"" . $this->handlers[$i]->getHandlerName() . "\") in the passed wallet ( " . serialize($resultWallets[$i]) . ")");
+            }
+            $resultWallet->setSystemDataByHandler(
+                $this->handlers[$i]->getHandlerName(),
+                $systemData
+            );
+        }
+        return $resultWallet;
     }
 
     /**
      * This Method adds new addresses into a wallet
      * @link https://www.blockcypher.com/dev/bitcoin/?shell#add-addresses-to-wallet-endpoint
      *
-     * @param string $walletName Name of wallet
+     * @param Wallet $wallet Object to which addresses will be added
      * @param string[] $addresses
      *
      * @return Wallet
@@ -576,11 +595,18 @@ class Bridge
      * @throws HandlerErrorException in case of any error with Handler occured
      *
      */
-    public function addaddresses($walletName, $addresses)
+    public function addaddresses(Wallet $wallet, $addresses)
     {
-        if ("string" != gettype($walletName) || ("" == $walletName)) {
-            throw new \InvalidArgumentException("Account variable must be non empty string.");
+        foreach ($this->handlers as $h) {
+            if (!$h->getSystemDataForWallet($wallet)) {
+                throw new \InvalidArgumentException(
+                    "No handlers data (\"" . $h->getHandlerName() . "\") in the passed wallet ( " . serialize($wallet) . ")."
+                );
+            }
         }
+        /*if ("string" != gettype($walletName) || ("" == $walletName)) {
+            throw new \InvalidArgumentException("Account variable must be non empty string.");
+        }*/
         if ((!is_array($addresses)) || (count($addresses) == 0)) {
             throw new \InvalidArgumentException("addresses variable must be non empty array.");
         }
@@ -589,18 +615,19 @@ class Bridge
         $successHandlers = [];
         /** @var $errorHandlers AbstractHandler[] */
         $errorHandlers = [];
-        $results = [];
+        /** @var $resultWallets Wallet[] */
+        $resultWallets = [];
 
         for ($i = 0; $i < count($this->handlers); ++$i) {
             try {
-                $result = $this->handlers[$i]->addaddresses($walletName, $addresses);
+                $wallet = $this->handlers[$i]->addaddresses($wallet, $addresses);
             } catch (\RuntimeException $ex) {
                 $this->loggerHandler->error($ex->getMessage());
                 $errorHandlers [] = $this->handlers[$i];
                 continue;
             }
             $successHandlers [] = $this->handlers[$i];
-            $results [] = $result;
+            $resultWallets [] = $wallet;
         }
 
         if ([] != $errorHandlers) {
@@ -610,7 +637,21 @@ class Bridge
                 "Some handler(s) raised error (method addaddresses)"
             );
         }
-        return $this->conflictHandler->addaddresses($results);
+        $this->conflictHandler->addaddresses($resultWallets); //In case of error throw will be raised
+        /** @var $resultWallet Wallet */
+        $resultWallet = $resultWallets[0];
+
+        for ($i = 0; $i < count($resultWallets); ++$i) {
+            $systemData = $this->handlers[$i]->getSystemDataForWallet($resultWallets[$i]);
+            if ( !$systemData ) {
+                throw new \RuntimeException("No handlers data (\"" . $this->handlers[$i]->getHandlerName() . "\") in the passed wallet ( " . serialize($resultWallets[$i]) . ")");
+            }
+            $resultWallet->setSystemDataByHandler(
+                $this->handlers[$i]->getHandlerName(),
+                $systemData
+            );
+        }
+        return $resultWallet;
     }
 
     /**

@@ -15,7 +15,8 @@ use BTCBridge\Api\TransactionReference;
 use BTCBridge\Exception\ConflictHandlerException;
 use BTCBridge\Api\Transaction;
 use BTCBridge\Api\Address;
-use BTCBridge\Api\Wallet;
+
+//use BTCBridge\Api\Wallet;
 
 /**
  * Interface that all BTCBridge ConflictHandlers must implement.
@@ -120,7 +121,7 @@ interface ConflictHandlerInterface
      *
      * @param array $data  Result from method createwallet (from all handlers)
      *
-     * @return Wallet object
+     * @return boolean  If ok then true
      *
      * @throws ConflictHandlerException in case of any error
      *
@@ -129,13 +130,13 @@ interface ConflictHandlerInterface
 
     /**
      * This Method adds new addresses into a wallet
-     * @link https://www.blockcypher.com/dev/bitcoin/?shell#add-addresses-to-wallet-endpoint
+     * @link https://www.blockcypher.com/dev/bitcoin/?shell#remove-addresses-from-wallet-endpoint
      *
-     * @param array $data  Result from method addaddresses (from all handlers)
+     * @param array $data  Result from method removeaddress (from all handlers)
      *
-     * @return Wallet object
+     * @return boolean  If ok then true
      *
-     * @throws ConflictHandlerException in case of any error
+     * @throws ConflictHandlerException in case of error of this type
      *
      */
     public function removeaddress($data);
@@ -146,7 +147,7 @@ interface ConflictHandlerInterface
      *
      * @param array $data  Result from method addaddresses (from all handlers)
      *
-     * @return bool result
+     * @return boolean  If ok then true
      *
      * @throws ConflictHandlerException in case of any error
      *
