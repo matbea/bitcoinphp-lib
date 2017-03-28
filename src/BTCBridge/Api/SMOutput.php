@@ -54,5 +54,4 @@ class SMOutput
         $this->amount = $amount;
         return $this;
     }
-
 }

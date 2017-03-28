@@ -205,7 +205,7 @@ class Bridge
      * @throws \RuntimeException in case of any error of this type
      * @throws \InvalidArgumentException in case of any error of this type
      *
-     * @return TransactionReference[] (if not enouth BTC on passed outputs then ampty array will be returned)
+     * @return TransactionReference[] If not enouth BTC on passed outputs then ampty array will be returned
      */
     public function selectOutputsForSpent($outputs, $amount)
     {
@@ -862,7 +862,7 @@ class Bridge
      *
      * @param integer $fee The transaction fee to pay, in satoshis, for each kilobyte of transaction data.
      *
-     * @return boolean tru on success
+     * @return boolean true on success
      *
      * @throws \RuntimeException in case of any error
      * @throws \InvalidArgumentException if error of this type
@@ -877,6 +877,7 @@ class Bridge
             );
         }
         $this->setOption(self::OPT_MINIMAL_FEE_PER_KB, strval($fee));
+        return true;
     }
 
     /**
