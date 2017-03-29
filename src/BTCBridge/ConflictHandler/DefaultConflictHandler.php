@@ -109,10 +109,10 @@ class DefaultConflictHandler implements ConflictHandlerInterface
             );
         }
 
-        for ($i = 0; $i < count($txrefs1); ++$i) {
+        for ($i = 0, $ic = count($txrefs1); $i < $ic; ++$i) {
             $tx = & $txrefs1[$i];
             $found = false;
-            for ($j = 0; $j < count($txrefs2); ++$j) {
+            for ($j = 0, $jc = count($txrefs2); $j < $jc; ++$j) {
                 $txc = & $txrefs2[$j];
                 if (($tx->getBlockHeight() != $txc->getBlockHeight()) ||
                     ($tx->getConfirmations() != $txc->getConfirmations()) ||
@@ -135,10 +135,10 @@ class DefaultConflictHandler implements ConflictHandlerInterface
             }
         }
 
-        for ($i = 0; $i < count($unconfirmedtxrefs1); ++$i) {
+        for ($i = 0, $ic = count($unconfirmedtxrefs1); $i < $ic; ++$i) {
             $tx = & $unconfirmedtxrefs1[$i];
             $found = false;
-            for ($j = 0; $j < count($unconfirmedtxrefs2); ++$j) {
+            for ($j = 0, $jc = count($unconfirmedtxrefs2); $j < $jc; ++$j) {
                 $txc = & $txrefs2[$j];
                 if (($tx->getBlockHeight() != $txc->getBlockHeight()) ||
                     ($tx->getConfirmations() != $txc->getConfirmations()) ||
@@ -208,10 +208,10 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                 "Different sizes of outputs ( " . serialize($outputs1) . " and " . serialize($outputs2) . " )."
             );
         }
-        for ($i = 0; $i < count($outputs1); ++$i) {
+        for ($i = 0, $ic = count($outputs1); $i < $ic; ++$i) {
             $output = & $outputs1[$i];
             $found = false;
-            for ($j = 0; $j < count($outputs2); ++$j) {
+            for ($j = 0, $jc = count($outputs2); $j < $jc; ++$j) {
                 $outputc = & $outputs2[$j];
                 if (($output->getValue() != $outputc->getValue()) ||
                     ($output->getScriptType() != $outputc->getScripttype()) ||
@@ -236,10 +236,10 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                 "Different sizes of inputs ( " . serialize($inputs1) . " and " . serialize($inputs2) . " )."
             );
         }
-        for ($i = 0; $i < count($inputs1); ++$i) {
+        for ($i = 0, $ic = count($inputs1); $i < $ic; ++$i) {
             $input = & $inputs1[$i];
             $found = false;
-            for ($j = 0; $j < count($inputs2); ++$j) {
+            for ($j = 0, $jc = count($inputs2); $j < $jc; ++$j) {
                 $inputc = & $inputs2[$j];
                 if (($input->getPrevHash() != $inputc->getPrevHash()) ||
                     ($input->getOutputIndex() != $inputc->getOutputIndex()) ||
@@ -323,11 +323,11 @@ class DefaultConflictHandler implements ConflictHandlerInterface
             );
         }
 
-        for ($i = 0; $i < count($txrefs1); ++$i) {
+        for ($i = 0, $ic = count($txrefs1); $i<$ic; ++$i) {
             /** @var $tx TransactionReference */
             $tx = & $txrefs1[$i];
             $found = false;
-            for ($j = 0; $j < count($txrefs2); ++$j) {
+            for ($j = 0, $jc = count($txrefs2); $j < $jc; ++$j) {
                 /** @var $txc TransactionReference */
                 $txc = & $txrefs2[$j];
                 if (($tx->getBlockHeight() != $txc->getBlockHeight()) ||
@@ -379,7 +379,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
             if (!$data[0] instanceof Wallet) {
                 throw new \InvalidArgumentException("Elements of Data array must be instances of Wallet class.");
             }
-            return $data[0];
+            return true;
         }
         if (2 != count($data)) {
             throw new \InvalidArgumentException("Data array for verification must have size 1 or 2.");
@@ -414,7 +414,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
     public function addaddresses($data)
     {
         if (1 == count($data)) {
-            return $data[0];
+            return true;
         }
         if (2 != count($data)) {
             throw new \InvalidArgumentException("Data array for verification must have size 1 or 2.");

@@ -459,7 +459,7 @@ class BlockCypherHandler extends AbstractHandler
                 $filteredTxs = array_filter($result, function (TransactionReference $tx) use ($txr) {
                         return $tx->isEqual($txr);
                 });
-                if ([] == $filteredTxs) {
+                if (empty($filteredTxs)) {
                     $result [] = $txr;
                 }
             }
@@ -485,7 +485,7 @@ class BlockCypherHandler extends AbstractHandler
                 $filteredTxs = array_filter($result, function (TransactionReference $tx) use ($txr) {
                         return $tx->isEqual($txr);
                 });
-                if ([] == $filteredTxs) {
+                if (empty($filteredTxs)) {
                     $result [] = $txr;
                 }
             }
@@ -730,13 +730,7 @@ class BlockCypherHandler extends AbstractHandler
                 "Answer does not contain \"tx\" field (url:\"" . $url . "\", post: \"" . $post_data . "\")."
             );
         }
-        $wallet = new Wallet;
-        $wallet->setName($content['name']);
         $wallet->setAddresses($content["addresses"]);
-        if (isset($content["token"])) {
-            $wallet->setToken($content["token"]);
-        }
-        $wallet->setSystemDataByHandler($this->getHandlerName(), ["name"=>$walletName]);
         return $wallet;
     }
 

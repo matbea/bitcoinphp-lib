@@ -287,11 +287,9 @@ abstract class AbstractHandler
      * This Method deletes a passed wallet
      * https://www.blockcypher.com/dev/bitcoin/?shell#delete-wallet-endpoint
      *
-     * @param string $walletName Name of wallet
+     * @param $walletName
      *
      * @throws \RuntimeException in case of error of this type
-     * @throws \InvalidArgumentException in case of error of this type
-     *
      */
     abstract public function deletewallet($walletName);
 

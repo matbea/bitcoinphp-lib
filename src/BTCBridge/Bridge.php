@@ -78,7 +78,7 @@ class Bridge
         ConflictHandlerInterface $conflictHandler = null,
         LoggerInterface $loggerHandler = null
     ) {
-        if ([] == $handlers) {
+        if (empty($handlers)) {
             throw new \InvalidArgumentException("Handlers array can not be empty.");
         }
         foreach ($handlers as $handler) {
@@ -215,7 +215,7 @@ class Bridge
                 $this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT) . "."
             );
         }
-        if (!is_array($outputs) || [] == $outputs) {
+        if (!is_array($outputs) || empty($outputs)) {
             throw new \InvalidArgumentException(
                 "outputs variable must be non empty array of TransactionReference type."
             );
@@ -225,7 +225,7 @@ class Bridge
         //Now we'll check sufficiency of total balance of passed subset of outputs -
         //and will try to find the output with the same value as needed
         $sum = 0;
-        for ($i = 0; $i < count($outputs); ++$i) {
+        for ($i = 0, $ic = count($outputs); $i < $ic; ++$i) {
             if ($outputs[$i]->getValue() == $amount) {
                 return [$outputs[$i]];
             }
@@ -485,7 +485,7 @@ class Bridge
             throw new \InvalidArgumentException("Transaction variable must be non empty string.");
         }
         $result = null;
-        for ($i = 0; $i < count($this->handlers); ++$i) {
+        for ($i = 0, $ic = count($this->handlers); $i < $ic; ++$i) {
             try {
                 $result = $this->handlers[$i]->sendrawtransaction($Transaction);
             } catch (\InvalidArgumentException $ex) {
@@ -540,7 +540,7 @@ class Bridge
         /** @var $errorHandlers AbstractHandler[] */
         $errorHandlers = [];
 
-        for ($i = 0; $i < count($this->handlers); ++$i) {
+        for ($i = 0, $ic = count($this->handlers); $i < $ic; ++$i) {
             try {
                 $resultWallet = $this->handlers[$i]->createwallet($walletName, $addresses);
                 /*$resultWallet->setSystemDataByHandler(
@@ -564,13 +564,15 @@ class Bridge
             );
         }
         $this->conflictHandler->createwallet($resultWallets); //In case of error throw will be raised
-        /** @var $resultWallet Wallet */
         $resultWallet = $resultWallets[0];
 
-        for ($i = 0; $i < count($resultWallets); ++$i) {
+        for ($i = 0, $ic = count($resultWallets); $i < $ic; ++$i) {
             $systemData = $this->handlers[$i]->getSystemDataForWallet($resultWallets[$i]);
-            if ( !$systemData ) {
-                throw new \RuntimeException("No handlers data (\"" . $this->handlers[$i]->getHandlerName() . "\") in the passed wallet ( " . serialize($resultWallets[$i]) . ")");
+            if (!$systemData) {
+                throw new \RuntimeException(
+                    "No handlers data (\"" . $this->handlers[$i]->getHandlerName() .
+                    "\") in the passed wallet ( " . serialize($resultWallets[$i]) . ")"
+                );
             }
             $resultWallet->setSystemDataByHandler(
                 $this->handlers[$i]->getHandlerName(),
@@ -597,16 +599,6 @@ class Bridge
      */
     public function addaddresses(Wallet $wallet, $addresses)
     {
-        foreach ($this->handlers as $h) {
-            if (!$h->getSystemDataForWallet($wallet)) {
-                throw new \InvalidArgumentException(
-                    "No handlers data (\"" . $h->getHandlerName() . "\") in the passed wallet ( " . serialize($wallet) . ")."
-                );
-            }
-        }
-        /*if ("string" != gettype($walletName) || ("" == $walletName)) {
-            throw new \InvalidArgumentException("Account variable must be non empty string.");
-        }*/
         if ((!is_array($addresses)) || (count($addresses) == 0)) {
             throw new \InvalidArgumentException("addresses variable must be non empty array.");
         }
@@ -618,7 +610,7 @@ class Bridge
         /** @var $resultWallets Wallet[] */
         $resultWallets = [];
 
-        for ($i = 0; $i < count($this->handlers); ++$i) {
+        for ($i = 0, $ic = count($this->handlers); $i < $ic; ++$i) {
             try {
                 $wallet = $this->handlers[$i]->addaddresses($wallet, $addresses);
             } catch (\RuntimeException $ex) {
@@ -638,20 +630,7 @@ class Bridge
             );
         }
         $this->conflictHandler->addaddresses($resultWallets); //In case of error throw will be raised
-        /** @var $resultWallet Wallet */
-        $resultWallet = $resultWallets[0];
-
-        for ($i = 0; $i < count($resultWallets); ++$i) {
-            $systemData = $this->handlers[$i]->getSystemDataForWallet($resultWallets[$i]);
-            if ( !$systemData ) {
-                throw new \RuntimeException("No handlers data (\"" . $this->handlers[$i]->getHandlerName() . "\") in the passed wallet ( " . serialize($resultWallets[$i]) . ")");
-            }
-            $resultWallet->setSystemDataByHandler(
-                $this->handlers[$i]->getHandlerName(),
-                $systemData
-            );
-        }
-        return $resultWallet;
+        return $resultWallets[0];
     }
 
     /**
@@ -690,7 +669,7 @@ class Bridge
         $errorHandlers = [];
         $results = [];
 
-        for ($i = 0; $i < count($this->handlers); ++$i) {
+        for ($i = 0, $ic = count($this->handlers); $i < $ic; ++$i) {
             try {
                 $result = $this->handlers[$i]->removeaddress($walletName, $address);
             } catch (\RuntimeException $ex) {
@@ -744,7 +723,7 @@ class Bridge
         /** @var $errorHandlers AbstractHandler[] */
         $errorHandlers = [];
 
-        for ($i = 0; $i < count($this->handlers); ++$i) {
+        for ($i = 0, $ic = count($this->handlers); $i < $ic; ++$i) {
             try {
                 $this->handlers[$i]->deletewallet($walletName);
             } catch (\RuntimeException $ex) {
@@ -1004,11 +983,11 @@ class Bridge
         do {
             /** @var $outputsForSpent TransactionReference[] */
             $outputsForSpent = $this->selectOutputsForSpent($unspents, $requiredCoins);
-            if ([] == $outputsForSpent) {
+            if (empty($outputsForSpent)) {
                 return ""; //No possible to create transaction, not enough money on unspent outputs of this wallet
             }
             $sumFromOutputs = 0;
-            for ($i = 0; $i < count($outputsForSpent); ++$i) {
+            for ($i = 0, $ic = count($outputsForSpent); $i < $ic; ++$i) {
                 $sumFromOutputs += $outputsForSpent[$i]->getValue();
             }
             //http://bitzuma.com/posts/making-sense-of-bitcoin-transaction-fees/     size = 181 * in + 34 * out + 10
@@ -1074,7 +1053,7 @@ class Bridge
 
         $ec = Bitcoin::getEcAdapter();
         $signer = new Signer($transaction, $ec);
-        for ($i = 0; $i < count($transactionSources); ++$i) {
+        for ($i = 0, $ic = count($transactionSources); $i < $ic; ++$i) {
             $signer->sign($i, $transactionSources[$i]->privateKey, $transactionSources[$i]->transactionOutput);
         }
         $signedTransaction = $signer->get();
@@ -1104,6 +1083,7 @@ class Bridge
      */
     public function sendmany($walletName, $smoutputs, $confirmations = 1, $comment = "")
     {
+        /** @var $smoutputs SMOutput[] */
         if ("string" != gettype($walletName) || ("" == $walletName)) {
             throw new \InvalidArgumentException("Account variable must be non empty string.");
         }
@@ -1113,11 +1093,11 @@ class Bridge
                 $walletName . "\" passed)."
             );
         }
-        if ("array" != gettype($smoutputs) || ([] == $smoutputs)) {
+        if ("array" != gettype($smoutputs) || (empty($smoutputs))) {
             throw new \InvalidArgumentException("\$smoutputs variable must be non empty string.");
         }
         $amount = 0;
-        for ($i = 0; $i < count($smoutputs); ++$i) {
+        for ($i = 0, $ic = count($smoutputs); $i < $ic; ++$i) {
             $amount += $smoutputs[$i]->getAmount();
         }
         if ($amount < intval(self::OPT_MINIMAL_AMOUNT_FOR_SENT)) {
@@ -1150,11 +1130,11 @@ class Bridge
         do {
             /** @var $outputsForSpent TransactionReference[] */
             $outputsForSpent = $this->selectOutputsForSpent($unspents, $requiredCoins);
-            if ([] == $outputsForSpent) {
+            if (empty($outputsForSpent)) {
                 return ""; //No possible to create transaction, not enough money on unspent outputs of this wallet
             }
             $sumFromOutputs = 0;
-            for ($i = 0; $i < count($outputsForSpent); ++$i) {
+            for ($i = 0, $ic = count($outputsForSpent); $i < $ic; ++$i) {
                 $sumFromOutputs += $outputsForSpent[$i]->getValue();
             }
             //http://bitzuma.com/posts/making-sense-of-bitcoin-transaction-fees/     size = 181 * in + 34 * out + 10
@@ -1224,7 +1204,7 @@ class Bridge
 
         $ec = Bitcoin::getEcAdapter();
         $signer = new Signer($transaction, $ec);
-        for ($i = 0; $i < count($transactionSources); ++$i) {
+        for ($i = 0, $ic = count($transactionSources); $i < $ic; ++$i) {
             $signer->sign($i, $transactionSources[$i]->privateKey, $transactionSources[$i]->transactionOutput);
         }
         $signedTransaction = $signer->get();
