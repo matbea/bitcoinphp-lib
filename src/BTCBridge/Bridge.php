@@ -6,10 +6,13 @@ use Monolog\Logger;
 use Psr\Log\LoggerInterface;
 use BTCBridge\Api\TransactionReference;
 use BTCBridge\Handler\AbstractHandler;
+use BTCBridge\ResultHandler\AbstractResultHandler;
 use BTCBridge\ConflictHandler\ConflictHandlerInterface;
 use BTCBridge\Exception\ConflictHandlerException;
+use BTCBridge\Exception\ResultHandlerException;
 use BTCBridge\Exception\HandlerErrorException;
 use BTCBridge\ConflictHandler\DefaultConflictHandler;
+use BTCBridge\ResultHandler\DefaultResultHandler;
 use BTCBridge\Api\Transaction;
 use BTCBridge\Api\Address;
 use BTCBridge\Api\Wallet;
@@ -57,6 +60,14 @@ class Bridge
     protected $conflictHandler;
 
     /**
+     * The result handler
+     *
+     * @var AbstractResultHandler
+     */
+    protected $resultHandler;
+
+
+    /**
      * The conflictHandler
      *
      * @var ConflictHandlerInterface
@@ -67,6 +78,7 @@ class Bridge
      * @param AbstractHandler[] $handlers         Stack of handlers for calling BTC-methods, $handlers must not be empty
      * @param ConflictHandlerInterface $conflictHandler  Methods of this objects will be raised for validating results.
      * Parameter is optional, by default DefaultConflictHandler instance will be used
+     * @param AbstractResultHandler $resultHandler
      * @param LoggerInterface $loggerHandler    Methods of this objects will be raised for validating results.
      * Parameter is optional, by default DefaultConflictHandler instance will be used
      *
@@ -76,6 +88,7 @@ class Bridge
     public function __construct(
         array $handlers,
         ConflictHandlerInterface $conflictHandler = null,
+        AbstractResultHandler $resultHandler = null,
         LoggerInterface $loggerHandler = null
     ) {
         if (empty($handlers)) {
@@ -83,12 +96,14 @@ class Bridge
         }
         foreach ($handlers as $handler) {
             if (!$handler instanceof AbstractHandler) {
-                throw new \RuntimeException("The given handler is not a AbstractHandler");
+                throw new \InvalidArgumentException("The given handler is not a AbstractHandler");
             }
         }
 
         $this->handlers = $handlers;
         $this->conflictHandler = (null !== $conflictHandler) ? $conflictHandler : new DefaultConflictHandler();
+        $this->resultHandler = (null !== $resultHandler) ? $resultHandler : new DefaultResultHandler();
+        $this->resultHandler->setHandlers($handlers);
         if ($loggerHandler) {
             $this->loggerHandler = $loggerHandler;
             foreach ($this->handlers as $handler) {
@@ -303,8 +318,9 @@ class Bridge
      * ]
      *
      * @throws \RuntimeException in case of any runtime error
-     * @throws \InvalidArgumentException if error of this type
+     * @throws \InvalidArgumentException in case of error of this type
      * @throws ConflictHandlerException in case of any error of this type
+     * @throws ResultHandlerException in case of any error of this type
      *
      * @return Address
      */
@@ -318,7 +334,8 @@ class Bridge
             $result = $handle->listtransactions($address, $options);
             $results [] = $result;
         }
-        return $this->conflictHandler->listtransactions($results);
+        $this->conflictHandler->listtransactions($results);
+        return $this->resultHandler->listtransactions($results);
     }
 
     /**
@@ -354,7 +371,8 @@ class Bridge
             $result = $handle->gettransaction($TXHASH, $options);
             $results [] = $result;
         }
-        return $this->conflictHandler->gettransaction($results);
+        $this->conflictHandler->gettransaction($results);
+        return $this->resultHandler->gettransaction($results);
     }
 
     /**
@@ -391,7 +409,8 @@ class Bridge
             $result = $handle->getbalance($walletName, $Confirmations, $IncludeWatchOnly);
             $results [] = $result;
         }
-        return $this->conflictHandler->getbalance($results);
+        $this->conflictHandler->getbalance($results);
+        return $this->resultHandler->getbalance($results);
     }
 
     /**
@@ -426,7 +445,8 @@ class Bridge
             $result = $handle->getunconfirmedbalance($walletName);
             $results [] = $result;
         }
-        return $this->conflictHandler->getunconfirmedbalance($results);
+        $this->conflictHandler->getunconfirmedbalance($results);
+        return $this->resultHandler->getunconfirmedbalance($results);
     }
 
     /**
@@ -462,7 +482,8 @@ class Bridge
             $result = $handle->listunspent($walletName, $MinimumConfirmations);
             $results [] = $result;
         }
-        return $this->conflictHandler->listunspent($results);
+        $this->conflictHandler->listunspent($results);
+        return $this->resultHandler->listunspent($results);
     }
 
     /**
@@ -564,22 +585,7 @@ class Bridge
             );
         }
         $this->conflictHandler->createwallet($resultWallets); //In case of error throw will be raised
-        $resultWallet = $resultWallets[0];
-
-        for ($i = 0, $ic = count($resultWallets); $i < $ic; ++$i) {
-            $systemData = $this->handlers[$i]->getSystemDataForWallet($resultWallets[$i]);
-            if (!$systemData) {
-                throw new \RuntimeException(
-                    "No handlers data (\"" . $this->handlers[$i]->getHandlerName() .
-                    "\") in the passed wallet ( " . serialize($resultWallets[$i]) . ")"
-                );
-            }
-            $resultWallet->setSystemDataByHandler(
-                $this->handlers[$i]->getHandlerName(),
-                $systemData
-            );
-        }
-        return $resultWallet;
+        return $this->resultHandler->createwallet($resultWallets);
     }
 
     /**
@@ -629,18 +635,16 @@ class Bridge
                 "Some handler(s) raised error (method addaddresses)"
             );
         }
-        $this->conflictHandler->addaddresses($resultWallets); //In case of error throw will be raised
-        return $resultWallets[0];
+        $this->conflictHandler->addaddresses($resultWallets);
+        return $this->resultHandler->addaddresses($resultWallets);
     }
 
     /**
      * This Method adds new addresses into a wallet
      * @link https://www.blockcypher.com/dev/bitcoin/?shell#remove-addresses-from-wallet-endpoint
      *
-     * @param string $walletName Name of wallet
+     * @param Wallet $wallet
      * @param string $address
-     *
-     * @return Wallet object
      *
      * @throws \RuntimeException in case of any runtime error
      * @throws \InvalidArgumentException if error of this type
@@ -648,17 +652,8 @@ class Bridge
      * @throws HandlerErrorException in case of any error with Handler occured
      *
      */
-    public function removeAddress($walletName, $address)
+    public function removeAddress(Wallet $wallet, $address)
     {
-        if ("string" != gettype($walletName) || ("" == $walletName)) {
-            throw new \InvalidArgumentException("Account variable must be non empty string.");
-        }
-        if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
-            throw new \InvalidArgumentException(
-                "Wallet name have to contain only alphanumeric, underline and dash symbols (\"" .
-                $walletName . "\" passed)."
-            );
-        }
         if ("string" != gettype($address) || ("" == $address)) {
             throw new \InvalidArgumentException("address variable must be non empty string.");
         }
@@ -667,18 +662,16 @@ class Bridge
         $successHandlers = [];
         /** @var $errorHandlers AbstractHandler[] */
         $errorHandlers = [];
-        $results = [];
 
         for ($i = 0, $ic = count($this->handlers); $i < $ic; ++$i) {
             try {
-                $result = $this->handlers[$i]->removeaddress($walletName, $address);
+                $this->handlers[$i]->removeaddress($wallet, $address);
             } catch (\RuntimeException $ex) {
                 $this->loggerHandler->error($ex->getMessage());
                 $errorHandlers [] = $this->handlers[$i];
                 continue;
             }
             $successHandlers [] = $this->handlers[$i];
-            $results [] = $result;
         }
 
         if ([] != $errorHandlers) {
@@ -688,7 +681,6 @@ class Bridge
                 "Some handler(s) raised error (method removeaddress)"
             );
         }
-        return $this->conflictHandler->removeaddress($results);
     }
 
 
@@ -696,28 +688,14 @@ class Bridge
      * This Method deletes a passed wallet
      * https://www.blockcypher.com/dev/bitcoin/?shell#delete-wallet-endpoint
      *
-     * @param string $walletName Name of wallet
+     * @param Wallet $wallet wallet for deleting
      *
-     * @return boolean result
-     *
-     * @throws \RuntimeException in case of any runtime error
+     * @throws Exception\HandlerErrorException
      * @throws \InvalidArgumentException if error of this type
-     * @throws ConflictHandlerException in case of any error of this type
-     * @throws HandlerErrorException in case of any error with Handler occured
      *
      */
-    public function deletewallet($walletName)
+    public function deletewallet(Wallet $wallet)
     {
-        if ("string" != gettype($walletName) || ("" == $walletName)) {
-            throw new \InvalidArgumentException("Wallet name variable must be non empty string.");
-        }
-        if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
-            throw new \InvalidArgumentException(
-                "Wallet name have to contain only alphanumeric, underline and dash symbols (\"" .
-                $walletName . "\" passed)."
-            );
-        }
-
         /** @var $successHandlers AbstractHandler[] */
         $successHandlers = [];
         /** @var $errorHandlers AbstractHandler[] */
@@ -725,7 +703,7 @@ class Bridge
 
         for ($i = 0, $ic = count($this->handlers); $i < $ic; ++$i) {
             try {
-                $this->handlers[$i]->deletewallet($walletName);
+                $this->handlers[$i]->deletewallet($wallet);
             } catch (\RuntimeException $ex) {
                 $this->loggerHandler->error($ex->getMessage());
                 $errorHandlers [] = $this->handlers[$i];
@@ -740,7 +718,6 @@ class Bridge
                 "Some handler(s) raised error (method deleteWallet)"
             );
         }
-        return true;
     }
 
     /**
@@ -748,7 +725,7 @@ class Bridge
      * @link https://bitcoin.org/en/developer-reference#getaddressesbyaccount
      * @link https://www.blockcypher.com/dev/bitcoin/?shell#get-wallet-addresses-endpoint
      *
-     * @param string $walletName
+     * @param Wallet $wallet
      *
      * @throws \RuntimeException in case of any runtime error
      * @throws \InvalidArgumentException if error of this type
@@ -756,23 +733,15 @@ class Bridge
      *
      * @return \string[] addesses
      */
-    public function getAddresses($walletName)
+    public function getAddresses(Wallet $wallet)
     {
-        if ("string" != gettype($walletName) || ("" == $walletName)) {
-            throw new \InvalidArgumentException("address variable must be non empty string.");
-        }
-        if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
-            throw new \InvalidArgumentException(
-                "Wallet name have to contain only alphanumeric, underline and dash symbols (\"" .
-                $walletName . "\" passed)."
-            );
-        }
         $results = [];
         foreach ($this->handlers as $handle) {
-            $result = $handle->getAddresses($walletName);
+            $result = $handle->getAddresses($wallet);
             $results [] = $result;
         }
-        return $this->conflictHandler->getAddresses($results);
+        $this->conflictHandler->getAddresses($results);
+        return $this->resultHandler->getaddresses($results);
     }
 
     /**
@@ -901,21 +870,6 @@ class Bridge
     }
 
     /**
-     * Method returns last generated address for change (if this case occured i methods sendfrom, sendmany).
-     *
-     * @return string $address
-     *
-     * @throws \RuntimeException in case of any runtime error
-     * @throws \InvalidArgumentException if error of this type
-     * @throws ConflictHandlerException in case of any error of this type
-     *
-     */
-    /*public function getLastCreatedAddressForChange()
-    {
-
-    }*/
-
-    /**
      * The sendfrom RPC spends an amount from a local account to a bitcoin address.
      * @link https://bitcoin.org/en/developer-reference#sendfrom
      *
@@ -970,7 +924,8 @@ class Bridge
             $result = $handle->listunspent($walletName, $confirmations);
             $results [] = $result;
         }
-        $unspents = $this->conflictHandler->listunspent($results);
+        $this->conflictHandler->listunspent($results);
+        $unspents = $this->resultHandler->listunspent($results);
 
         $feePerKb = intval($this->getOption(self::OPT_MINIMAL_FEE_PER_KB));
         //Ideal case - one input for spend, one output
@@ -1117,7 +1072,8 @@ class Bridge
             $result = $handle->listunspent($walletName, $confirmations);
             $results [] = $result;
         }
-        $unspents = $this->conflictHandler->listunspent($results);
+        $this->conflictHandler->listunspent($results);
+        $unspents = $this->resultHandler->listunspent($results);
 
         $feePerKb = intval($this->getOption(self::OPT_MINIMAL_FEE_PER_KB));
         //Ideal case - one input for spend, necessary count of outputs

@@ -35,7 +35,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
         //$uniq_results = array_map('unserialize',array_unique(array_map('serialize', $data)) );
         //$uniq_results = array_unique($results);
         if (1 == count($data)) {
-            return $data[0];
+            return;
         }
         if (2 != count($data)) {
             throw new \InvalidArgumentException("Data array for verification must have size 1 or 2.");
@@ -160,7 +160,6 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                 );
             }
         }
-        return $address1;
     }
 
     /**
@@ -169,7 +168,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
     public function gettransaction($data)
     {
         if (1 == count($data)) {
-            return $data[0];
+            return;
         }
         if (2 != count($data)) {
             throw new \InvalidArgumentException("Data array for verification must have size 1 or 2.");
@@ -257,7 +256,6 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                 );
             }
         }
-        return $tx1;
     }
 
     /**
@@ -266,7 +264,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
     public function getbalance($data)
     {
         if (1 == count($data)) {
-            return $data[0];
+            return;
         }
         if (2 != count($data)) {
             throw new \InvalidArgumentException("Data array for verification must have size 1 or 2.");
@@ -279,7 +277,6 @@ class DefaultConflictHandler implements ConflictHandlerInterface
         if ($balance1 != $balance2) {
             throw new ConflictHandlerException("No equal results from different services.");
         }
-        return $balance1;
     }
 
     /**
@@ -288,7 +285,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
     public function getunconfirmedbalance($data)
     {
         if (1 == count($data)) {
-            return $data[0];
+            return;
         }
         if (2 != count($data)) {
             throw new \InvalidArgumentException("Data array for verification must have size 1 or 2.");
@@ -301,7 +298,6 @@ class DefaultConflictHandler implements ConflictHandlerInterface
         if ($unconfirmedbalance1 != $unconfirmedbalance2) {
             throw new ConflictHandlerException("No equal results from different services.");
         }
-        return $unconfirmedbalance1;
     }
 
     /**
@@ -310,7 +306,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
     public function listunspent($data)
     {
         if (1 == count($data)) {
-            return $data[0];
+            return;
         }
         if (2 != count($data)) {
             throw new \InvalidArgumentException("Data array for verification must have size 1 or 2.");
@@ -350,21 +346,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                 );
             }
         }
-        return $txrefs1;
     }
-
-    /**
-     * {@inheritdoc}
-     */
-    /*public function sendrawtransaction($data)
-    {
-        for ($i = 0; $i < count($data) - 1; ++$i) {
-            if ($data[$i] != $data[$i + 1]) {
-                throw new ConflictHandlerException("No equal results from different services.");
-            }
-        }
-        return $data[0];
-    }*/
 
     /**
      * {@inheritdoc}
@@ -379,7 +361,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
             if (!$data[0] instanceof Wallet) {
                 throw new \InvalidArgumentException("Elements of Data array must be instances of Wallet class.");
             }
-            return true;
+            return;
         }
         if (2 != count($data)) {
             throw new \InvalidArgumentException("Data array for verification must have size 1 or 2.");
@@ -405,7 +387,6 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                 . " and " . implode(",", $addressesArr2) . " )."
             );
         }
-        return true;
     }
 
     /**
@@ -414,7 +395,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
     public function addaddresses($data)
     {
         if (1 == count($data)) {
-            return true;
+            return;
         }
         if (2 != count($data)) {
             throw new \InvalidArgumentException("Data array for verification must have size 1 or 2.");
@@ -431,38 +412,10 @@ class DefaultConflictHandler implements ConflictHandlerInterface
         $addressesArr2 = $wallet2->getAddresses();
         if ($addressesArr1 != $addressesArr2) {
             throw new ConflictHandlerException(
-                "Different addresses ( " . implode(",", $addressesArr1)
-                . " and " . implode(",", $addressesArr2) . " )."
+                "Different addresses ( \"" . implode(",", $addressesArr1)
+                . "\" and \"" . implode(",", $addressesArr2) . "\" )."
             );
         }
-        return true;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function removeaddress($data)
-    {
-        if (1 == count($data)) {
-            return $data[0];
-        }
-        if (2 != count($data)) {
-            throw new \InvalidArgumentException("Data array for verification must have size 1 or 2.");
-        }
-        /** @var $result1 bool */
-        $result1 = & $data[0];
-        /** @var $result2 bool */
-        $result2 = & $data[1];
-
-        if ((gettype($result1) != 'boolean') || (gettype($result2) != 'boolean')) {
-            throw new \InvalidArgumentException("Elements of Data array must be instances of boolean type.");
-        }
-        if ($result1 != $result2) {
-            throw new ConflictHandlerException(
-                "Different results from method \"removeaddress\"."
-            );
-        }
-        return $result1;
     }
 
     /**
@@ -471,7 +424,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
     public function getaddresses($data)
     {
         if (1 == count($data)) {
-            return $data[0];
+            return;
         }
         if (2 != count($data)) {
             throw new \InvalidArgumentException("Data array for verification must have size 1 or 2.");
@@ -489,6 +442,5 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                 "Different results from method \"getaddresses\"."
             );
         }
-        return $result1;
     }
 }

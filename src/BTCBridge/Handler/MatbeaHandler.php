@@ -157,29 +157,60 @@ class MatbeaHandler extends AbstractHandler
      */
     public function addaddresses(Wallet $wallet, $addresses)
     {
-        return new Wallet();
+        $walletSystemData = $this->getSystemDataForWallet($wallet);
+        if (!$walletSystemData) {
+            throw new \InvalidArgumentException(
+                "System data of passed wallet is empty (for handler \"" . $this->getHandlerName() . "\")."
+            );
+        }
+        /** @noinspection PhpUnusedLocalVariableInspection */
+        $walletId = $walletSystemData["id"];
+        return $wallet;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function removeaddress($walletName, $address)
+    public function removeaddress(Wallet $wallet, $address)
     {
-        return true;
+        $walletSystemData = $this->getSystemDataForWallet($wallet);
+        if (!$walletSystemData) {
+            throw new \InvalidArgumentException(
+                "System data of passed wallet is empty (for handler \"" . $this->getHandlerName() . "\")."
+            );
+        }
+        /** @noinspection PhpUnusedLocalVariableInspection */
+        $walletId = $walletSystemData["id"];
     }
 
     /**
      * {@inheritdoc}
      */
-    public function deletewallet($walletName)
+    public function deletewallet(Wallet $wallet)
     {
+        $walletSystemData = $this->getSystemDataForWallet($wallet);
+        if (!$walletSystemData) {
+            throw new \InvalidArgumentException(
+                "System data of passed wallet is empty (for handler \"" . $this->getHandlerName() . "\")."
+            );
+        }
+        /** @noinspection PhpUnusedLocalVariableInspection */
+        $walletId = $walletSystemData["id"];
     }
 
     /**
      * {@inheritdoc}
      */
-    public function getAddresses($walletName)
+    public function getAddresses(Wallet $wallet)
     {
+        $walletSystemData = $this->getSystemDataForWallet($wallet);
+        if (!$walletSystemData) {
+            throw new \InvalidArgumentException(
+                "System data of passed wallet is empty (for handler \"" . $this->getHandlerName() . "\")."
+            );
+        }
+        /** @noinspection PhpUnusedLocalVariableInspection */
+        $walletId = $walletSystemData["id"];
         return [];
     }
 
@@ -189,16 +220,5 @@ class MatbeaHandler extends AbstractHandler
     public function getHandlerName()
     {
         return "matbea.net";
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getSystemDataForWallet(Wallet $wallet)
-    {
-        if (!$wallet->getName()) {
-            throw new \InvalidArgumentException("No name property in the passed wallet ( " . serialize($wallet) . ")");
-        }
-        return $wallet->getSystemDataByHandler($this->getHandlerName());
     }
 }

@@ -560,12 +560,12 @@ class BlockCypherHandler extends AbstractHandler
      */
     public function createwallet($walletName, $addresses)
     {
-        if ("string" != gettype($walletName) || ("" == $walletName)) {
+        if ("string" != gettype($walletName)) {
             throw new \InvalidArgumentException("name variable must be non empty string.");
         }
         if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
             throw new \InvalidArgumentException(
-                "Wallet name have to contain only alphanumeric, underline and dash symbols (\"" .
+                "Wallet name can't be empty and have to contain only alphanumeric, underline and dash symbols (\"" .
                 $walletName . "\" passed)."
             );
         }
@@ -630,6 +630,7 @@ class BlockCypherHandler extends AbstractHandler
                 if ($this->token) {
                     $wallet->setToken($this->token);
                 }
+                $wallet->setSystemDataByHandler($this->getHandlerName(), ["name"=>$walletName]);
                 return $wallet;
             }
         }
@@ -657,19 +658,17 @@ class BlockCypherHandler extends AbstractHandler
      */
     public function addaddresses(Wallet $wallet, $addresses)
     {
-        if (!$this->getSystemDataForWallet($wallet)) {
+        $walletSystemData = $this->getSystemDataForWallet($wallet);
+        if (!$walletSystemData) {
             throw new \InvalidArgumentException(
                 "No handlers data (\"" . $this->getHandlerName()
                 . "\") in the passed wallet ( " . serialize($wallet) . ")."
             );
         }
-        $walletName = $wallet->getName();
-        if ("" == $walletName) {
-            throw new \InvalidArgumentException("name variable must be non empty string.");
-        }
+        $walletName = $walletSystemData["name"];
         if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
             throw new \InvalidArgumentException(
-                "Wallet name have to contain only alphanumeric, underline and dash symbols (\"" .
+                "Wallet name cant't be empty and have to contain only alphanumeric, underline and dash symbols (\"" .
                 $walletName . "\" passed)."
             );
         }
@@ -727,7 +726,12 @@ class BlockCypherHandler extends AbstractHandler
         }
         if (!isset($content['name'])) {
             throw new \RuntimeException(
-                "Answer does not contain \"tx\" field (url:\"" . $url . "\", post: \"" . $post_data . "\")."
+                "Answer does not contain \"tx\" field (url:\"" . $url . "\", post: \"" . serialize($post_data) . "\")."
+            );
+        }
+        if (!isset($content['addresses'])) {
+            throw new \RuntimeException(
+                "Answer does not contain \"addresses\" field (url:\"" . $url . "\", post: \"" . $post_data . "\")."
             );
         }
         $wallet->setAddresses($content["addresses"]);
@@ -737,14 +741,19 @@ class BlockCypherHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function removeaddress($walletName, $address)
+    public function removeaddress(Wallet $wallet, $address)
     {
-        if ("string" != gettype($walletName) || ("" == $walletName)) {
-            throw new \InvalidArgumentException("name variable must be non empty string.");
+        $walletSystemData = $this->getSystemDataForWallet($wallet);
+        if (!$walletSystemData) {
+            throw new \InvalidArgumentException(
+                "No handlers data (\"" . $this->getHandlerName()
+                . "\") in the passed wallet ( " . serialize($wallet) . ")."
+            );
         }
+        $walletName = $walletSystemData["name"];
         if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
             throw new \InvalidArgumentException(
-                "Wallet name have to contain only alphanumeric, underline and dash symbols (\"" .
+                "Wallet name cant't be empty and have to contain only alphanumeric, underline and dash symbols (\"" .
                 $walletName . "\" passed)."
             );
         }
@@ -788,21 +797,23 @@ class BlockCypherHandler extends AbstractHandler
                 "curl query does not return error occured (url:\"" . $url . "\", httpcode =  " . $httpCode . ".)"
             );
         }
-        return true;
     }
-
 
     /**
      * {@inheritdoc}
      */
-    public function deletewallet($walletName)
+    public function deletewallet(Wallet $wallet)
     {
-        if ("string" != gettype($walletName) || ("" == $walletName)) {
-            throw new \InvalidArgumentException("name variable must be non empty string.");
+        $walletSystemData = $this->getSystemDataForWallet($wallet);
+        if (!$walletSystemData) {
+            throw new \InvalidArgumentException(
+                "System data of passed wallet is empty (for handler \"" . $this->getHandlerName() . "\")."
+            );
         }
+        $walletName = $walletSystemData["name"];
         if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
             throw new \InvalidArgumentException(
-                "Wallet name have to contain only alphanumeric, underline and dash symbols (\"" .
+                "Wallet name can't be empty and have to contain only alphanumeric, underline and dash symbols (\"" .
                 $walletName . "\" passed)."
             );
         }
@@ -855,14 +866,18 @@ class BlockCypherHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function getAddresses($walletName)
+    public function getAddresses(Wallet $wallet)
     {
-        if ("string" != gettype($walletName) || ("" == $walletName)) {
-            throw new \InvalidArgumentException("walletName variable must be non empty string.");
+        $walletSystemData = $this->getSystemDataForWallet($wallet);
+        if (!$walletSystemData) {
+            throw new \InvalidArgumentException(
+                "System data of passed wallet is empty (for handler \"" . $this->getHandlerName() . "\")."
+            );
         }
+        $walletName = $walletSystemData["name"];
         if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
             throw new \InvalidArgumentException(
-                "Wallet name have to contain only alphanumeric, underline and dash symbols (\"" .
+                "Wallet name can't be empty and have to contain only alphanumeric, underline and dash symbols (\"" .
                 $walletName . "\" passed)."
             );
         }
@@ -902,16 +917,5 @@ class BlockCypherHandler extends AbstractHandler
     public function getHandlerName()
     {
         return "blockcypher.com";
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getSystemDataForWallet(Wallet $wallet)
-    {
-        if (!$wallet->getName()) {
-            throw new \InvalidArgumentException("No name property in the passed wallet ( " . serialize($wallet) . ")");
-        }
-        return $wallet->getSystemDataByHandler($this->getHandlerName());
     }
 }

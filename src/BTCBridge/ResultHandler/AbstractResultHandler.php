@@ -9,22 +9,46 @@
  * file that was distributed with this source code.
  */
 
-namespace BTCBridge\ConflictHandler;
+namespace BTCBridge\ResultHandler;
 
-use BTCBridge\Exception\ConflictHandlerException;
+use BTCBridge\Handler\AbstractHandler;
+use BTCBridge\Api\TransactionReference;
+use BTCBridge\Api\Wallet;
+use BTCBridge\Exception\ResultHandlerException;
 use BTCBridge\Api\Transaction;
 use BTCBridge\Api\Address;
 
-//use BTCBridge\Api\Wallet;
-
 /**
- * Interface that all BTCBridge ConflictHandlers must implement.
- * Every method can throw Exception in case of any error occured.
+ * Abstract class that all BTCBridge ResultHandlers must extend and implement.
  *
  * @author Matbea <mail@matbea.com>
  */
-interface ConflictHandlerInterface
+abstract class AbstractResultHandler
 {
+
+    /** @var AbstractHandler[] $handlers */
+    protected $handlers;
+
+    /**
+     * Set handlers to the instanse
+     * @param AbstractHandler[] $handlers
+     *
+     * @throws \InvalidArgumentException if the provided argument $handlers is empty
+     * or any item of this array has incorrect type
+     */
+    public function setHandlers(array $handlers)
+    {
+        if (empty($handlers)) {
+            throw new \InvalidArgumentException("Handlers array can not be empty.");
+        }
+        foreach ($handlers as $handler) {
+            if (!$handler instanceof AbstractHandler) {
+                throw new \InvalidArgumentException("The given handler is not a AbstractHandler");
+            }
+        }
+        $this->handlers = $handlers;
+    }
+
     /**
      * The listtransactions RPC returns the most recent transactions that affect the wallet.
      * The default Address Endpoint strikes a balance between speed of response and data on Addresses.
@@ -35,9 +59,11 @@ interface ConflictHandlerInterface
      *
      * @param Address[] $data  Result from method listtransactions (from all handlers)
      *
-     * @throws ConflictHandlerException in case of any error
+     * @throws ResultHandlerException in case of any error
+     *
+     * @return Address object
      */
-    public function listtransactions($data);
+    abstract public function listtransactions($data);
 
     /**
      * The gettransaction RPC gets detailed information about an in-wallet transaction.
@@ -47,9 +73,11 @@ interface ConflictHandlerInterface
      *
      * @param Transaction[] $data  Result from method gettransaction (from all handlers)
      *
-     * @throws ConflictHandlerException in case of any error
+     * @throws ResultHandlerException in case of any error
+     *
+     * @return Transaction
      */
-    public function gettransaction($data);
+    abstract public function gettransaction($data);
 
     /**
      * The getbalance RPC gets the balance in decimal bitcoins across all accounts or for a particular account.
@@ -60,9 +88,11 @@ interface ConflictHandlerInterface
      *
      * @param array $data  Result from method getbalance (from all handlers)
      *
-     * @throws ConflictHandlerException in case of any error
+     * @throws ResultHandlerException in case of any error
+     *
+     * @return integer        The balance in satoshi
      */
-    public function getbalance($data);
+    abstract public function getbalance($data);
 
     /**
      * Returns the wallet’s total unconfirmed balance.
@@ -73,9 +103,11 @@ interface ConflictHandlerInterface
      *
      * @param array $data  Result from method getunconfirmedbalance (from all handlers)
      *
-     * @throws ConflictHandlerException in case of any error
+     * @throws ResultHandlerException in case of any error
+     *
+     * @return integer        The total number of bitcoins paid to this wallet in unconfirmed transactions (in satoshi)
      */
-    public function getunconfirmedbalance($data);
+    abstract public function getunconfirmedbalance($data);
 
     /**
      * Returns an array of unspent transaction outputs belonging to this wallet.
@@ -87,9 +119,11 @@ interface ConflictHandlerInterface
      * @param TransactionReference[][] $data
      * Result from method listunspent (from all handlers)
      *
-     * @throws ConflictHandlerException in case of any error
+     * @throws ResultHandlerException in case of any error
+     *
+     * @return TransactionReference[] The list of unspent outputs
      */
-    public function listunspent($data);
+    abstract public function listunspent($data);
 
     /**
      * The sendrawtransaction RPC validates a transaction and broadcasts it to the peer-to-peer network.
@@ -97,7 +131,7 @@ interface ConflictHandlerInterface
      *
      * @param array $data  Result from method sendrawtransaction (from all handlers)
      *
-     * @throws ConflictHandlerException in case of any error
+     * @throws ResultHandlerException in case of any error
      *
      * @return string If the transaction was accepted by the node for broadcast, this will be the TXID of the
      * transaction encoded as hex in RPC byte order.
@@ -110,12 +144,12 @@ interface ConflictHandlerInterface
      *
      * @param array $data  Result from method createwallet (from all handlers)
      *
-     * @return boolean  If ok then true
+     * @return Wallet
      *
-     * @throws ConflictHandlerException in case of any error
+     * @throws ResultHandlerException in case of any error
      *
      */
-    public function createwallet($data);
+    abstract public function createwallet($data);
 
     /**
      * This Method adds new addresses into a wallet
@@ -123,10 +157,12 @@ interface ConflictHandlerInterface
      *
      * @param array $data  Result from method addaddresses (from all handlers)
      *
-     * @throws ConflictHandlerException in case of any error
+     * @return Wallet
+     *
+     * @throws ResultHandlerException in case of any error
      *
      */
-    public function addaddresses($data);
+    abstract public function addaddresses($data);
 
     /**
      * This method returns addresses from the passed wallet
@@ -140,5 +176,5 @@ interface ConflictHandlerInterface
      *
      * @return \string[] addresses
      */
-    public function getaddresses($data);
+    abstract public function getaddresses($data);
 }

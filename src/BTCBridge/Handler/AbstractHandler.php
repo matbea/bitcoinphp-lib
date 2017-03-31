@@ -256,16 +256,14 @@ abstract class AbstractHandler
      * This Method adds new addresses into a wallet
      * @link https://www.blockcypher.com/dev/bitcoin/?shell#remove-addresses-from-wallet-endpoint
      *
-     * @param string $walletName Name of wallet
+     * @param Wallet $wallet
      * @param string $address
-     *
-     * @return Wallet result object
      *
      * @throws \RuntimeException in case of error of this type
      * @throws \InvalidArgumentException in case of error of this type
      *
      */
-    abstract public function removeAddress($walletName, $address);
+    abstract public function removeAddress(Wallet $wallet, $address);
 
     /**
      * This Method adds new addresses into a wallet
@@ -287,25 +285,25 @@ abstract class AbstractHandler
      * This Method deletes a passed wallet
      * https://www.blockcypher.com/dev/bitcoin/?shell#delete-wallet-endpoint
      *
-     * @param $walletName
+     * @param Wallet $wallet
      *
      * @throws \RuntimeException in case of error of this type
      */
-    abstract public function deletewallet($walletName);
+    abstract public function deletewallet(Wallet $wallet);
 
     /**
      * This method returns addresses from the passed wallet
      * @link https://bitcoin.org/en/developer-reference#getaddressesbyaccount
      * @link https://www.blockcypher.com/dev/bitcoin/?shell#get-wallet-addresses-endpoint
      *
-     * @param string $walletName
+     * @param Wallet $wallet
      *
      * @throws \RuntimeException in case of any error of this type
      * @throws \InvalidArgumentException in case of any error of this type
      *
      * @return \string[] addresses
      */
-    abstract public function getAddresses($walletName);
+    abstract public function getAddresses(Wallet $wallet);
 
     /**
      * This method returns name of current handler
@@ -324,5 +322,8 @@ abstract class AbstractHandler
      *
      * @return \array systemdata
      */
-    abstract public function getSystemDataForWallet(Wallet $wallet);
+    public function getSystemDataForWallet(Wallet $wallet)
+    {
+        return $wallet->getSystemDataByHandler($this->getHandlerName());
+    }
 }

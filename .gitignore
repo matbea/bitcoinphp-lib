@@ -2,3 +2,7 @@ vendor
 composer.lock
 /nbproject/
 /.idea/
+tests/bitwasp_make_tr.php
+tests/bitwasp_make_tr2.php
+tests/data/wallet.dat
+
