@@ -308,7 +308,7 @@ abstract class AbstractHandler
     /**
      * This method returns name of current handler
      *
-     * @return \string[] Name of the handler
+     * @return \string Name of the handler
      */
     abstract public function getHandlerName();
 
