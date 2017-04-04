@@ -12,8 +12,8 @@ try {
     $bridge = new \BTCBridge\Bridge(
         [
             $blockCypherHandler
-            ,
-            $matbeaHandler
+            //,
+            //$matbeaHandler
             //,
             //(new \BTCBridge\Handler\BlockCypherHandler())->setToken("dc20a175f3594965a8f4707cdcf58a32")
         ],
@@ -43,8 +43,20 @@ try {
 
     //$res = $bridge->listtransactions("12S42ZEw2741DHrivgZHLfX8M58mxb7bFy", []);
     //$res = $bridge->gettransaction("a1405d6b266b63a2d1a5af6b3dee1af9ae60124be16f81b4774059c7dd43aa27");
-    $balance = $bridge->getbalance("1BdxBor4JG76RKLAwJZfHC58fWbgidYukz");
-    $unconfirmedbalance = $bridge->getunconfirmedbalance("1BdxBor4JG76RKLAwJZfHC58fWbgidYukz");
+    //$balance = $bridge->getbalance("1BdxBor4JG76RKLAwJZfHC58fWbgidYukz");
+    //$unconfirmedbalance = $bridge->getunconfirmedbalance("1BdxBor4JG76RKLAwJZfHC58fWbgidYukz");
+
+    $bridge->setOption(\BTCBridge\Bridge::OPT_MINIMAL_FEE_PER_KB, "163054");
+    //$res = $bridge->sendfrom("tst", "1BdxBor4JG76RKLAwJZfHC58fWbgidYukz", 1179178 - 41242 - 0);
+    $sendMoneyOptions = new BTCBridge\Api\SendMoneyOptions();
+    $sendMoneyOptions->setConfirmations(1);
+    $sendMoneyOptions->setComment("");
+    $sendMoneyOptions->setCommentTo("");
+    //$res = $bridge->sendfrom("tst", "1BdxBor4JG76RKLAwJZfHC58fWbgidYukz", 1179178 - 41242 - 0);
+    $smoutput = new \BTCBridge\Api\SMOutput();
+    $smoutput->setAddress("1BdxBor4JG76RKLAwJZfHC58fWbgidYukz")->setAmount(1179178 - 41242 - 0);
+    $res = $bridge->sendmanyEX("tst", [$smoutput], $sendMoneyOptions);
+
     die;
     //$res = $bridge->addaddresses("tst", ["1BdxBor4JG76RKLAwJZfHC58fWbgidYukz"]);
     //$res = $bridge->getAddresses("tst");
@@ -53,7 +65,7 @@ try {
     //$res = $bridge->getAddresses("deadka");
     //$res = $bridge->getAddresses("tst");
 
-    //$res = $bridge->sendfrom("tst", "1BdxBor4JG76RKLAwJZfHC58fWbgidYukz", 1202384 + 13894 + 5500);
+
     //$res = $bridge->sendfrom("tst", "1BdxBor4JG76RKLAwJZfHC58fWbgidYukz", 1202384);
     //$res = $bridge->sendfrom("tst", "1BdxBor4JG76RKLAwJZfHC58fWbgidYukz", 5500 + 2530);
     //$res = $bridge->sendfrom("tst", "1BdxBor4JG76RKLAwJZfHC58fWbgidYukz", 13894 - 2530);

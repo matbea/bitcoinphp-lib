@@ -4,7 +4,7 @@ namespace BTCBridge\Api;
 
 /**
  * Class SMOutput
- * Specieal Output exclusively for SendManyMethod
+ * Special Output exclusively for SendManyMethod
  *
  * @property string address
  * @property int amount
