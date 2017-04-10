@@ -1098,8 +1098,10 @@ class Bridge
             } elseif ($change > 0) {
                 if ($change < intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT))) {
                     $amount = $amount - ( intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT)) - $change );
-                    if ( $amount < intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT)) ) {
-                        throw new \InvalidArgumentException("The transaction amount is too small to send after the fee has been deducted.");
+                    if ($amount < intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT))) {
+                        throw new \InvalidArgumentException(
+                            "The transaction amount is too small to send after the fee has been deducted."
+                        );
                     }
                     $change = intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT));
                 }
@@ -1245,8 +1247,10 @@ class Bridge
             } elseif ($change > 0) {
                 if ($change < intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT))) {
                     $amount = $amount - ( intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT)) - $change );
-                    if ( $amount < intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT)) ) {
-                        throw new \InvalidArgumentException("The transaction amount is too small to send after the fee has been deducted.");
+                    if ($amount < intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT))) {
+                        throw new \InvalidArgumentException(
+                            "The transaction amount is too small to send after the fee has been deducted."
+                        );
                     }
                     $change = intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT));
                 }
@@ -1389,9 +1393,11 @@ class Bridge
                 $requiredCoins = $amount + $requiredFeeWithChange;
             } elseif ($change > 0) {
                 if ($change < intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT))) {
-                    $amount = $amount - ( intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT)) - $change );
+                    $amount = $amount - (intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT)) - $change);
                     if ( $amount < intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT)) ) {
-                        throw new \InvalidArgumentException("The transaction amount is too small to send after the fee has been deducted.");
+                        throw new \InvalidArgumentException(
+                            "The transaction amount is too small to send after the fee has been deducted."
+                        );
                     }
                     $change = intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT));
                 }
@@ -1434,7 +1440,9 @@ class Bridge
             );
         }
         if ($change > $this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT)) {
-            $addressForChange = ("" != $sendMoneyOptions) ? $sendMoneyOptions->getAddressForChange() : $outputsForSpent[0]->getAddress();
+            $addressForChange = ("" != $sendMoneyOptions)
+                ? $sendMoneyOptions->getAddressForChange()
+                : $outputsForSpent[0]->getAddress();
             /** @noinspection PhpUndefinedMethodInspection */
             $transaction = $transaction->payToAddress($change, AddressFactory::fromString($addressForChange));
         }

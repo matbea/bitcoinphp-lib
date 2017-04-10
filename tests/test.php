@@ -2,21 +2,6 @@
 
 require __DIR__ . "/../vendor/autoload.php";
 
-/*$url = 'http://api.matbea.net:8080/user/register';
-$data = array('email' => 'e@ma.il', 'password' => 'qwerty');
-$options = array(
-    'http' => array(
-        'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
-        'method'  => 'POST',
-        'content' => http_build_query($data)
-    )
-);
-$context  = stream_context_create($options);
-$result = file_get_contents($url, false, $context);
-if ($result === FALSE) {  }
-var_dump($result);*/
-
-
 try {
     $logger = new Monolog\Logger('BTCBridge');
     $logfilename = (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') ? "c:/ProgramData/btcbridge.log" : '/tmp/btcbridge.log';
@@ -74,6 +59,27 @@ try {
     //$res = $bridge->sendmanyEX("tst", [$smoutput], $sendMoneyOptions);
     //$res = $bridge->getunconfirmedbalance("12S42ZEw2741DHrivgZHLfX8M58mxb7bFy");
     //$res = $bridge->getbalance("12S42ZEw2741DHrivgZHLfX8M58mxb7bFy");
+
+
+
+    $txs = [
+        //'0000354c3112e062f26df428ab831ff33ae2aca1381982931a33e40c778cbca2',
+        '00004973ccacb026732e8751ef8e9dedd1706b1cf27d5308a5097fd98cca09e7',
+        '0000a524025cca89db9743a6ec940d2a987bbb7f19f392adb3912b85c7a9a12f',
+        '0000a524025cca89db9743a6ec940d2a987bbb7f19f392adb3912b85c7a9a12f',
+        '0000bf2e205a47994c1a9a0525d1d1658216b036baa1fe6bc8d50417e1ac61a8',
+        '0000e58684b78dfd555ade10a49d043d3a2d059940a3a8e2a2b6e15ddfe1153b',
+        '0000fa31b80b4da025c65c32f06881e321d8eefcd949e0e96deb6e43b9bfc219',
+        '00010dea7f32ece989228fc2b8d3209aa165f74742bf14c5435edd3d27239b4e',
+        '00011c29277fc948629be3f9c00fd26d11ec19b952402d1b0df7658fdb33ebeb'
+    ];
+    foreach ($txs as $txhash) {
+        $res = $bridge->gettransaction($txhash);
+    }
+
+
+
+
     $res = $bridge->gettransaction("a1405d6b266b63a2d1a5af6b3dee1af9ae60124be16f81b4774059c7dd43aa27"); //newly minted OK
     $res = $bridge->gettransaction("000010ab9378a649fe2d57387afeb4b066a6fa396cefcc6b91328badd49f319f"); //newly minted OK
     $res = $bridge->gettransaction("00000005aca88ceece655e19070dbfe9416b0c2850da0463f1e4c823bb41f295"); //pubkeyhash

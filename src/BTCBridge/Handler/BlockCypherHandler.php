@@ -392,7 +392,7 @@ class BlockCypherHandler extends AbstractHandler
         } else {
             $url .= "?";
         }
-        $url .= "&unspentOnly=true&confirmations=" . $MinimumConfirmations;
+        $url .= "&unspentOnly=true&confirmations=" . intval($MinimumConfirmations);
         $ch = curl_init();
         $this->prepareCurl($ch, $url);
         $content = curl_exec($ch);
