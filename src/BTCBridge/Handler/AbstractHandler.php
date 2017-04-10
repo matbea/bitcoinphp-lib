@@ -344,7 +344,7 @@ abstract class AbstractHandler
      *
      * @return \string transformed type
      */
-    abstract public function getTransformedTypeOfSignature($type,array $options=[]);
+    abstract public function getTransformedTypeOfSignature($type, array $options = []);
 
     /**
      * This method returns name of current handler

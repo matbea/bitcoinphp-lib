@@ -212,7 +212,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
         for ($i = 0, $ic = count($outputs1); $i < $ic; ++$i) {
             $output1 = & $outputs1[$i];
             $output2 = & $outputs2[$i];
-            if ( (gmp_cmp($output1->getValue(), $output2->getValue()) != 0) ||
+            if ((gmp_cmp($output1->getValue(), $output2->getValue()) != 0) ||
                 ($output1->getScriptType() != $output2->getScripttype()) ||
                 ($output1->getAddresses() != $output2->getAddresses())
             ) {

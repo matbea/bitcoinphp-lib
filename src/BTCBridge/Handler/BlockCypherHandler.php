@@ -888,7 +888,7 @@ class BlockCypherHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function getTransformedTypeOfSignature($type, array $options=[])
+    public function getTransformedTypeOfSignature($type, array $options = [])
     {
         switch ($type) {
             case "pay-to-multi-pubkey-hash":

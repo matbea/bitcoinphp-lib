@@ -2,6 +2,21 @@
 
 require __DIR__ . "/../vendor/autoload.php";
 
+/*$url = 'http://api.matbea.net:8080/user/register';
+$data = array('email' => 'e@ma.il', 'password' => 'qwerty');
+$options = array(
+    'http' => array(
+        'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
+        'method'  => 'POST',
+        'content' => http_build_query($data)
+    )
+);
+$context  = stream_context_create($options);
+$result = file_get_contents($url, false, $context);
+if ($result === FALSE) {  }
+var_dump($result);*/
+
+
 try {
     $logger = new Monolog\Logger('BTCBridge');
     $logfilename = (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') ? "c:/ProgramData/btcbridge.log" : '/tmp/btcbridge.log';

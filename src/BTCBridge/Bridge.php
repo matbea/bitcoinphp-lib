@@ -578,7 +578,7 @@ class Bridge
             $resultWallets [] = $resultWallet;
         }
 
-        if ([] != $errorHandlers) {
+        if (!empty($errorHandlers)) {
             throw new HandlerErrorException(
                 $successHandlers,
                 $errorHandlers,
@@ -629,7 +629,7 @@ class Bridge
             $resultWallets [] = $wallet;
         }
 
-        if ([] != $errorHandlers) {
+        if (!empty($errorHandlers)) {
             throw new HandlerErrorException(
                 $successHandlers,
                 $errorHandlers,
@@ -675,7 +675,7 @@ class Bridge
             $successHandlers [] = $this->handlers[$i];
         }
 
-        if ([] != $errorHandlers) {
+        if (!empty($errorHandlers)) {
             throw new HandlerErrorException(
                 $successHandlers,
                 $errorHandlers,
@@ -712,7 +712,7 @@ class Bridge
             }
             $successHandlers [] = $this->handlers[$i];
         }
-        if ([] != $errorHandlers) {
+        if (!empty($errorHandlers)) {
             throw new HandlerErrorException(
                 $successHandlers,
                 $errorHandlers,
@@ -955,8 +955,10 @@ class Bridge
             } elseif ($change > 0) {
                 if ($change < intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT))) {
                     $amount = $amount - ( intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT)) - $change );
-                    if ( $amount < intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT)) ) {
-                        throw new \InvalidArgumentException("The transaction amount is too small to send after the fee has been deducted.");
+                    if ($amount < intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT))) {
+                        throw new \InvalidArgumentException(
+                            "The transaction amount is too small to send after the fee has been deducted."
+                        );
                     }
                     $change = intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT));
                 }
@@ -1135,7 +1137,7 @@ class Bridge
         }
         $transaction = $transaction->payToAddress($amount, AddressFactory::fromString($address));
         if ($change >= $this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT)) {
-            $addressForChange = (""!=$sendMoneyOptions) ? $sendMoneyOptions->getAddressForChange() : $outputsForSpent[0]->getAddress();
+            $addressForChange = ("" != $sendMoneyOptions) ? $sendMoneyOptions->getAddressForChange() : $outputsForSpent[0]->getAddress();
             /** @noinspection PhpUndefinedMethodInspection */
             $transaction = $transaction->payToAddress($change, AddressFactory::fromString($addressForChange));
         }
@@ -1432,7 +1434,7 @@ class Bridge
             );
         }
         if ($change > $this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT)) {
-            $addressForChange = (""!=$sendMoneyOptions) ? $sendMoneyOptions->getAddressForChange() : $outputsForSpent[0]->getAddress();
+            $addressForChange = ("" != $sendMoneyOptions) ? $sendMoneyOptions->getAddressForChange() : $outputsForSpent[0]->getAddress();
             /** @noinspection PhpUndefinedMethodInspection */
             $transaction = $transaction->payToAddress($change, AddressFactory::fromString($addressForChange));
         }

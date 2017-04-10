@@ -364,7 +364,7 @@ class MatbeaHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function getTransformedTypeOfSignature($type, array $options=[])
+    public function getTransformedTypeOfSignature($type, array $options = [])
     {
         return $type;
     }

@@ -14,8 +14,7 @@ namespace BTCBridge\ConflictHandler;
 use BTCBridge\Exception\ConflictHandlerException;
 use BTCBridge\Api\Transaction;
 use BTCBridge\Api\Address;
-
-//use BTCBridge\Api\Wallet;
+use BTCBridge\Api\TransactionReference;
 
 /**
  * Interface that all BTCBridge ConflictHandlers must implement.

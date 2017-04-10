@@ -89,7 +89,7 @@ class Wallet
         } else {
             $this->setAddresses(array_merge($this->getAddresses(), array($address)));
         }
-        return $this->getAddresses();
+        return $this;
     }
 
     /**
