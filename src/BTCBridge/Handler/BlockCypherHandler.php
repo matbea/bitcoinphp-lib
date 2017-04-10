@@ -54,36 +54,6 @@ class BlockCypherHandler extends AbstractHandler
     }
 
     /**
-     * Prepare curl descriptor for querying
-     *
-     * @param resource $curl A reference to the curl onjet
-     * @param string $url An url address for connecting
-     *
-     * @throws \RuntimeException in case of any curl error
-     */
-    private function prepareCurl(&$curl, $url)
-    {
-        if (!curl_setopt($curl, CURLOPT_URL, $url)) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_USERAGENT, $this->getOption(self::OPT_BASE_BROWSER))) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1)) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_HEADER, 0)) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0)) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0)) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-    }
-
-    /**
      * {@inheritdoc}
      */
     public function listtransactions($address, array $options = array())
@@ -285,26 +255,30 @@ class BlockCypherHandler extends AbstractHandler
         $tx->setVoutSz($content["vout_sz"]);
         $tx->setVinSz($content["vin_sz"]);
         $tx->setConfirmations($content["confirmations"]);
-        foreach ($content["inputs"] as $inp) { //HUERAGA - вроде как 20 штук по дефолту выдаётся, надо, чтобы все
+        foreach ($content["inputs"] as $inp) { //20 штук по дефолту выдаётся, надо, чтобы все
             $input = new TransactionInput();
-            if (isset($inp["addresses"])) {
-                $input->setAddresses($inp["addresses"]);
-            }
+            $input->setAddresses((isset($inp["addresses"]) && (null!==$inp["addresses"]))?$inp["addresses"]:[]);
             if (isset($inp["prev_hash"])) {
                 $input->setPrevHash($inp["prev_hash"]);
             }
             if (isset($inp["output_index"])) {
                 $input->setOutputIndex($inp["output_index"]);
             }
-            $input->setOutputValue($inp["output_value"]);
-            $input->setScriptType($inp["script_type"]);
+            $val = gmp_init(strval($inp["output_value"]));
+            $input->setOutputValue($val);
+            $options = [];
+            if ( $input->getOutputIndex() == -1 ) {
+                $options["newlyminted"] = true;
+            }
+            $input->setScriptType($this->getTransformedTypeOfSignature($inp["script_type"], $options));
             $tx->addInput($input);
         }
         foreach ($content["outputs"] as $outp) {
             $output = new TransactionOutput();
-            $output->setAddresses($outp["addresses"]);
-            $output->setValue($outp["value"]);
-            $output->setScriptType($outp["script_type"]);
+            $output->setAddresses((isset($outp["addresses"]) && (null!==$outp["addresses"]))?$outp["addresses"]:[]);
+            $output->setValue(gmp_init(strval($outp["value"])));
+            $options = [];
+            $output->setScriptType($this->getTransformedTypeOfSignature($outp["script_type"], $options));
             $tx->addOutput($output);
         }
         return $tx;
@@ -909,6 +883,33 @@ class BlockCypherHandler extends AbstractHandler
             sort($content['addresses']);
         }
         return $content['addresses'];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getTransformedTypeOfSignature($type, array $options=[])
+    {
+        switch ($type) {
+            case "pay-to-multi-pubkey-hash":
+                return "pay-to-multi-pubkey-hash"; break;
+            case "pay-to-pubkey-hash":
+                return "pubkeyhash"; break;
+            case "pay-to-pubkey":
+                return "pubkey"; break;
+            case "empty": {
+                if ( isset($options["newlyminted"]) ) {
+                    return "pubkey"; break;
+                }
+                return "nonstandard"; break;
+            }
+            case "null-data":
+                return "nulldata"; break;
+            case "pay-to-script-hash":
+                return "scripthash"; break;
+            default:
+                return $type; break;
+        }
     }
 
     /**

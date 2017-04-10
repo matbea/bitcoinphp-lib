@@ -179,7 +179,8 @@ class DefaultConflictHandler implements ConflictHandlerInterface
             throw new \InvalidArgumentException("Elements of Data array must be instances of Transaction class.");
         }
         if (($tx1->getBlockHash() !== $tx2->getBlockHash()) ||
-            ($tx1->getConfirmed() !== $tx2->getConfirmed()) ||
+            // because of txhash=000010ab9378a649fe2d57387afeb4b066a6fa396cefcc6b91328badd49f319f (different time)
+            //($tx1->getConfirmed() !== $tx2->getConfirmed()) ||
             ($tx1->getLockTime() !== $tx2->getLockTime()) ||
             ($tx1->getDoubleSpend() !== $tx2->getDoubleSpend()) ||
             ($tx1->getVinSz() !== $tx2->getVinSz()) ||
@@ -207,14 +208,31 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                 "Different sizes of outputs ( " . serialize($outputs1) . " and " . serialize($outputs2) . " )."
             );
         }
+        $error = false;
         for ($i = 0, $ic = count($outputs1); $i < $ic; ++$i) {
+            $output1 = & $outputs1[$i];
+            $output2 = & $outputs2[$i];
+            if ( (gmp_cmp($output1->getValue(), $output2->getValue()) != 0) ||
+                ($output1->getScriptType() != $output2->getScripttype()) ||
+                ($output1->getAddresses() != $output2->getAddresses())
+            ) {
+                $error = true;
+                break;
+            }
+        }
+        if ($error) {
+            throw new ConflictHandlerException(
+                "Outputs are not equal ( " . serialize($outputs1) . " ), ( " . serialize($outputs2) . " )."
+            );
+        }
+        /*(for ($i = 0, $ic = count($outputs1); $i < $ic; ++$i) {
             $output = & $outputs1[$i];
             $found = false;
             for ($j = 0, $jc = count($outputs2); $j < $jc; ++$j) {
                 $outputc = & $outputs2[$j];
-                if (($output->getValue() != $outputc->getValue()) ||
+                if ( (gmp_cmp($output->getValue(), $outputc->getValue()) != 0) ||
                     ($output->getScriptType() != $outputc->getScripttype()) ||
-                    ($output->getSpentBy() != $outputc->getSpentBy()) ||
+                    //($output->getSpentBy() != $outputc->getSpentBy()) ||
                     ($output->getAddresses() != $outputc->getAddresses())
                 ) {
                     continue;
@@ -227,7 +245,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                     "No found output in second array ( " . serialize($output) . " )."
                 );
             }
-        }
+        }*/
         $inputs1 = $tx1->getInputs() ? $tx1->getInputs() : [];
         $inputs2 = $tx2->getInputs() ? $tx2->getInputs() : [];
         if (count($inputs1) != count($inputs2)) {
@@ -235,7 +253,27 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                 "Different sizes of inputs ( " . serialize($inputs1) . " and " . serialize($inputs2) . " )."
             );
         }
+        $error = false;
         for ($i = 0, $ic = count($inputs1); $i < $ic; ++$i) {
+            $input1 = & $inputs1[$i];
+            $input2 = & $inputs2[$i];
+            if (($input1->getPrevHash() != $input2->getPrevHash()) ||
+                ($input1->getOutputIndex() != $input2->getOutputIndex()) ||
+                ($input1->getAddresses() != $input2->getAddresses()) ||
+                ( gmp_cmp($input1->getOutputValue(), $input2->getOutputValue()) != 0 ) ||
+                ($input1->getScriptType() != $input2->getScriptType())
+            ) {
+                /** @noinspection PhpUnusedLocalVariableInspection */
+                $error = true;
+                break;
+            }
+            if ($error) {
+                throw new ConflictHandlerException(
+                    "Inputs are not equal ( " . serialize($inputs1) . " ), ( " . serialize($inputs2) . " )."
+                );
+            }
+        }
+        /*for ($i = 0, $ic = count($inputs1); $i < $ic; ++$i) {
             $input = & $inputs1[$i];
             $found = false;
             for ($j = 0, $jc = count($inputs2); $j < $jc; ++$j) {
@@ -243,6 +281,8 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                 if (($input->getPrevHash() != $inputc->getPrevHash()) ||
                     ($input->getOutputIndex() != $inputc->getOutputIndex()) ||
                     ($input->getAddresses() != $inputc->getAddresses()) ||
+                    //($input->getOutputValue() != $inputc->getOutputValue()
+                    ( gmp_cmp($input->getOutputValue(), $inputc->getOutputValue()) != 0 ) ||
                     ($input->getScriptType() != $inputc->getScriptType())
                 ) {
                     continue;
@@ -255,7 +295,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                     "No found output in second array ( " . serialize($input) . " )."
                 );
             }
-        }
+        }*/
     }
 
     /**

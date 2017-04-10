@@ -103,6 +103,37 @@ abstract class AbstractHandler
     }
 
     /**
+     * Prepare curl descriptor for querying
+     *
+     * @param resource $curl A reference to the curl onjet
+     * @param string $url An url address for connecting
+     *
+     * @throws \RuntimeException in case of any curl error
+     */
+    protected function prepareCurl(&$curl, $url)
+    {
+        if (!curl_setopt($curl, CURLOPT_URL, $url)) {
+            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
+        }
+        if (!curl_setopt($curl, CURLOPT_USERAGENT, $this->getOption(self::OPT_BASE_BROWSER))) {
+            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
+        }
+        if (!curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1)) {
+            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
+        }
+        if (!curl_setopt($curl, CURLOPT_HEADER, 0)) {
+            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
+        }
+        if (!curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0)) {
+            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
+        }
+        if (!curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0)) {
+            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
+        }
+    }
+
+
+    /**
      * The listtransactions RPC returns the most recent transactions that affect the wallet.
      * The default Address Endpoint strikes a balance between speed of response and data on Addresses.
      * It returns more information about an address’ transactions than the Address Balance Endpoint
@@ -306,11 +337,23 @@ abstract class AbstractHandler
     abstract public function getAddresses(Wallet $wallet);
 
     /**
+     * This method transforms name of signature type to common
+     *
+     * @param string $type
+     * @param array $options
+     *
+     * @return \string transformed type
+     */
+    abstract public function getTransformedTypeOfSignature($type,array $options=[]);
+
+    /**
      * This method returns name of current handler
+     *
      *
      * @return \string Name of the handler
      */
     abstract public function getHandlerName();
+
 
     /**
      * This method returns system Id from the passed wallet

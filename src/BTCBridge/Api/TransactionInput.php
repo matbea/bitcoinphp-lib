@@ -18,19 +18,19 @@ class TransactionInput
      * Does not exist for coinbase transactions.
      * @var string
      */
-    protected $prevHash = null;
+    protected $prevHash;
 
     /**
      * Index in the previous transaction of the output being spent. Does not exist for coinbase transactions.
      * @var int
      */
-    protected $outputIndex = null;
+    protected $outputIndex;
 
     /**
      * Value of the output being spent. Does not exist for coinbase transactions.
-     * @var int
+     * @var GMP
      */
-    protected $outputValue = null;
+    protected $outputValue;
 
     /**
      * Addresses referenced in the transaction output being spent.
@@ -42,7 +42,7 @@ class TransactionInput
      * Script type in the transaction output being spent.
      * @var string
      */
-    protected $scriptType = null;
+    protected $scriptType;
 
 
     /**
@@ -94,7 +94,7 @@ class TransactionInput
     /**
      * Value of the output being spent. Does not exist for coinbase transactions.
      *
-     * @return int
+     * @return GMP
      */
     public function getOutputValue()
     {
@@ -104,7 +104,7 @@ class TransactionInput
     /**
      * Value of the output being spent. Does not exist for coinbase transactions.
      *
-     * @param int $outputValue
+     * @param GMP $outputValue
      * @return $this
      */
     public function setOutputValue($outputValue)

@@ -27,15 +27,9 @@ class TransactionOutput
 
     /**
      * Value transferred by the transaction output, in satoshi.
-     * @var int
+     * @var GMP
      */
     protected $value = null;
-
-    /**
-     * Output address
-     * @var string
-     */
-    protected $address = null;
 
     /**
      * Addresses that correspond to this output
@@ -53,13 +47,13 @@ class TransactionOutput
      * The transaction hash that spent this output. Only returned for outputs that have been spent.
      * @var string
      */
-    protected $spentBy = null;
+    //protected $spentBy = null;
 
 
     /**
      * Value transferred by the transaction output, in satoshi.
      *
-     * @return int
+     * @return GMP
      */
     public function getValue()
     {
@@ -69,31 +63,12 @@ class TransactionOutput
     /**
      * Value transferred by the transaction output, in satoshi.
      *
-     * @param int $value
+     * @param GMP $value
      * @return $this
      */
     public function setValue($value)
     {
         $this->value = $value;
-        return $this;
-    }
-
-
-    /**
-     * @return string
-     */
-    public function getAddress()
-    {
-        return $this->address;
-    }
-
-    /**
-     * @param string $address
-     * @return $this
-     */
-    public function setAddress($address)
-    {
-        $this->address = $address;
         return $this;
     }
 
@@ -157,28 +132,6 @@ class TransactionOutput
     public function setScriptType($scriptType)
     {
         $this->scriptType = $scriptType;
-        return $this;
-    }
-
-    /**
-     * Optional The transaction hash that spent this output. Only returned for outputs that have been spent.
-     *
-     * @return string
-     */
-    public function getSpentBy()
-    {
-        return $this->spentBy;
-    }
-
-    /**
-     * Optional The transaction hash that spent this output. Only returned for outputs that have been spent.
-     *
-     * @param string $spentBy
-     * @return $this
-     */
-    public function setSpentBy($spentBy)
-    {
-        $this->spentBy = $spentBy;
         return $this;
     }
 }
