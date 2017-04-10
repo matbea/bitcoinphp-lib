@@ -28,7 +28,7 @@ class TransactionInput
 
     /**
      * Value of the output being spent. Does not exist for coinbase transactions.
-     * @var GMP
+     * @var \GMP
      */
     protected $outputValue;
 
@@ -94,7 +94,7 @@ class TransactionInput
     /**
      * Value of the output being spent. Does not exist for coinbase transactions.
      *
-     * @return GMP
+     * @return \GMP
      */
     public function getOutputValue()
     {
@@ -104,7 +104,7 @@ class TransactionInput
     /**
      * Value of the output being spent. Does not exist for coinbase transactions.
      *
-     * @param GMP $outputValue
+     * @param \GMP $outputValue
      * @return $this
      */
     public function setOutputValue($outputValue)

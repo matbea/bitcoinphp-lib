@@ -27,7 +27,7 @@ class TransactionOutput
 
     /**
      * Value transferred by the transaction output, in satoshi.
-     * @var GMP
+     * @var \GMP
      */
     protected $value = null;
 
@@ -53,7 +53,7 @@ class TransactionOutput
     /**
      * Value transferred by the transaction output, in satoshi.
      *
-     * @return GMP
+     * @return \GMP
      */
     public function getValue()
     {
@@ -63,7 +63,7 @@ class TransactionOutput
     /**
      * Value transferred by the transaction output, in satoshi.
      *
-     * @param GMP $value
+     * @param \GMP $value
      * @return $this
      */
     public function setValue($value)
