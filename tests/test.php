@@ -12,8 +12,8 @@ try {
     $bridge = new \BTCBridge\Bridge(
         [
             $blockCypherHandler
-            ,
-            $matbeaHandler
+            //,
+            //$matbeaHandler
             //,
             //(new \BTCBridge\Handler\BlockCypherHandler())->setToken("dc20a175f3594965a8f4707cdcf58a32")
         ],
@@ -23,6 +23,19 @@ try {
     );
 
     $bridge->setOption(\BTCBridge\Bridge::OPT_LOCAL_PATH_OF_WALLET_DATA, __DIR__ . "/data/wallet.dat");
+
+    $wallet = new \BTCBridge\Api\Wallet();
+    $wallet->setSystemDataByHandler($blockCypherHandler->getHandlerName(), ["name"=>"todo1"]);
+    $addresses = $bridge->getAddresses($wallet);
+    //$wallet->setSystemDataByHandler($matbeaHandler->getHandlerName(), ["id"=>"123","name"=>"todo"]);
+    $bridge->deletewallet($wallet);
+    $wallet = $bridge->createwallet("todo1", ["1BdxBor4JG76RKLAwJZfHC58fWbgidYukz"]);
+    $wallet = $bridge->addaddresses($wallet, ["12S42ZEw2741DHrivgZHLfX8M58mxb7bFy"]);
+    $wallet = $bridge->removeAddress($wallet, "1BdxBor4JG76RKLAwJZfHC58fWbgidYukz;12S42ZEw2741DHrivgZHLfX8M58mxb7bFy");
+
+
+
+    //$balance = $bridge->getbalance("1BdxBor4JG76RKLAwJZfHC58fWbgidYukz");
 
     //$addr = $bridge->getnewaddress("sdf");
     //$wif = $bridge->dumpprivkey("sdf1", "1JTypCDWN7a7GNHaZdwjUkGQyFwhFqTuGL");
@@ -63,15 +76,14 @@ try {
 
 
     $txs = [
-        //'0000354c3112e062f26df428ab831ff33ae2aca1381982931a33e40c778cbca2',
+        '0000354c3112e062f26df428ab831ff33ae2aca1381982931a33e40c778cbca2',
         '00004973ccacb026732e8751ef8e9dedd1706b1cf27d5308a5097fd98cca09e7',
-        '0000a524025cca89db9743a6ec940d2a987bbb7f19f392adb3912b85c7a9a12f',
-        '0000a524025cca89db9743a6ec940d2a987bbb7f19f392adb3912b85c7a9a12f',
+        '0000a524025cca89db9743a6ec940d2a987bbb7f19f392adb3912b85c7a9a12f'/*CRASH*/,
         '0000bf2e205a47994c1a9a0525d1d1658216b036baa1fe6bc8d50417e1ac61a8',
         '0000e58684b78dfd555ade10a49d043d3a2d059940a3a8e2a2b6e15ddfe1153b',
-        '0000fa31b80b4da025c65c32f06881e321d8eefcd949e0e96deb6e43b9bfc219',
+        '0000fa31b80b4da025c65c32f06881e321d8eefcd949e0e96deb6e43b9bfc219'/*CRASH*/,
         '00010dea7f32ece989228fc2b8d3209aa165f74742bf14c5435edd3d27239b4e',
-        '00011c29277fc948629be3f9c00fd26d11ec19b952402d1b0df7658fdb33ebeb'
+        '00011c29277fc948629be3f9c00fd26d11ec19b952402d1b0df7658fdb33ebeb'/*CRASH*/
     ];
     foreach ($txs as $txhash) {
         $res = $bridge->gettransaction($txhash);

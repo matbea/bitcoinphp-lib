@@ -604,7 +604,7 @@ class Bridge
      * @throws HandlerErrorException in case of any error with Handler occured
      *
      */
-    public function addaddresses(Wallet $wallet, $addresses)
+    public function addAddresses(Wallet $wallet, $addresses)
     {
         if ((!is_array($addresses)) || (count($addresses) == 0)) {
             throw new \InvalidArgumentException("addresses variable must be non empty array.");
@@ -619,7 +619,7 @@ class Bridge
 
         for ($i = 0, $ic = count($this->handlers); $i < $ic; ++$i) {
             try {
-                $wallet = $this->handlers[$i]->addaddresses($wallet, $addresses);
+                $wallet = $this->handlers[$i]->addAddresses($wallet, $addresses);
             } catch (\RuntimeException $ex) {
                 $this->loggerHandler->error($ex->getMessage());
                 $errorHandlers [] = $this->handlers[$i];
@@ -633,11 +633,11 @@ class Bridge
             throw new HandlerErrorException(
                 $successHandlers,
                 $errorHandlers,
-                "Some handler(s) raised error (method addaddresses)"
+                "Some handler(s) raised error (method addAddresses)"
             );
         }
-        $this->conflictHandler->addaddresses($resultWallets);
-        return $this->resultHandler->addaddresses($resultWallets);
+        $this->conflictHandler->addAddresses($resultWallets);
+        return $this->resultHandler->addAddresses($resultWallets);
     }
 
     /**
@@ -646,6 +646,8 @@ class Bridge
      *
      * @param Wallet $wallet
      * @param string $address
+     *
+     * @return \BTCBridge\Api\Wallet
      *
      * @throws \RuntimeException in case of any runtime error
      * @throws \InvalidArgumentException if error of this type
@@ -663,16 +665,19 @@ class Bridge
         $successHandlers = [];
         /** @var $errorHandlers AbstractHandler[] */
         $errorHandlers = [];
+        /** @var $resultWallets Wallet[] */
+        $resultWallets = [];
 
         for ($i = 0, $ic = count($this->handlers); $i < $ic; ++$i) {
             try {
-                $this->handlers[$i]->removeaddress($wallet, $address);
+                $wallet = $this->handlers[$i]->removeaddress($wallet, $address);
             } catch (\RuntimeException $ex) {
                 $this->loggerHandler->error($ex->getMessage());
                 $errorHandlers [] = $this->handlers[$i];
                 continue;
             }
             $successHandlers [] = $this->handlers[$i];
+            $resultWallets [] = $wallet;
         }
 
         if (!empty($errorHandlers)) {
@@ -682,6 +687,8 @@ class Bridge
                 "Some handler(s) raised error (method removeaddress)"
             );
         }
+        $this->conflictHandler->removeAddress($resultWallets);
+        return $this->resultHandler->removeAddress($resultWallets);
     }
 
 
@@ -742,7 +749,7 @@ class Bridge
             $results [] = $result;
         }
         $this->conflictHandler->getAddresses($results);
-        return $this->resultHandler->getaddresses($results);
+        return $this->resultHandler->getAddresses($results);
     }
 
     /**

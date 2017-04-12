@@ -152,29 +152,43 @@ abstract class AbstractResultHandler
     abstract public function createwallet($data);
 
     /**
-     * This Method adds new addresses into a wallet
-     * @link https://www.blockcypher.com/dev/bitcoin/?shell#add-addresses-to-wallet-endpoint
+     * This Method removes address from the passed wallet
+     * @link https://www.blockcypher.com/dev/bitcoin/?shell#remove-addresses-from-wallet-endpoint
      *
-     * @param array $data  Result from method addaddresses (from all handlers)
+     * @param array $data  Result from method removeAddress (from all handlers)
      *
      * @return Wallet
      *
      * @throws ResultHandlerException in case of any error
      *
      */
-    abstract public function addaddresses($data);
+    abstract public function removeAddress($data);
+
+
+    /**
+     * This Method adds new addresses into a wallet
+     * @link https://www.blockcypher.com/dev/bitcoin/?shell#add-addresses-to-wallet-endpoint
+     *
+     * @param array $data  Result from method addAddresses (from all handlers)
+     *
+     * @return Wallet
+     *
+     * @throws ResultHandlerException in case of any error
+     *
+     */
+    abstract public function addAddresses($data);
 
     /**
      * This method returns addresses from the passed wallet
      * @link https://bitcoin.org/en/developer-reference#getaddressesbyaccount
      * @link https://www.blockcypher.com/dev/bitcoin/?shell#get-wallet-addresses-endpoint
      *
-     * @param array $data  Result from method addaddresses (from all handlers)
+     * @param array $data  Result from method getAddresses (from all handlers)
      *
      * @throws \RuntimeException in case of any error of this type
      * @throws \InvalidArgumentException in case of any error of this type
      *
      * @return \string[] addresses
      */
-    abstract public function getaddresses($data);
+    abstract public function getAddresses($data);
 }

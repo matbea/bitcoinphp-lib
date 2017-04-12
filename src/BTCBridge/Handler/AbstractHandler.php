@@ -284,11 +284,13 @@ abstract class AbstractHandler
     abstract public function createwallet($walletName, $addresses);
 
     /**
-     * This Method adds new addresses into a wallet
+     * This Method removes address from the wallet
      * @link https://www.blockcypher.com/dev/bitcoin/?shell#remove-addresses-from-wallet-endpoint
      *
      * @param Wallet $wallet
      * @param string $address
+     *
+     * @return Wallet result object
      *
      * @throws \RuntimeException in case of error of this type
      * @throws \InvalidArgumentException in case of error of this type
@@ -309,7 +311,7 @@ abstract class AbstractHandler
      * @throws \InvalidArgumentException in case of error of this type
      *
      */
-    abstract public function addaddresses(Wallet $wallet, $addresses);
+    abstract public function addAddresses(Wallet $wallet, $addresses);
 
 
     /**

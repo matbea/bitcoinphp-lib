@@ -302,7 +302,7 @@ class MatbeaHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function addaddresses(Wallet $wallet, $addresses)
+    public function addAddresses(Wallet $wallet, $addresses)
     {
         $walletSystemData = $this->getSystemDataForWallet($wallet);
         if (!$walletSystemData) {
@@ -328,6 +328,7 @@ class MatbeaHandler extends AbstractHandler
         }
         /** @noinspection PhpUnusedLocalVariableInspection */
         $walletId = $walletSystemData["id"];
+        return $wallet;
     }
 
     /**

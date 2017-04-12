@@ -7,19 +7,9 @@ namespace BTCBridge\Api;
  *
  * @package BTCBridge\Api
  *
- * @property string token
- * @property string name
- * @property string[] addresses
- * @property array systemData
  */
 class Wallet
 {
-
-    /**
-     * Token of the wallet
-     * @var string
-     */
-    protected $token;
 
     /**
      * Name of the wallet
@@ -38,25 +28,6 @@ class Wallet
      * @var array
      */
     protected $systemData;
-
-    /**
-     * @return string
-     */
-    public function getToken()
-    {
-        return $this->token;
-    }
-
-    /**
-     * @param string $token
-     * @return $this
-     */
-    public function setToken($token)
-    {
-        $this->token = $token;
-        return $this;
-    }
-
 
     /**
      * @return string

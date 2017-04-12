@@ -4,5 +4,6 @@ composer.lock
 /.idea/
 tests/bitwasp_make_tr.php
 tests/bitwasp_make_tr2.php
+tests/bitwasp_make_tr3.php
 tests/data/wallet.dat
 

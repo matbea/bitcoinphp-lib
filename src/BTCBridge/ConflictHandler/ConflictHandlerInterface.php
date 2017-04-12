@@ -14,7 +14,7 @@ namespace BTCBridge\ConflictHandler;
 use BTCBridge\Exception\ConflictHandlerException;
 use BTCBridge\Api\Transaction;
 use BTCBridge\Api\Address;
-use BTCBridge\Api\TransactionReference;
+//use BTCBridge\Api\TransactionReference;
 
 /**
  * Interface that all BTCBridge ConflictHandlers must implement.
@@ -117,27 +117,39 @@ interface ConflictHandlerInterface
     public function createwallet($data);
 
     /**
-     * This Method adds new addresses into a wallet
-     * @link https://www.blockcypher.com/dev/bitcoin/?shell#add-addresses-to-wallet-endpoint
+     * This Method removes address from the passed wallet
+     * @link https://www.blockcypher.com/dev/bitcoin/?shell#remove-addresses-from-wallet-endpoint
      *
-     * @param array $data  Result from method addaddresses (from all handlers)
+     * @param array $data  Result from method removeAddress (from all handlers)
      *
      * @throws ConflictHandlerException in case of any error
      *
      */
-    public function addaddresses($data);
+    public function removeAddress($data);
+
+
+    /**
+     * This Method adds new addresses to the passed wallet
+     * @link https://www.blockcypher.com/dev/bitcoin/?shell#add-addresses-to-wallet-endpoint
+     *
+     * @param array $data  Result from method addAddresses (from all handlers)
+     *
+     * @throws ConflictHandlerException in case of any error
+     *
+     */
+    public function addAddresses($data);
 
     /**
      * This method returns addresses from the passed wallet
      * @link https://bitcoin.org/en/developer-reference#getaddressesbyaccount
      * @link https://www.blockcypher.com/dev/bitcoin/?shell#get-wallet-addresses-endpoint
      *
-     * @param array $data  Result from method addaddresses (from all handlers)
+     * @param array $data  Result from method getAddresses (from all handlers)
      *
      * @throws \RuntimeException in case of any error of this type
      * @throws \InvalidArgumentException in case of any error of this type
      *
      * @return \string[] addresses
      */
-    public function getaddresses($data);
+    public function getAddresses($data);
 }

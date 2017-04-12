@@ -12,7 +12,9 @@
 namespace BTCBridge\ConflictHandler;
 
 //use BitWasp\Bitcoin\Transaction\Transaction;
+//use BitWasp\Bitcoin\Transaction\TransactionOutput;
 use BTCBridge\Api\Transaction;
+use BTCBridge\Api\TransactionOutput;
 use BTCBridge\Api\Address;
 use \BTCBridge\Api\TransactionReference;
 //use BTCBridge\Api\Wallet;
@@ -195,12 +197,19 @@ class DefaultConflictHandler implements ConflictHandlerInterface
         }
         $addressesArr1 = $tx1->getAddresses();
         $addressesArr2 = $tx2->getAddresses();
-        if ($addressesArr1 != $addressesArr2) {
-            throw new ConflictHandlerException(
-                "Different addresses ( " . implode(",", $addressesArr1)
-                . " and " . implode(",", $addressesArr2) . " )."
-            );
+        //If at least one of outputs is multisig/nonstandard - we'll not make strong check
+        $multisigOrnonstandardOutputs = array_filter($tx1->getOutputs(), function (TransactionOutput $output) /*use ($txr)*/ {
+                return in_array($output->getScriptType(),["multisig","nonstandard"]);
+            });
+        if (empty($multisigOrnonstandardOutputs)) {
+            if ($addressesArr1 != $addressesArr2) {
+                throw new ConflictHandlerException(
+                    "Different addresses ( " . implode(",", $addressesArr1)
+                    . " and " . implode(",", $addressesArr2) . " )."
+                );
+            }
         }
+
         $outputs1 = $tx1->getOutputs();
         $outputs2 = $tx2->getOutputs();
         if (count($outputs1) != count($outputs2)) {
@@ -213,11 +222,18 @@ class DefaultConflictHandler implements ConflictHandlerInterface
             $output1 = & $outputs1[$i];
             $output2 = & $outputs2[$i];
             if ((gmp_cmp($output1->getValue(), $output2->getValue()) != 0) ||
-                ($output1->getScriptType() != $output2->getScripttype()) ||
-                ($output1->getAddresses() != $output2->getAddresses())
+                ($output1->getScriptType() != $output2->getScripttype())
             ) {
                 $error = true;
                 break;
+            } else {
+                if (!in_array($output1->getScriptType(),["multisig","nonstandard"])) {
+                    if ($output1->getAddresses() != $output2->getAddresses()) {
+                        $error = true;
+                        break;
+                    }
+                }
+
             }
         }
         if ($error) {
@@ -432,7 +448,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
     /**
      * {@inheritdoc}
      */
-    public function addaddresses($data)
+    public function removeAddress($data)
     {
         if (1 == count($data)) {
             return;
@@ -461,7 +477,36 @@ class DefaultConflictHandler implements ConflictHandlerInterface
     /**
      * {@inheritdoc}
      */
-    public function getaddresses($data)
+    public function addAddresses($data)
+    {
+        if (1 == count($data)) {
+            return;
+        }
+        if (2 != count($data)) {
+            throw new \InvalidArgumentException("Data array for verification must have size 1 or 2.");
+        }
+        /** @var $wallet1 Wallet */
+        $wallet1 = & $data[0];
+        /** @var $wallet2 Wallet */
+        $wallet2 = & $data[1];
+
+        if ((!$wallet1 instanceof Wallet) || (!$wallet2 instanceof Wallet)) {
+            throw new \InvalidArgumentException("Elements of Data array must be instances of Wallet class.");
+        }
+        $addressesArr1 = $wallet1->getAddresses();
+        $addressesArr2 = $wallet2->getAddresses();
+        if ($addressesArr1 != $addressesArr2) {
+            throw new ConflictHandlerException(
+                "Different addresses ( \"" . implode(",", $addressesArr1)
+                . "\" and \"" . implode(",", $addressesArr2) . "\" )."
+            );
+        }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getAddresses($data)
     {
         if (1 == count($data)) {
             return;
@@ -479,7 +524,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
         }
         if ($result1 != $result2) {
             throw new ConflictHandlerException(
-                "Different results from method \"getaddresses\"."
+                "Different results from method \"getAddresses\"."
             );
         }
     }

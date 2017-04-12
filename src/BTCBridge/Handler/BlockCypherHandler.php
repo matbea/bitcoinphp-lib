@@ -16,7 +16,11 @@ use BTCBridge\Api\TransactionInput;
 use BTCBridge\Api\TransactionOutput;
 use BTCBridge\Api\Address;
 use BTCBridge\Api\Wallet;
-use \BTCBridge\Api\TransactionReference;
+use BTCBridge\Api\TransactionReference;
+use BitWasp\Bitcoin\Script\ScriptFactory;
+use BitWasp\Bitcoin\Script\Classifier\OutputClassifier;
+use BitWasp\Bitcoin\Key\PublicKeyFactory;
+use BitWasp\Bitcoin\Script\Script;
 
 /**
  * Returns data to user's btc-requests using BlockCypher-API
@@ -51,6 +55,61 @@ class BlockCypherHandler extends AbstractHandler
         }
         $this->token = $token;
         return $this;
+    }
+
+    /**
+     * Extract destination bitcoin-addresses from the multisig output
+     *
+     * @param string $script hex of ScriptPubKey of output, must be multisig
+     *
+     * @throws \InvalidArgumentException in case of error of this type
+     * @throws \RuntimeException in case of error of this type
+     *
+     * @return \string addresses
+     */
+
+    private function extractAddressesFromMultisigScript($script)
+    {
+        if (("string" != gettype($script)) || ("" == $script)) {
+            throw new \InvalidArgumentException("script variable must be non empty string.");
+        }
+        try {
+            $objScript = ScriptFactory::fromHex($script);
+        } catch (\InvalidArgumentException $ex) {
+            throw new \InvalidArgumentException($ex->getMessage());
+        }
+        if (!$objScript instanceof Script) {
+            throw new \InvalidArgumentException("Passed string is not valid hex of scriptPubkey hex (" . $script . ").");
+        }
+        //$decode = (new OutputClassifier())->decode($script);
+        $solutions = null;
+        $type = (new OutputClassifier())->classify($objScript,$solutions);
+        if ( in_array($type,["multisig","nonstandard"]) ) {
+            return []; //This moment we'll not elaborate this case
+        } else {
+            throw new \InvalidArgumentException(
+                "Type of passed scriptPubKey is not multisig or nonstandard (" . $script . ")."
+            );
+        }
+
+        /*
+        if (("multisig" !== $type) && ("nonstandard" !== $type)) {
+            throw new \InvalidArgumentException("Type of signature of passed scriptPubkey (" . $script . ") is not multisig.");
+        }
+        if (!is_array($solutions) || empty($solutions)) {
+            throw new \InvalidArgumentException("Incorrect solutions of passed scriptPubkey (" . $script . ").");
+        }
+        $addresses = [];
+        foreach ($solutions as $solution) {
+            try {
+                $addr =  PublicKeyFactory::fromHex($solution)->getAddress();
+                $addresses [] = $addr->getAddress();
+            } catch (\Exception $ex) {
+                throw new \InvalidArgumentException("Passed scriptPubkey does not ontain valid addresses (" . $script . ").");
+            }
+        }
+        return $addresses;
+        */
     }
 
     /**
@@ -277,8 +336,29 @@ class BlockCypherHandler extends AbstractHandler
             $output = new TransactionOutput();
             $output->setAddresses((isset($outp["addresses"]) && (null!==$outp["addresses"]))?$outp["addresses"]:[]);
             $output->setValue(gmp_init(strval($outp["value"])));
+            if ("pay-to-multi-pubkey-hash" == $outp["script_type"]) {
+                //TODO after fixing bug in bit-wasp with the multisig/nonstandard
+                /** @noinspection PhpUnusedLocalVariableInspection */
+                $multisigAddresses = $this->extractAddressesFromMultisigScript($outp["script"]);
+                /*$previousOutputAddresses = $output->getAddresses();
+                $output->setAddresses($multisigAddresses);
+                $txAddresses = $tx->getAddresses();
+                if (!empty($previousOutputAddresses)) {
+                    $tx->setAddresses(array_diff($txAddresses, $previousOutputAddresses));
+                    $txAddresses = $tx->getAddresses();
+                }
+                if ( !empty($multisigAddresses) ) {
+                    foreach ( $multisigAddresses as $addr ) {
+                        if ( !in_array($addr,$txAddresses) ) {
+                            $txAddresses [] = $addr;
+                        }
+                    }
+                    $tx->setAddresses($txAddresses);
+                }*/
+            }
             $options = [];
-            $output->setScriptType($this->getTransformedTypeOfSignature($outp["script_type"], $options));
+            $script_type = $this->getTransformedTypeOfSignature($outp["script_type"], $options);
+            $output->setScriptType($script_type);
             $tx->addOutput($output);
         }
         return $tx;
@@ -289,7 +369,7 @@ class BlockCypherHandler extends AbstractHandler
      */
     public function getbalance($walletName, $Confirmations = 1, $IncludeWatchOnly = false)
     {
-        if ("string" != gettype($walletName) || ("" == $walletName)) {
+        if ("string" != gettype($walletName)) {
             throw new \InvalidArgumentException("Account variable must be non empty string.");
         }
         if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
@@ -591,22 +671,10 @@ class BlockCypherHandler extends AbstractHandler
             throw new \RuntimeException("curl does not return a json object (url:\"" . $url . "\").");
         }
         if (isset($content['error'])) {
-            if ("Error: wallet exists" != $content['error']) {
-                throw new \RuntimeException(
-                    "Error \"" . $content['error'] . "\" returned (url:\"" . $url . "\", post: \""
-                    . json_encode($post_data) . "\")."
-                );
-            } else { //Library will not throw error in case of modifying wallet data
-                //(because sometime rollback is needed)
-                $wallet = new Wallet;
-                $wallet->setName($walletName);
-                $wallet->setAddresses($addresses);
-                if ($this->token) {
-                    $wallet->setToken($this->token);
-                }
-                $wallet->setSystemDataByHandler($this->getHandlerName(), ["name"=>$walletName]);
-                return $wallet;
-            }
+            throw new \RuntimeException(
+                "Error \"" . $content['error'] . "\" returned (url:\"" . $url . "\", post: \""
+                . json_encode($post_data) . "\")."
+            );
         }
         if (!isset($content['name'])) {
             throw new \RuntimeException(
@@ -620,9 +688,6 @@ class BlockCypherHandler extends AbstractHandler
             $content["addresses"] = [];
         }
         $wallet->setAddresses($content["addresses"]);
-        if (isset($content["token"])) {
-            $wallet->setToken($content["token"]);
-        }
         $wallet->setSystemDataByHandler($this->getHandlerName(), ["name"=>$walletName]);
         return $wallet;
     }
@@ -630,7 +695,7 @@ class BlockCypherHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function addaddresses(Wallet $wallet, $addresses)
+    public function addAddresses(Wallet $wallet, $addresses)
     {
         $walletSystemData = $this->getSystemDataForWallet($wallet);
         if (!$walletSystemData) {
@@ -735,10 +800,12 @@ class BlockCypherHandler extends AbstractHandler
             throw new \InvalidArgumentException("address variable must be non empty string.");
         }
         $url = $this->getOption(self::OPT_BASE_URL) . "wallets/" . $walletName . "/addresses";
+        $sep = "?";
         if ($this->token) {
-            $url .= "?token=" . $this->token;
+            $url .= $sep .  "token=" . $this->token;
+            $sep = "&";
         }
-        $url .= "&address=" . $address;
+        $url .= $sep . "address=" . $address;
         $curl = curl_init();
         if (!curl_setopt($curl, CURLOPT_URL, $url)) {
             throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
@@ -771,6 +838,8 @@ class BlockCypherHandler extends AbstractHandler
                 "curl query does not return error occured (url:\"" . $url . "\", httpcode =  " . $httpCode . ".)"
             );
         }
+        $wallet->setAddresses(array_diff($wallet->getAddresses(), [$address]));
+        return $wallet;
     }
 
     /**
@@ -879,10 +948,9 @@ class BlockCypherHandler extends AbstractHandler
         }
         if (!isset($content['addresses'])) {
             $content['addresses'] = [];
-        } else {
-            sort($content['addresses']);
         }
-        return $content['addresses'];
+        $wallet->setAddresses($content['addresses']);
+        return $wallet->getAddresses();
     }
 
     /**
@@ -892,7 +960,7 @@ class BlockCypherHandler extends AbstractHandler
     {
         switch ($type) {
             case "pay-to-multi-pubkey-hash":
-                return "pay-to-multi-pubkey-hash"; break;
+                return "multisig"; break;
             case "pay-to-pubkey-hash":
                 return "pubkeyhash"; break;
             case "pay-to-pubkey":
@@ -908,7 +976,8 @@ class BlockCypherHandler extends AbstractHandler
             case "pay-to-script-hash":
                 return "scripthash"; break;
             default:
-                return $type; break;
+                return $type;
+                break;
         }
     }
 

@@ -162,7 +162,7 @@ class DefaultResultHandler extends AbstractResultHandler
     /**
      * {@inheritdoc}
      */
-    public function addaddresses($data)
+    public function removeAddress($data)
     {
         if (1 == count($data)) {
             return $data[0];
@@ -184,7 +184,29 @@ class DefaultResultHandler extends AbstractResultHandler
     /**
      * {@inheritdoc}
      */
-    public function getaddresses($data)
+    public function addAddresses($data)
+    {
+        if (1 == count($data)) {
+            return $data[0];
+        }
+        if (2 != count($data)) {
+            throw new \InvalidArgumentException("Data array for verification must have size 1 or 2.");
+        }
+        /** @var $wallet1 Wallet */
+        $wallet1 = & $data[0];
+        /** @var $wallet2 Wallet */
+        $wallet2 = & $data[1];
+
+        if ((!$wallet1 instanceof Wallet) || (!$wallet2 instanceof Wallet)) {
+            throw new \InvalidArgumentException("Elements of Data array must be instances of Wallet class.");
+        }
+        return $wallet1;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getAddresses($data)
     {
         if (1 == count($data)) {
             return $data[0];
