@@ -12,8 +12,8 @@ try {
     $bridge = new \BTCBridge\Bridge(
         [
             $blockCypherHandler
-            //,
-            //$matbeaHandler
+            ,
+            $matbeaHandler
             //,
             //(new \BTCBridge\Handler\BlockCypherHandler())->setToken("dc20a175f3594965a8f4707cdcf58a32")
         ],
@@ -25,13 +25,16 @@ try {
     $bridge->setOption(\BTCBridge\Bridge::OPT_LOCAL_PATH_OF_WALLET_DATA, __DIR__ . "/data/wallet.dat");
 
     $wallet = new \BTCBridge\Api\Wallet();
-    $wallet->setSystemDataByHandler($blockCypherHandler->getHandlerName(), ["name"=>"todo1"]);
-    $addresses = $bridge->getAddresses($wallet);
-    //$wallet->setSystemDataByHandler($matbeaHandler->getHandlerName(), ["id"=>"123","name"=>"todo"]);
-    $bridge->deletewallet($wallet);
-    $wallet = $bridge->createwallet("todo1", ["1BdxBor4JG76RKLAwJZfHC58fWbgidYukz"]);
-    $wallet = $bridge->addaddresses($wallet, ["12S42ZEw2741DHrivgZHLfX8M58mxb7bFy"]);
-    $wallet = $bridge->removeAddress($wallet, "1BdxBor4JG76RKLAwJZfHC58fWbgidYukz;12S42ZEw2741DHrivgZHLfX8M58mxb7bFy");
+    $wallet->setSystemDataByHandler($blockCypherHandler->getHandlerName(), ["name"=>"todo5"]);
+    //$addresses = $bridge->getAddresses($wallet);
+    $wallet->setSystemDataByHandler($matbeaHandler->getHandlerName(), ["id"=>"123","name"=>"todo5"]);
+    $wallet = $bridge->createWallet("todo5", ["1BdxBor4JG76RKLAwJZfHC58fWbgidYukz","12S42ZEw2741DHrivgZHLfX8M58mxb7bFy"]);
+    $bridge->deleteWallet($wallet);
+
+    //$wallet = $bridge->addaddresses($wallet, ["12S42ZEw2741DHrivgZHLfX8M58mxb7bFy"]);
+    //$wallet = $bridge->removeAddress($wallet, "1BdxBor4JG76RKLAwJZfHC58fWbgidYukz;12S42ZEw2741DHrivgZHLfX8M58mxb7bFy");
+    $wallet = $bridge->removeAddress($wallet, "1BdxBor4JG76RKLAwJZfHC58fWbgidYukz");
+    $wallet = $bridge->removeAddress($wallet, "1BdxBor4JG76RKLAwJZfHC58fWbgidYukz");
 
 
 
@@ -41,15 +44,15 @@ try {
     //$wif = $bridge->dumpprivkey("sdf1", "1JTypCDWN7a7GNHaZdwjUkGQyFwhFqTuGL");
 
     //It will raise the exception , because % sybol is contained in the string
-    //$res = $bridge->createwallet("deadka1-%_", []);
+    //$res = $bridge->createWallet("deadka1-%_", []);
 
     //$wallet = new BTCBridge\Api\Wallet();
     //$wallet->setSystemDataByHandler($blockCypherHandler->getHandlerName(), ["name"=>"todo"]);
     //$wallet->setSystemDataByHandler($matbeaHandler->getHandlerName(), ["id"=>"123","name"=>"todo"]);
-    //$bridge->deletewallet($wallet);
-    //$bridge->deletewallet($wallet);
-    //$wallet = $bridge->createwallet("todo", ["1BdxBor4JG76RKLAwJZfHC58fWbgidYukz"]);
-    //$wallet = $bridge->createwallet("todo", ["1BdxBor4JG76RKLAwJZfHC58fWbgidYukz"]);
+    //$bridge->deleteWallet($wallet);
+    //$bridge->deleteWallet($wallet);
+    //$wallet = $bridge->createWallet("todo", ["1BdxBor4JG76RKLAwJZfHC58fWbgidYukz"]);
+    //$wallet = $bridge->createWallet("todo", ["1BdxBor4JG76RKLAwJZfHC58fWbgidYukz"]);
     //$wallet = $bridge->addaddresses($wallet, ["12S42ZEw2741DHrivgZHLfX8M58mxb7bFy"]);
     //$res = $bridge->removeAddress($wallet, "1BdxBor4JG76RKLAwJZfHC58fWbgidYukz");
     //$addresses = $res = $bridge->getAddresses($wallet);
@@ -142,7 +145,9 @@ try {
     exit(1);
 } catch (\BTCBridge\Exception\HandlerErrorException $ex) {
     $successHandlers = $ex->getSuccessHandlers();
-    $errorHandlers = $ex->getErrorHandlers();
+    $errorHandler = $ex->getErrorHandler();
+    $unusedHandlers = $ex->getUnusedHandlers();
+    $result = $ex->getResult();
     fwrite(STDERR, $ex->getMessage() . PHP_EOL);
     exit(1);
 } catch (\BTCBridge\Exception\ConflictHandlerException $ex) {

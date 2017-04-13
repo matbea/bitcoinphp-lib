@@ -106,4 +106,23 @@ class Wallet
         $this->systemData[$handlerId] = $data;
         return $this;
     }
+
+    /**
+     * @return \array
+     */
+    public function getSystemData()
+    {
+        return $this->systemData;
+    }
+
+    /**
+     * @param \array $data
+     *
+     * @return $this
+     */
+    public function setSystemData($data)
+    {
+        $this->systemData = $data;
+        return $this;
+    }
 }

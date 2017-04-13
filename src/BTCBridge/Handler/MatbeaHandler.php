@@ -13,7 +13,6 @@ namespace BTCBridge\Handler;
 
 use BTCBridge\Api\Transaction;
 use BTCBridge\Api\Wallet;
-
 use BTCBridge\Api\TransactionInput;
 use BTCBridge\Api\TransactionOutput;
 use BTCBridge\Api\Address;
@@ -287,16 +286,13 @@ class MatbeaHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function createwallet($walletName, $addresses)
+    public function createWallet($walletName, $addresses)
     {
-        if ("todo" == $walletName) {
-            $wallet = new Wallet();
-            $wallet->setAddresses($addresses);
-            $wallet->setName($walletName);
-            $wallet->setSystemDataByHandler($this->getHandlerName(), ["name"=>$walletName, "id"=>123456789]);
-            return $wallet;
-        }
-        return new Wallet();
+        $wallet = new Wallet();
+        $wallet->setAddresses($addresses);
+        $wallet->setName($walletName);
+        $wallet->setSystemDataByHandler($this->getHandlerName(), ["name"=>$walletName, "id"=>123456789]);
+        return $wallet;
     }
 
     /**
@@ -318,7 +314,7 @@ class MatbeaHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function removeaddress(Wallet $wallet, $address)
+    public function removeAddress(Wallet $wallet, $address)
     {
         $walletSystemData = $this->getSystemDataForWallet($wallet);
         if (!$walletSystemData) {
@@ -334,7 +330,7 @@ class MatbeaHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function deletewallet(Wallet $wallet)
+    public function deleteWallet(Wallet $wallet)
     {
         $walletSystemData = $this->getSystemDataForWallet($wallet);
         if (!$walletSystemData) {

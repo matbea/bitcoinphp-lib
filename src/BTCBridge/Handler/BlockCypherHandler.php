@@ -612,7 +612,7 @@ class BlockCypherHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function createwallet($walletName, $addresses)
+    public function createWallet($walletName, $addresses)
     {
         if ("string" != gettype($walletName)) {
             throw new \InvalidArgumentException("name variable must be non empty string.");
@@ -780,7 +780,7 @@ class BlockCypherHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function removeaddress(Wallet $wallet, $address)
+    public function removeAddress(Wallet $wallet, $address)
     {
         $walletSystemData = $this->getSystemDataForWallet($wallet);
         if (!$walletSystemData) {
@@ -845,7 +845,7 @@ class BlockCypherHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function deletewallet(Wallet $wallet)
+    public function deleteWallet(Wallet $wallet)
     {
         $walletSystemData = $this->getSystemDataForWallet($wallet);
         if (!$walletSystemData) {

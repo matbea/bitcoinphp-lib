@@ -281,7 +281,7 @@ abstract class AbstractHandler
      * @throws \InvalidArgumentException in case of error of this type
      *
      */
-    abstract public function createwallet($walletName, $addresses);
+    abstract public function createWallet($walletName, $addresses);
 
     /**
      * This Method removes address from the wallet
@@ -322,7 +322,7 @@ abstract class AbstractHandler
      *
      * @throws \RuntimeException in case of error of this type
      */
-    abstract public function deletewallet(Wallet $wallet);
+    abstract public function deleteWallet(Wallet $wallet);
 
     /**
      * This method returns addresses from the passed wallet

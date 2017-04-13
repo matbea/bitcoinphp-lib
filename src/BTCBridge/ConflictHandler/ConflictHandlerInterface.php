@@ -107,14 +107,14 @@ interface ConflictHandlerInterface
      * This Method Creates a new wallet
      * @link https://www.blockcypher.com/dev/bitcoin/?shell#create-wallet-endpoint
      *
-     * @param array $data  Result from method createwallet (from all handlers)
+     * @param array $data  Result from method createWallet (from all handlers)
      *
      * @return boolean  If ok then true
      *
      * @throws ConflictHandlerException in case of any error
      *
      */
-    public function createwallet($data);
+    public function createWallet($data);
 
     /**
      * This Method removes address from the passed wallet

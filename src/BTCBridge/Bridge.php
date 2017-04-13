@@ -540,9 +540,9 @@ class Bridge
      * @throws HandlerErrorException in case of any error with Handler occured
      *
      */
-    public function createwallet($walletName, $addresses)
+    public function createWallet($walletName, $addresses)
     {
-        if ("string" != gettype($walletName) || ("" == $walletName)) {
+        if ("string" != gettype($walletName)) {
             throw new \InvalidArgumentException("Wallet name variable must be non empty string.");
         }
         if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
@@ -556,37 +556,49 @@ class Bridge
         }
         /** @var $resultWallets Wallet[] */
         $resultWallets = [];
-
         /** @var $successHandlers AbstractHandler[] */
         $successHandlers = [];
-        /** @var $errorHandlers AbstractHandler[] */
-        $errorHandlers = [];
+        /** @var $errorHandler AbstractHandler */
+        $errorHandler = null;
+        /** @var $unusedHandlers AbstractHandler[] */
+        $unusedHandlers = [];
 
         for ($i = 0, $ic = count($this->handlers); $i < $ic; ++$i) {
             try {
-                $resultWallet = $this->handlers[$i]->createwallet($walletName, $addresses);
+                $resultWallet = $this->handlers[$i]->createWallet($walletName, $addresses);
                 /*$resultWallet->setSystemDataByHandler(
                     $this->handlers[$i]->getHandlerName(),
                     $this->handlers[$i]->getSystemDataForWallet($resultWallet)
                 );*/
             } catch (\RuntimeException $ex) {
                 $this->loggerHandler->error($ex->getMessage());
-                $errorHandlers [] = $this->handlers[$i];
-                continue;
+                $errorHandler = $this->handlers[$i];
+                break;
             }
             $successHandlers [] = $this->handlers[$i];
             $resultWallets [] = $resultWallet;
         }
 
-        if (!empty($errorHandlers)) {
+        if ($errorHandler) {
+            $resultWallet = new Wallet();
+            if (!empty($successHandlers)) {
+                $this->resultHandler->setHandlers($successHandlers);
+                $resultWallet = $this->resultHandler->createWallet($resultWallets);
+                $this->resultHandler->setHandlers($this->handlers);
+            }
+            for ($j = $i + 1; $j < $ic; ++$j) {
+                $unusedHandlers [] = $this->handlers[$j];
+            }
             throw new HandlerErrorException(
                 $successHandlers,
-                $errorHandlers,
-                "Some handler(s) raised error (method createwallet)"
+                $errorHandler,
+                $unusedHandlers,
+                $resultWallet,
+                '"' . $errorHandler->getHandlerName() . '" handler raised error (method createWallet).'
             );
         }
-        $this->conflictHandler->createwallet($resultWallets); //In case of error throw will be raised
-        return $this->resultHandler->createwallet($resultWallets);
+        $this->conflictHandler->createWallet($resultWallets); //In case of error throw will be raised
+        return $this->resultHandler->createWallet($resultWallets);
     }
 
     /**
@@ -610,30 +622,43 @@ class Bridge
             throw new \InvalidArgumentException("addresses variable must be non empty array.");
         }
 
-        /** @var $successHandlers AbstractHandler[] */
-        $successHandlers = [];
-        /** @var $errorHandlers AbstractHandler[] */
-        $errorHandlers = [];
         /** @var $resultWallets Wallet[] */
         $resultWallets = [];
+        /** @var $successHandlers AbstractHandler[] */
+        $successHandlers = [];
+        /** @var $errorHandler AbstractHandler */
+        $errorHandler = null;
+        /** @var $unusedHandlers AbstractHandler[] */
+        $unusedHandlers = [];
 
         for ($i = 0, $ic = count($this->handlers); $i < $ic; ++$i) {
             try {
                 $wallet = $this->handlers[$i]->addAddresses($wallet, $addresses);
             } catch (\RuntimeException $ex) {
                 $this->loggerHandler->error($ex->getMessage());
-                $errorHandlers [] = $this->handlers[$i];
-                continue;
+                $errorHandler = $this->handlers[$i];
+                break;
             }
             $successHandlers [] = $this->handlers[$i];
             $resultWallets [] = $wallet;
         }
 
-        if (!empty($errorHandlers)) {
+        if ($errorHandler) {
+            $resultWallet = new Wallet();
+            if (!empty($successHandlers)) {
+                $this->resultHandler->setHandlers($successHandlers);
+                $resultWallet = $this->resultHandler->addAddresses($resultWallets);
+                $this->resultHandler->setHandlers($this->handlers);
+            }
+            for ($j = $i + 1; $j < $ic; ++$j) {
+                $unusedHandlers [] = $this->handlers[$j];
+            }
             throw new HandlerErrorException(
                 $successHandlers,
-                $errorHandlers,
-                "Some handler(s) raised error (method addAddresses)"
+                $errorHandler,
+                $unusedHandlers,
+                $resultWallet,
+                '"' . $errorHandler->getHandlerName() . '" handler raised error (method addAddresses).'
             );
         }
         $this->conflictHandler->addAddresses($resultWallets);
@@ -661,30 +686,43 @@ class Bridge
             throw new \InvalidArgumentException("address variable must be non empty string.");
         }
 
-        /** @var $successHandlers AbstractHandler[] */
-        $successHandlers = [];
-        /** @var $errorHandlers AbstractHandler[] */
-        $errorHandlers = [];
         /** @var $resultWallets Wallet[] */
         $resultWallets = [];
+        /** @var $successHandlers AbstractHandler[] */
+        $successHandlers = [];
+        /** @var $errorHandler AbstractHandler */
+        $errorHandler = null;
+        /** @var $unusedHandlers AbstractHandler[] */
+        $unusedHandlers = [];
 
         for ($i = 0, $ic = count($this->handlers); $i < $ic; ++$i) {
             try {
-                $wallet = $this->handlers[$i]->removeaddress($wallet, $address);
+                $wallet = $this->handlers[$i]->removeAddress($wallet, $address);
             } catch (\RuntimeException $ex) {
                 $this->loggerHandler->error($ex->getMessage());
-                $errorHandlers [] = $this->handlers[$i];
-                continue;
+                $errorHandler = $this->handlers[$i];
+                break;
             }
             $successHandlers [] = $this->handlers[$i];
             $resultWallets [] = $wallet;
         }
 
-        if (!empty($errorHandlers)) {
+        if ($errorHandler) {
+            $resultWallet = new Wallet();
+            if (!empty($successHandlers)) {
+                $this->resultHandler->setHandlers($successHandlers);
+                $resultWallet = $this->resultHandler->removeAddress($resultWallets);
+                $this->resultHandler->setHandlers($this->handlers);
+            }
+            for ($j = $i + 1; $j < $ic; ++$j) {
+                $unusedHandlers [] = $this->handlers[$j];
+            }
             throw new HandlerErrorException(
                 $successHandlers,
-                $errorHandlers,
-                "Some handler(s) raised error (method removeaddress)"
+                $errorHandler,
+                $unusedHandlers,
+                $resultWallet,
+                '"' . $errorHandler->getHandlerName() . '" handler raised error (method removeAddress).'
             );
         }
         $this->conflictHandler->removeAddress($resultWallets);
@@ -702,28 +740,35 @@ class Bridge
      * @throws \InvalidArgumentException if error of this type
      *
      */
-    public function deletewallet(Wallet $wallet)
+    public function deleteWallet(Wallet $wallet)
     {
         /** @var $successHandlers AbstractHandler[] */
         $successHandlers = [];
-        /** @var $errorHandlers AbstractHandler[] */
-        $errorHandlers = [];
+        /** @var $errorHandler AbstractHandler */
+        $errorHandler = null;
+        /** @var $unusedHandlers AbstractHandler[] */
+        $unusedHandlers = [];
 
         for ($i = 0, $ic = count($this->handlers); $i < $ic; ++$i) {
             try {
-                $this->handlers[$i]->deletewallet($wallet);
+                $this->handlers[$i]->deleteWallet($wallet);
             } catch (\RuntimeException $ex) {
                 $this->loggerHandler->error($ex->getMessage());
-                $errorHandlers [] = $this->handlers[$i];
-                continue;
+                $errorHandler = $this->handlers[$i];
+                break;
             }
             $successHandlers [] = $this->handlers[$i];
         }
-        if (!empty($errorHandlers)) {
+        if ($errorHandler) {
+            for ($j = $i + 1; $j < $ic; ++$j) {
+                $unusedHandlers [] = $this->handlers[$j];
+            }
             throw new HandlerErrorException(
                 $successHandlers,
-                $errorHandlers,
-                "Some handler(s) raised error (method deleteWallet)"
+                $errorHandler,
+                $unusedHandlers,
+                null,/*This method does not return wallet, so we can pass null only*/
+                '"' . $errorHandler->getHandlerName() . '" handler raised error (method deleteWallet).'
             );
         }
     }

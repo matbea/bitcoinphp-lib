@@ -38,12 +38,12 @@ abstract class AbstractResultHandler
      */
     public function setHandlers(array $handlers)
     {
-        if (empty($handlers)) {
+        /*if (empty($handlers)) {
             throw new \InvalidArgumentException("Handlers array can not be empty.");
-        }
+        }*/
         foreach ($handlers as $handler) {
             if (!$handler instanceof AbstractHandler) {
-                throw new \InvalidArgumentException("The given handler is not a AbstractHandler");
+                throw new \InvalidArgumentException("The given handler is not an AbstractHandler");
             }
         }
         $this->handlers = $handlers;
@@ -142,14 +142,14 @@ abstract class AbstractResultHandler
      * This Method Creates a new wallet
      * @link https://www.blockcypher.com/dev/bitcoin/?shell#create-wallet-endpoint
      *
-     * @param array $data  Result from method createwallet (from all handlers)
+     * @param array $data  Result from method createWallet (from all handlers)
      *
      * @return Wallet
      *
      * @throws ResultHandlerException in case of any error
      *
      */
-    abstract public function createwallet($data);
+    abstract public function createWallet($data);
 
     /**
      * This Method removes address from the passed wallet

@@ -117,7 +117,7 @@ class DefaultResultHandler extends AbstractResultHandler
     /**
      * {@inheritdoc}
      */
-    public function createwallet($data)
+    public function createWallet($data)
     {
         if (!is_array($data)) {
             throw new \InvalidArgumentException("\$data variable must be the array of instances of Wallet class.");
@@ -127,6 +127,17 @@ class DefaultResultHandler extends AbstractResultHandler
             if (!$data[0] instanceof Wallet) {
                 throw new \InvalidArgumentException("Elements of Data array must be instances of Wallet class.");
             }
+            $systemData = $this->handlers[0]->getSystemDataForWallet($data[0]);
+            if (!$systemData) {
+                throw new ResultHandlerException(
+                    "No handlers data (\"" . $this->handlers[0]->getHandlerName() .
+                    "\") in the passed wallet ( " . serialize($data[0]) . ")"
+                );
+            }
+            $data[0]->setSystemDataByHandler(
+                $this->handlers[0]->getHandlerName(),
+                $systemData
+            );
             return $data[0];
         }
         if (2 != count($data)) {
@@ -165,6 +176,17 @@ class DefaultResultHandler extends AbstractResultHandler
     public function removeAddress($data)
     {
         if (1 == count($data)) {
+            $systemData = $this->handlers[0]->getSystemDataForWallet($data[0]);
+            if (!$systemData) {
+                throw new ResultHandlerException(
+                    "No handlers data (\"" . $this->handlers[0]->getHandlerName() .
+                    "\") in the passed wallet ( " . serialize($data[0]) . ")"
+                );
+            }
+            $data[0]->setSystemDataByHandler(
+                $this->handlers[0]->getHandlerName(),
+                $systemData
+            );
             return $data[0];
         }
         if (2 != count($data)) {
@@ -187,6 +209,17 @@ class DefaultResultHandler extends AbstractResultHandler
     public function addAddresses($data)
     {
         if (1 == count($data)) {
+            $systemData = $this->handlers[0]->getSystemDataForWallet($data[0]);
+            if (!$systemData) {
+                throw new ResultHandlerException(
+                    "No handlers data (\"" . $this->handlers[0]->getHandlerName() .
+                    "\") in the passed wallet ( " . serialize($data[0]) . ")"
+                );
+            }
+            $data[0]->setSystemDataByHandler(
+                $this->handlers[0]->getHandlerName(),
+                $systemData
+            );
             return $data[0];
         }
         if (2 != count($data)) {

@@ -407,7 +407,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
     /**
      * {@inheritdoc}
      */
-    public function createwallet($data)
+    public function createWallet($data)
     {
         if (!is_array($data)) {
             throw new \InvalidArgumentException("\$data variable must be the array of instances of Wallet class.");
