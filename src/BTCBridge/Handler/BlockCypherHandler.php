@@ -216,6 +216,7 @@ class BlockCypherHandler extends AbstractHandler
                 $txr->setConfirmations($txref["confirmations"]);
                 $txr->setDoubleSpend($txref["double_spend"]);
                 $txr->setSpent($txref["spent"]);
+                $txr->setConfirmed($txref["confirmed"]);
                 $txr->setTxHash($txref["tx_hash"]);
                 $txr->setTxInputN($txref["tx_input_n"]);
                 $txr->setTxOutputN($txref["tx_output_n"]);
@@ -304,11 +305,15 @@ class BlockCypherHandler extends AbstractHandler
             throw new \RuntimeException("Error \"" . $content['error'] . "\" returned (url:\"" . $url . "\").");
         }
         $tx = new Transaction;
-        $tx->setBlockHash($content["block_hash"]);
+        if (isset($content["block_hash"])) {
+            $tx->setBlockHash($content["block_hash"]);
+        }
         $tx->setBlockHeight($content["block_height"]);
         $tx->setHash($content["hash"]);
         $tx->setAddresses($content["addresses"]);
-        $tx->setConfirmed($content["confirmed"]);
+        if (isset($content["confirmed"])) {
+            $tx->setConfirmed(strtotime($content["confirmed"]));
+        }
         $tx->setLockTime($content["lock_time"]);
         $tx->setDoubleSpend($content["double_spend"]);
         $tx->setVoutSz($content["vout_sz"]);
@@ -536,6 +541,7 @@ class BlockCypherHandler extends AbstractHandler
                 $txr->setTxOutputN($txref["tx_output_n"]);
                 $txr->setValue($txref["value"]);
                 $txr->setAddress($txref['address']);
+                $txr->setConfirmed(strtotime($txref["confirmed"]));
                 $filteredTxs = array_filter($result, function (TransactionReference $tx) use ($txr) {
                         return $tx->isEqual($txr);
                 });

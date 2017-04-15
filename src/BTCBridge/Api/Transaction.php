@@ -39,7 +39,7 @@ class Transaction
 
     /**
      * Time at which transaction was included in a block; only present for confirmed transactions.
-     * @var string
+     * @var int
      */
     protected $confirmed = null;
 
@@ -138,7 +138,7 @@ class Transaction
     /**
      * Time at which transaction was included in a block; only present for confirmed transactions.
      *
-     * @return string
+     * @return int
      */
     public function getConfirmed()
     {
@@ -148,7 +148,7 @@ class Transaction
     /**
      * Time at which transaction was included in a block; only present for confirmed transactions.
      *
-     * @param string $confirmed
+     * @param int $confirmed
      * @return $this
      */
     public function setConfirmed($confirmed)

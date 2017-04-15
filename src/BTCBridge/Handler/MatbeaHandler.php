@@ -129,11 +129,15 @@ class MatbeaHandler extends AbstractHandler
             );
         }
         $tx = new Transaction;
-        $tx->setBlockHash($content["transaction"]["block_hash"]);
-        $tx->setBlockHeight($content["transaction"]["block_height"]);
+        if ( 0 != $content["transaction"]["block_height"] ) {
+            $tx->setConfirmed(strtotime($content["transaction"]["confirmed"]));
+            $tx->setBlockHash($content["transaction"]["block_hash"]);
+            $tx->setBlockHeight($content["transaction"]["block_height"]);
+        } else {
+            $tx->setBlockHeight(-1);
+        }
         $tx->setHash($content["transaction"]["hash"]);
         $tx->setAddresses($content["transaction"]["addresses"]);
-        $tx->setConfirmed($content["transaction"]["confirmed"]);
         $tx->setLockTime($content["transaction"]["lock_time"]);
         $tx->setDoubleSpend($content["transaction"]["double_spend"]);
         $tx->setVoutSz($content["transaction"]["vout_sz"]);

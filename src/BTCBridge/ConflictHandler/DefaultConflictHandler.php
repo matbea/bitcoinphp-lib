@@ -184,7 +184,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
             // because of txhash=000010ab9378a649fe2d57387afeb4b066a6fa396cefcc6b91328badd49f319f (different time)
             //($tx1->getConfirmed() !== $tx2->getConfirmed()) ||
             ($tx1->getLockTime() !== $tx2->getLockTime()) ||
-            ($tx1->getDoubleSpend() !== $tx2->getDoubleSpend()) ||
+            //($tx1->getDoubleSpend() !== $tx2->getDoubleSpend()) || HUERAGA - have to develop it
             ($tx1->getVinSz() !== $tx2->getVinSz()) ||
             ($tx1->getVoutSz() !== $tx2->getVoutSz()) ||
             ($tx1->getConfirmations() !== $tx2->getConfirmations()) ||

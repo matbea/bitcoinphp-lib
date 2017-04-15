@@ -63,6 +63,13 @@ class TransactionReference
     protected $confirmations = null;
 
     /**
+     * Time at which transaction was included in a block; only present for confirmed transactions.
+     * @var int
+     */
+    protected $confirmed = null;
+
+
+    /**
      * Whether the transaction is a double spend (see Zero Confirmations).
      * @var bool
      */
@@ -260,6 +267,28 @@ class TransactionReference
     }
 
     /**
+     * Time at which transaction was included in a block; only present for confirmed transactions.
+     *
+     * @return int
+     */
+    public function getConfirmed()
+    {
+        return $this->confirmed;
+    }
+
+    /**
+     * Time at which transaction was included in a block; only present for confirmed transactions.
+     *
+     * @param int $confirmed
+     * @return $this
+     */
+    public function setConfirmed($confirmed)
+    {
+        $this->confirmed = $confirmed;
+        return $this;
+    }
+
+    /**
      Is $o equal current object
      * @param TransactionReference $o
      *
@@ -285,6 +314,8 @@ class TransactionReference
             ($this->getConfirmations() == $o->getConfirmations())
                 &&
             ($this->getAddress() == $o->getAddress())
+            &&
+            ($this->getConfirmed() == $o->getConfirmed())
         ;
     }
 }
