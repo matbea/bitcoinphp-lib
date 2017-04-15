@@ -580,10 +580,18 @@ class Bridge
         }
 
         if ($errorHandler) {
-            $resultWallet = new Wallet();
+            $resultWallet = null;
             if (!empty($successHandlers)) {
                 $this->resultHandler->setHandlers($successHandlers);
-                $resultWallet = $this->resultHandler->createWallet($resultWallets);
+                try {
+                    $resultWallet = $this->resultHandler->createWallet($resultWallets);
+                } catch (\InvalidArgumentException $ex) {
+                    $this->resultHandler->setHandlers($this->handlers);
+                    throw $ex;
+                } catch (\ResultHandlerException $ex) {
+                    $this->resultHandler->setHandlers($this->handlers);
+                    throw $ex;
+                }
                 $this->resultHandler->setHandlers($this->handlers);
             }
             for ($j = $i + 1; $j < $ic; ++$j) {
@@ -644,10 +652,18 @@ class Bridge
         }
 
         if ($errorHandler) {
-            $resultWallet = new Wallet();
+            $resultWallet = null;
             if (!empty($successHandlers)) {
                 $this->resultHandler->setHandlers($successHandlers);
-                $resultWallet = $this->resultHandler->addAddresses($resultWallets);
+                try {
+                    $resultWallet = $this->resultHandler->addAddresses($resultWallets);
+                } catch (\InvalidArgumentException $ex) {
+                    $this->resultHandler->setHandlers($this->handlers);
+                    throw $ex;
+                } catch (\ResultHandlerException $ex) {
+                    $this->resultHandler->setHandlers($this->handlers);
+                    throw $ex;
+                }
                 $this->resultHandler->setHandlers($this->handlers);
             }
             for ($j = $i + 1; $j < $ic; ++$j) {
@@ -708,10 +724,18 @@ class Bridge
         }
 
         if ($errorHandler) {
-            $resultWallet = new Wallet();
+            $resultWallet = null;
             if (!empty($successHandlers)) {
                 $this->resultHandler->setHandlers($successHandlers);
-                $resultWallet = $this->resultHandler->removeAddress($resultWallets);
+                try {
+                    $resultWallet = $this->resultHandler->removeAddress($resultWallets);
+                } catch (\InvalidArgumentException $ex) {
+                    $this->resultHandler->setHandlers($this->handlers);
+                    throw $ex;
+                } catch (\ResultHandlerException $ex) {
+                    $this->resultHandler->setHandlers($this->handlers);
+                    throw $ex;
+                }
                 $this->resultHandler->setHandlers($this->handlers);
             }
             for ($j = $i + 1; $j < $ic; ++$j) {
@@ -810,17 +834,8 @@ class Bridge
      * @throws \InvalidArgumentException in case of error of this type
      *
      */
-    public function getnewaddress($walletName)
+    public function getnewaddress()
     {
-        if ("string" != gettype($walletName) || ("" == $walletName)) {
-            throw new \InvalidArgumentException("wallet Name must be non empty string.");
-        }
-        if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
-            throw new \InvalidArgumentException(
-                "Wallet name have to contain only alphanumeric, underline and dash symbols (\"" .
-                $walletName . "\" passed)."
-            );
-        }
         try {
             $privateKey = PrivateKeyFactory::create();
             $address = $privateKey->getPublicKey()->getAddress();
@@ -832,7 +847,7 @@ class Bridge
         } //May be \RuntimeException will raised in the BitWASP library - we'll not change this
         if (!file_put_contents(
             $this->getOption(Bridge::OPT_LOCAL_PATH_OF_WALLET_DATA),
-            ($walletName.";".$wif.";".$address.PHP_EOL),
+            ($wif.";".$address.PHP_EOL),
             FILE_APPEND
         ) ) {
             throw new \RuntimeException(
@@ -856,17 +871,8 @@ class Bridge
      * @throws \InvalidArgumentException in case of error of this type
      *
      */
-    public function dumpprivkey($walletName, $address)
+    public function dumpprivkey($address)
     {
-        if ("string" != gettype($walletName) || ("" == $walletName)) {
-            throw new \InvalidArgumentException("wallet Name must be non empty string.");
-        }
-        if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
-            throw new \InvalidArgumentException(
-                "Wallet name have to contain only alphanumeric, underline and dash symbols (\"" .
-                $walletName . "\" passed)."
-            );
-        }
         if ("string" != gettype($address) || ("" == $address)) {
             throw new \InvalidArgumentException("address variable must be non empty string.");
         }
@@ -883,15 +889,15 @@ class Bridge
         while (($data = fgetcsv($handle, 1000, ";")) !== false) {
             ++$i;
             $num = count($data);
-            if (3 != $num) {
+            if (2 != $num) {
                 throw new \RuntimeException(
                     "Line #" . $i . " in the file " . $path . " contains " .
                     $num . " fields, must contain 3 fields only."
                 );
             }
-            if (( $address == $data[2] ) && ( $walletName == $data[0] )) {
+            if ($address == $data[1]) {
                 fclose($handle);
-                return $data[1];
+                return $data[0];
             }
         }
         fclose($handle);

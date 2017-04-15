@@ -24,7 +24,9 @@ try {
 
     $bridge->setOption(\BTCBridge\Bridge::OPT_LOCAL_PATH_OF_WALLET_DATA, __DIR__ . "/data/wallet.dat");
 
-    $res = $bridge->listunspent("12S42ZEw2741DHrivgZHLfX8M58mxb7bFy");
+    //$res = $bridge->listunspent("12S42ZEw2741DHrivgZHLfX8M58mxb7bFy");
+    //$res = $bridge->getnewaddress();
+    $res = $bridge->dumpprivkey("1GC5nxT5cUASbqMcCkB94ZvH6C1pq6eADg");
 
 
     $res = $bridge->gettransaction("21df512a116abb22384bfe47f15833e43ac4f8999b434a7a5c74ad1f487043a9"); //unconfirmed

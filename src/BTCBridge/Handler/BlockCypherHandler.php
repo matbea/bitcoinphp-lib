@@ -540,7 +540,9 @@ class BlockCypherHandler extends AbstractHandler
                 $txr->setTxInputN($txref["tx_input_n"]);
                 $txr->setTxOutputN($txref["tx_output_n"]);
                 $txr->setValue($txref["value"]);
-                $txr->setAddress($txref['address']);
+                if ( isset($txref["address"]) ) {
+                    $txr->setAddress($txref['address']);
+                }
                 $txr->setConfirmed(strtotime($txref["confirmed"]));
                 $filteredTxs = array_filter($result, function (TransactionReference $tx) use ($txr) {
                         return $tx->isEqual($txr);
