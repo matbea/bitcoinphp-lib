@@ -65,6 +65,25 @@ class DefaultResultHandler extends AbstractResultHandler
     /**
      * {@inheritdoc}
      */
+    public function gettransactions($data)
+    {
+        if (1 == count($data)) {
+            return $data[0];
+        }
+        if (2 != count($data)) {
+            throw new \InvalidArgumentException("Data array for verification must have size 1 or 2.");
+        }
+        $txs1 = & $data[0];
+        $txs2 = & $data[1];
+        if ((!is_array($txs1)) || (!is_array($txs2))) {
+            throw new \InvalidArgumentException("Elements of Data array must be array of instances of Transaction class.");
+        }
+        return $txs1;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function getbalance($data)
     {
         if (1 == count($data)) {
@@ -183,6 +202,7 @@ class DefaultResultHandler extends AbstractResultHandler
                     "\") in the passed wallet ( " . serialize($data[0]) . ")"
                 );
             }
+            /** @var $data Wallet[] */
             $data[0]->setSystemDataByHandler(
                 $this->handlers[0]->getHandlerName(),
                 $systemData
@@ -216,6 +236,7 @@ class DefaultResultHandler extends AbstractResultHandler
                     "\") in the passed wallet ( " . serialize($data[0]) . ")"
                 );
             }
+            /** @var $data Wallet[] */
             $data[0]->setSystemDataByHandler(
                 $this->handlers[0]->getHandlerName(),
                 $systemData

@@ -80,6 +80,18 @@ abstract class AbstractResultHandler
     abstract public function gettransaction($data);
 
     /**
+     * The gettransactions RPC gets detailed information about an in-wallet transaction.
+     *
+     * @param Transaction[][] $data  Result from method gettransactions (from all handlers)
+     *
+     * @throws ResultHandlerException in case of any error
+     *
+     * @return Transaction[]
+     */
+    abstract public function gettransactions($data);
+
+
+    /**
      * The getbalance RPC gets the balance in decimal bitcoins across all accounts or for a particular account.
      * The Address Balance Endpoint is the simplest—and fastest—method to get a subset of
      * information on a public address.

@@ -372,6 +372,179 @@ class BlockCypherHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
+    public function gettransactions(array $txHashes, array $options = array())
+    {
+        if (empty($txHashes)) {
+            throw new \InvalidArgumentException("txHashes variable must be non empty array of non empty strings.");
+        }
+
+        $urls = [];
+
+        foreach ( $txHashes as $txHash ) {
+            if ((!is_string($txHash)) && (""==$txHash) ) {
+                throw new \InvalidArgumentException("All hashes is \$txHashes array must be non empty strings.");
+            }
+
+            $url = $this->getOption(self::OPT_BASE_URL) . "txs/" . $txHash;
+
+            $sep = "?";
+            if (array_key_exists('limit', $options) && (20 !== $options['limit'])) {
+                $url .= $sep . "limit=" . $options['limit'];
+                $sep = "&";
+            }
+            if (array_key_exists('instart', $options) && (null !== $options['instart'])) {
+                $url .= $sep . "instart=" . $options['instart'];
+                $sep = "&";
+            }
+            if (array_key_exists('outstart', $options) && (null !== $options['outstart'])) {
+                $url .= $sep . "outstart=" . $options['outstart'];
+                $sep = "&";
+            }
+            if (array_key_exists('includeHex', $options) && (true === $options['includeHex'])) {
+                $url .= $sep . "includeHex=true";
+                $sep = "&";
+            }
+            if (array_key_exists('includeConfidence', $options) && (true === $options['includeConfidence'])) {
+                $url .= $sep . "includeConfidence=true";
+            }
+
+            $awaiting_params = ['limit', 'instart', 'outstart', 'includeHex', 'includeConfidence'];
+
+            foreach ($options as $opt_name => $opt_val) {
+                if (!in_array($opt_name, $awaiting_params)) {
+                    $this->logger->warning("Method \"" . __METHOD__ . "\" does not accept option \"" . $opt_name . "\".");
+                }
+            }
+            $urls[$url] = [];
+            $urls[$url]["ch"] = "";
+        }
+
+        $multi = curl_multi_init();
+        $allResults = [];
+        foreach ($urls as $url => $urlData) {
+            $ch = curl_init();
+            $this->prepareCurl($ch, $url);
+            //curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+            curl_multi_add_handle($multi, $ch);
+            $urls[$url]["ch"] = $ch;
+        }
+
+        $active = null;
+        do {
+            $mrc = curl_multi_exec($multi, $active);
+        } while ($mrc == CURLM_CALL_MULTI_PERFORM);
+
+        while ($active && $mrc == CURLM_OK) {
+            # for php 7+
+//            if (curl_multi_select($multi) == -1) {
+//                continue;
+//            }
+            # For php 5.6
+            if (curl_multi_select($multi) == -1) {
+                usleep(500);
+            }
+            do {
+                $mrc = curl_multi_exec($multi, $active);
+            } while ($mrc == CURLM_CALL_MULTI_PERFORM);
+        }
+
+
+        //Пока все соединения не отработают
+        //do { curl_multi_exec($multi,$active); } while ($active);
+
+        foreach ($urls as $url => $urlData) {
+            $content = curl_multi_getcontent($urlData['ch']);
+            if ( (!$content) || (""==$content) ) {
+                curl_multi_close($multi);
+                throw new \RuntimeException("curl did not return content (url:\"" . $url . "\")");
+            }
+            $content = json_decode($content, true);
+            if ((false === $content) || (null === $content)) {
+                curl_multi_close($multi); //???
+                throw new \RuntimeException("curl does not return a json object (url:\"" . $url . "\").");
+            }
+            $allResults [$url] = $content;
+            curl_multi_remove_handle($multi, $urlData['ch']);
+        }
+        curl_multi_close($multi);
+
+        $txs = [];
+
+        foreach ($allResults as $url => $content) {
+            if (isset($content['error'])) {
+                throw new \RuntimeException("Error \"" . $content['error'] . "\" returned (url:\"" . $url . "\").");
+            }
+            $tx = new Transaction;
+            if (isset($content["block_hash"])) {
+                $tx->setBlockHash($content["block_hash"]);
+            }
+            $tx->setBlockHeight($content["block_height"]);
+            $tx->setHash($content["hash"]);
+            $tx->setAddresses($content["addresses"]);
+            if (isset($content["confirmed"])) {
+                $tx->setConfirmed(strtotime($content["confirmed"]));
+            }
+            $tx->setLockTime($content["lock_time"]);
+            $tx->setDoubleSpend($content["double_spend"]);
+            $tx->setVoutSz($content["vout_sz"]);
+            $tx->setVinSz($content["vin_sz"]);
+            $tx->setConfirmations($content["confirmations"]);
+            foreach ($content["inputs"] as $inp) { //20 штук по дефолту выдаётся, надо, чтобы все
+                $input = new TransactionInput();
+                $input->setAddresses((isset($inp["addresses"]) && (null!==$inp["addresses"]))?$inp["addresses"]:[]);
+                if (isset($inp["prev_hash"])) {
+                    $input->setPrevHash($inp["prev_hash"]);
+                }
+                if (isset($inp["output_index"])) {
+                    $input->setOutputIndex($inp["output_index"]);
+                }
+                $val = gmp_init(strval($inp["output_value"]));
+                $input->setOutputValue($val);
+                $options = [];
+                if ( $input->getOutputIndex() == -1 ) {
+                    $options["newlyminted"] = true;
+                }
+                $input->setScriptType($this->getTransformedTypeOfSignature($inp["script_type"], $options));
+                $tx->addInput($input);
+            }
+            foreach ($content["outputs"] as $outp) {
+                $output = new TransactionOutput();
+                $output->setAddresses((isset($outp["addresses"]) && (null!==$outp["addresses"]))?$outp["addresses"]:[]);
+                $output->setValue(gmp_init(strval($outp["value"])));
+                if ("pay-to-multi-pubkey-hash" == $outp["script_type"]) {
+                    //TODO after fixing bug in bit-wasp with the multisig/nonstandard
+                    /** @noinspection PhpUnusedLocalVariableInspection */
+                    $multisigAddresses = $this->extractAddressesFromMultisigScript($outp["script"]);
+                    /*$previousOutputAddresses = $output->getAddresses();
+                    $output->setAddresses($multisigAddresses);
+                    $txAddresses = $tx->getAddresses();
+                    if (!empty($previousOutputAddresses)) {
+                        $tx->setAddresses(array_diff($txAddresses, $previousOutputAddresses));
+                        $txAddresses = $tx->getAddresses();
+                    }
+                    if ( !empty($multisigAddresses) ) {
+                        foreach ( $multisigAddresses as $addr ) {
+                            if ( !in_array($addr,$txAddresses) ) {
+                                $txAddresses [] = $addr;
+                            }
+                        }
+                        $tx->setAddresses($txAddresses);
+                    }*/
+                }
+                $options = [];
+                $script_type = $this->getTransformedTypeOfSignature($outp["script_type"], $options);
+                $output->setScriptType($script_type);
+                $tx->addOutput($output);
+            }
+            $txs [] = $tx;
+        }
+        return $txs;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function getbalance($walletName, $Confirmations = 1, $IncludeWatchOnly = false)
     {
         if ("string" != gettype($walletName)) {

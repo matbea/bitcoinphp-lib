@@ -1,5 +1,84 @@
 <?php
 
+/*$urls = array(
+    'http://www.google.ru/',
+    'http://www.altavista.com/',
+    'http://www.yahoo.com/'
+);
+$mh = curl_multi_init();
+foreach ($urls as $i => $url) {
+    $conn[$i]=curl_init($url);
+    curl_setopt($conn[$i],CURLOPT_RETURNTRANSFER,1);  //ничего в браузер не давать
+    curl_setopt($conn[$i],CURLOPT_CONNECTTIMEOUT,10); //таймаут соединения
+    curl_multi_add_handle ($mh,$conn[$i]);
+}
+//Пока все соединения не отработают
+do { curl_multi_exec($mh,$active); } while ($active);
+//разбор полетов
+for ($i = 0; $i < count($urls); $i++) {
+    //ответ сервера в переменную
+    $res[$i] = curl_multi_getcontent($conn[$i]);
+    curl_multi_remove_handle($mh, $conn[$i]);
+    curl_close($conn[$i]);
+}
+curl_multi_close($mh);
+print_r($res);
+die;
+
+$urls = [
+    'https://api.blockcypher.com/v1/btc/main/txs/0000005f67276a9d277507f1439ff6c322d7e969b855e449aec6b34b0b6d1655' => ['handler' => 'empty1'],
+    'https://api.blockcypher.com/v1/btc/main/txs/00000005aca88ceece655e19070dbfe9416b0c2850da0463f1e4c823bb41f295' => ['handler' => 'empty2']
+];
+
+$multi = curl_multi_init();
+$allResults = [];
+foreach ($urls as $url => $urlData) {
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 3);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HEADER, false);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+    curl_multi_add_handle($multi, $ch);
+    $urls[$url]['ch'] = $ch;
+}
+
+//$s = microtime(true);
+$active = null;
+do {
+    $mrc = curl_multi_exec($multi, $active);
+} while ($mrc == CURLM_CALL_MULTI_PERFORM);
+
+while ($active && $mrc == CURLM_OK) {
+    # for php 7+
+//            if (curl_multi_select($multi) == -1) {
+//                continue;
+//            }
+
+    # For php 5.6
+    if (curl_multi_select($multi,4) == -1) {
+        //usleep(500);
+        usleep(1000000);
+    }
+
+    do {
+        $mrc = curl_multi_exec($multi, $active);
+    } while ($mrc == CURLM_CALL_MULTI_PERFORM);
+}
+//echo 'SPEND '.(microtime(true) - $s)."\n";
+
+foreach ($urls as $url => $urlData) {
+//            echo "-----------------------------------".$url."\n\n";
+//            echo curl_multi_getcontent($urlData['ch'])."\n";
+    $content = curl_multi_getcontent($urlData['ch']);
+    $allResults[] = json_decode($content, true);
+    curl_multi_remove_handle($multi, $urlData['ch']);
+}
+curl_multi_close($multi);
+*/
+
 require __DIR__ . "/../vendor/autoload.php";
 
 try {
@@ -12,8 +91,8 @@ try {
     $bridge = new \BTCBridge\Bridge(
         [
             $blockCypherHandler
-            ,
-            $matbeaHandler
+            //,
+            //$matbeaHandler
             //,
             //(new \BTCBridge\Handler\BlockCypherHandler())->setToken("dc20a175f3594965a8f4707cdcf58a32")
         ],
@@ -26,7 +105,9 @@ try {
 
     //$res = $bridge->listunspent("12S42ZEw2741DHrivgZHLfX8M58mxb7bFy");
     //$res = $bridge->getnewaddress();
-    $res = $bridge->dumpprivkey("1GC5nxT5cUASbqMcCkB94ZvH6C1pq6eADg");
+    //$res = $bridge->dumpprivkey("1GC5nxT5cUASbqMcCkB94ZvH6C1pq6eADg");
+
+    $balance = $bridge->gettransactions(["0000005f67276a9d277507f1439ff6c322d7e969b855e449aec6b34b0b6d1655","00000005aca88ceece655e19070dbfe9416b0c2850da0463f1e4c823bb41f295"],[]);
 
 
     $res = $bridge->gettransaction("21df512a116abb22384bfe47f15833e43ac4f8999b434a7a5c74ad1f487043a9"); //unconfirmed

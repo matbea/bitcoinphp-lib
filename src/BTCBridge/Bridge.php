@@ -377,6 +377,40 @@ class Bridge
     }
 
     /**
+     * The gettransactions RPC gets detailed information about an in-wallet transaction.
+     *
+     * @param string[] $txHashes transaction identifiers
+     * @param array $options   Array containing the optional params
+     * $options = [
+     *   ['limit']             integer    Filters TXInputs/TXOutputs, if unset, default is 20.
+     *   ['instart']           integer    Filters TX to only include TXInputs from this input index and above.
+     *   ['outstart']          integer    Filters TX to only include TXOutputs from this output index and above.
+     *   ['includeHex']        bool    If true, includes hex-encoded raw transaction; false by default.
+     *   ['includeConfidence'] bool    If true, includes the confidence attribute (useful for unconfirmed transactions).
+     *   For more info about this figure, check the Confidence Factor documentation.
+     * ]
+     *
+     * @throws \RuntimeException in case of any runtime error
+     * @throws \InvalidArgumentException if error of this type
+     * @throws ConflictHandlerException in case of any error of this type
+     *
+     * @return Transaction[]
+     */
+    public function gettransactions(array $txHashes, array $options = array()) {
+        if (empty($txHashes)) {
+            throw new \InvalidArgumentException("txHashes variable must be non empty array of non empty strings.");
+        }
+        $results = [];
+        foreach ($this->handlers as $handle) {
+            $result = $handle->gettransactions($txHashes, $options);
+            $results [] = $result;
+        }
+        //$this->conflictHandler->gettransaction($results);
+        //return $this->resultHandler->gettransaction($results);
+    }
+
+
+    /**
      * The getbalance RPC gets the balance in decimal bitcoins across all accounts or for a particular account.
      * The Address Balance Endpoint is the simplest—and fastest—method
      * to get a subset of information on a public address.
@@ -532,12 +566,11 @@ class Bridge
      * @param string $walletName
      * @param string[] $addresses
      *
-     * @return Wallet
-     *
-     * @throws \RuntimeException in case of any runtime error
+     * @throws \Exception|\InvalidArgumentException
+     * @throws Exception\HandlerErrorException
      * @throws \InvalidArgumentException if error of this type
-     * @throws ConflictHandlerException in case of any error of this type
-     * @throws HandlerErrorException in case of any error with Handler occured
+     * @throws Exception\ResultHandlerException|\Exception
+     * @return Wallet
      *
      */
     public function createWallet($walletName, $addresses)
@@ -588,7 +621,7 @@ class Bridge
                 } catch (\InvalidArgumentException $ex) {
                     $this->resultHandler->setHandlers($this->handlers);
                     throw $ex;
-                } catch (\ResultHandlerException $ex) {
+                } catch (ResultHandlerException $ex) {
                     $this->resultHandler->setHandlers($this->handlers);
                     throw $ex;
                 }
@@ -616,12 +649,11 @@ class Bridge
      * @param Wallet $wallet Object to which addresses will be added
      * @param string[] $addresses
      *
-     * @return Wallet
-     *
-     * @throws \RuntimeException in case of any runtime error
+     * @throws \Exception|\InvalidArgumentException
+     * @throws Exception\HandlerErrorException
      * @throws \InvalidArgumentException if error of this type
-     * @throws ConflictHandlerException in case of any error of this type
-     * @throws HandlerErrorException in case of any error with Handler occured
+     * @throws Exception\ResultHandlerException|\Exception
+     * @return Wallet
      *
      */
     public function addAddresses(Wallet $wallet, $addresses)
@@ -660,7 +692,7 @@ class Bridge
                 } catch (\InvalidArgumentException $ex) {
                     $this->resultHandler->setHandlers($this->handlers);
                     throw $ex;
-                } catch (\ResultHandlerException $ex) {
+                } catch (ResultHandlerException $ex) {
                     $this->resultHandler->setHandlers($this->handlers);
                     throw $ex;
                 }
@@ -688,12 +720,11 @@ class Bridge
      * @param Wallet $wallet
      * @param string $address
      *
-     * @return \BTCBridge\Api\Wallet
-     *
-     * @throws \RuntimeException in case of any runtime error
+     * @throws \Exception|\InvalidArgumentException
+     * @throws Exception\HandlerErrorException
      * @throws \InvalidArgumentException if error of this type
-     * @throws ConflictHandlerException in case of any error of this type
-     * @throws HandlerErrorException in case of any error with Handler occured
+     * @throws Exception\ResultHandlerException|\Exception
+     * @return \BTCBridge\Api\Wallet
      *
      */
     public function removeAddress(Wallet $wallet, $address)
@@ -732,7 +763,7 @@ class Bridge
                 } catch (\InvalidArgumentException $ex) {
                     $this->resultHandler->setHandlers($this->handlers);
                     throw $ex;
-                } catch (\ResultHandlerException $ex) {
+                } catch (ResultHandlerException $ex) {
                     $this->resultHandler->setHandlers($this->handlers);
                     throw $ex;
                 }
@@ -826,12 +857,10 @@ class Bridge
      * If an account is specified, payments received with the address will be credited to that account.
      * @link https://bitcoin.org/en/developer-reference#getnewaddress
      *
-     * @param string $walletName Name of wallet
+     * @throws \RuntimeException in case of error of this type
+     * @internal param string $walletName Name of wallet
      *
      * @return \string
-     *
-     * @throws \RuntimeException in case of error of this type
-     * @throws \InvalidArgumentException in case of error of this type
      *
      */
     public function getnewaddress()
@@ -862,13 +891,12 @@ class Bridge
      * (But does not remove it from the wallet.)
      * @link https://bitcoin.org/en/developer-reference#dumpprivkey
      *
-     * @param string $walletName Name of wallet
      * @param string $address
-     *
-     * @return \string|null WIF or null (if didn't found)
      *
      * @throws \RuntimeException in case of error of this type
      * @throws \InvalidArgumentException in case of error of this type
+     * @internal param string $walletName Name of wallet
+     * @return \string|null WIF or null (if didn't found)
      *
      */
     public function dumpprivkey($address)

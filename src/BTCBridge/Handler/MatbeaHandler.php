@@ -184,6 +184,13 @@ class MatbeaHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
+    public function gettransactions(array $txHashes, array $options = array()) {
+        return [];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function getbalance($walletName, $Confirmations = 1, $IncludeWatchOnly = false)
     {
         if ("string" != gettype($walletName) || ("" == $walletName)) {
