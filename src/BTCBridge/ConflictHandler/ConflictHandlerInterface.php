@@ -129,12 +129,12 @@ interface ConflictHandlerInterface
      * This Method removes address from the passed wallet
      * @link https://www.blockcypher.com/dev/bitcoin/?shell#remove-addresses-from-wallet-endpoint
      *
-     * @param array $data  Result from method removeAddress (from all handlers)
+     * @param array $data  Result from method removeAddresses (from all handlers)
      *
      * @throws ConflictHandlerException in case of any error
      *
      */
-    public function removeAddress($data);
+    public function removeAddresses($data);
 
 
     /**

@@ -167,14 +167,14 @@ abstract class AbstractResultHandler
      * This Method removes address from the passed wallet
      * @link https://www.blockcypher.com/dev/bitcoin/?shell#remove-addresses-from-wallet-endpoint
      *
-     * @param array $data  Result from method removeAddress (from all handlers)
+     * @param array $data  Result from method removeAddresses (from all handlers)
      *
      * @return Wallet
      *
      * @throws ResultHandlerException in case of any error
      *
      */
-    abstract public function removeAddress($data);
+    abstract public function removeAddresses($data);
 
 
     /**

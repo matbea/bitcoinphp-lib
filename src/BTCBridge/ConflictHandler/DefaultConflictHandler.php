@@ -553,7 +553,8 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                     ($tx->getTxHash() != $txc->getTxHash()) ||
                     ($tx->getTxInputN() != $txc->getTxInputN()) ||
                     ($tx->getTxOutputN() != $txc->getTxOutputN()) ||
-                    ($tx->getValue() != $txc->getValue())
+                    ($tx->getValue() != $txc->getValue()) ||
+                    ($tx->getAddress() != $txc->getAddress())
                 ) {
                     continue;
                 }
@@ -612,7 +613,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
     /**
      * {@inheritdoc}
      */
-    public function removeAddress($data)
+    public function removeAddresses($data)
     {
         if (1 == count($data)) {
             return;

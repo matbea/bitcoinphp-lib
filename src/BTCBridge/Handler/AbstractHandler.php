@@ -263,16 +263,17 @@ abstract class AbstractHandler
      * @link https://bitcoin.org/en/developer-reference#listunspent Official bitcoin documentation.
      * @link https://www.blockcypher.com/dev/bitcoin/?shell#address-endpoint
      *
-     * @param string $Account An account name to get unconfirmed balance from
+     * @param string $walletName An account name to get unconfirmed balance from
      * @param int $MinimumConfirmations  The minimum number of confirmations the transaction containing an output
      * must have in order to be returned.
+     * If $MinimumConfirmations = 0, then only unconfirmed transactions will be returned.
      *
      * @throws \RuntimeException in case of any error
      * @throws \InvalidArgumentException if error of this type
      *
      * @return  TransactionReference[] The list of unspent outputs
      */
-    abstract public function listunspent($Account, $MinimumConfirmations = 1);
+    abstract public function listunspent($walletName, $MinimumConfirmations = 1);
 
     /**
      * The sendrawtransaction RPC validates a transaction and broadcasts it to the peer-to-peer network.
@@ -302,14 +303,14 @@ abstract class AbstractHandler
      * @throws \InvalidArgumentException in case of error of this type
      *
      */
-    abstract public function createWallet($walletName, $addresses);
+    abstract public function createWallet($walletName, array $addresses);
 
     /**
      * This Method removes address from the wallet
      * @link https://www.blockcypher.com/dev/bitcoin/?shell#remove-addresses-from-wallet-endpoint
      *
      * @param Wallet $wallet
-     * @param string $address
+     * @param string[] $addresses
      *
      * @return Wallet result object
      *
@@ -317,7 +318,7 @@ abstract class AbstractHandler
      * @throws \InvalidArgumentException in case of error of this type
      *
      */
-    abstract public function removeAddress(Wallet $wallet, $address);
+    abstract public function removeAddresses(Wallet $wallet, array $addresses);
 
     /**
      * This Method adds new addresses into a wallet
@@ -332,7 +333,7 @@ abstract class AbstractHandler
      * @throws \InvalidArgumentException in case of error of this type
      *
      */
-    abstract public function addAddresses(Wallet $wallet, $addresses);
+    abstract public function addAddresses(Wallet $wallet, array $addresses);
 
 
     /**

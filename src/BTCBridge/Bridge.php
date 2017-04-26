@@ -405,8 +405,8 @@ class Bridge
             $result = $handle->gettransactions($txHashes, $options);
             $results [] = $result;
         }
-        //$this->conflictHandler->gettransaction($results);
-        //return $this->resultHandler->gettransaction($results);
+        $this->conflictHandler->gettransactions($results);
+        return $this->resultHandler->gettransactions($results);
     }
 
 
@@ -494,6 +494,7 @@ class Bridge
      * @param string $walletName An account name to get unconfirmed balance from
      * @param int $MinimumConfirmations  The minimum number of confirmations the transaction containing an output
      * must have in order to be returned.
+     * If $MinimumConfirmations = 0, then only unconfirmed transactions will be returned.
      *
      * @throws \RuntimeException in case of any runtime error
      * @throws \InvalidArgumentException if error of this type
@@ -503,13 +504,19 @@ class Bridge
      */
     public function listunspent($walletName, $MinimumConfirmations = 1)
     {
-        if ("string" != gettype($walletName) || ("" == $walletName)) {
+        if ("string" != gettype($walletName)) {
             throw new \InvalidArgumentException("Account variable must be non empty string.");
         }
         if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
             throw new \InvalidArgumentException(
                 "Wallet name have to contain only alphanumeric, underline and dash symbols (\"" .
                 $walletName . "\" passed)."
+            );
+        }
+        if ( !is_int($MinimumConfirmations) || $MinimumConfirmations < 0 ) {
+            throw new \InvalidArgumentException(
+                "\$MinumumConfirmations variable must be nonnegative integerymbols ( " .
+                $MinimumConfirmations . " passed)."
             );
         }
         $results = [];
@@ -573,7 +580,7 @@ class Bridge
      * @return Wallet
      *
      */
-    public function createWallet($walletName, $addresses)
+    public function createWallet($walletName, array $addresses)
     {
         if ("string" != gettype($walletName)) {
             throw new \InvalidArgumentException("Wallet name variable must be non empty string.");
@@ -584,9 +591,7 @@ class Bridge
                 $walletName . "\" passed)."
             );
         }
-        if (!is_array($addresses)) {
-            throw new \InvalidArgumentException("addresses variable must be the array.");
-        }
+
         /** @var $resultWallets Wallet[] */
         $resultWallets = [];
         /** @var $successHandlers AbstractHandler[] */
@@ -595,6 +600,7 @@ class Bridge
         $errorHandler = null;
         /** @var $unusedHandlers AbstractHandler[] */
         $unusedHandlers = [];
+        $errMsg = "";
 
         for ($i = 0, $ic = count($this->handlers); $i < $ic; ++$i) {
             try {
@@ -606,6 +612,7 @@ class Bridge
             } catch (\RuntimeException $ex) {
                 $this->loggerHandler->error($ex->getMessage());
                 $errorHandler = $this->handlers[$i];
+                $errMsg = $ex->getMessage();
                 break;
             }
             $successHandlers [] = $this->handlers[$i];
@@ -635,7 +642,7 @@ class Bridge
                 $errorHandler,
                 $unusedHandlers,
                 $resultWallet,
-                '"' . $errorHandler->getHandlerName() . '" handler raised error (method createWallet).'
+                '"' . $errorHandler->getHandlerName() . '" handler raised error (method createWallet) ' . $errMsg . '.'
             );
         }
         $this->conflictHandler->createWallet($resultWallets); //In case of error throw will be raised
@@ -656,9 +663,9 @@ class Bridge
      * @return Wallet
      *
      */
-    public function addAddresses(Wallet $wallet, $addresses)
+    public function addAddresses(Wallet $wallet, array $addresses)
     {
-        if ((!is_array($addresses)) || (count($addresses) == 0)) {
+        if (empty($addresses)) {
             throw new \InvalidArgumentException("addresses variable must be non empty array.");
         }
 
@@ -718,7 +725,7 @@ class Bridge
      * @link https://www.blockcypher.com/dev/bitcoin/?shell#remove-addresses-from-wallet-endpoint
      *
      * @param Wallet $wallet
-     * @param string $address
+     * @param string[] $addresses
      *
      * @throws \Exception|\InvalidArgumentException
      * @throws Exception\HandlerErrorException
@@ -727,10 +734,10 @@ class Bridge
      * @return \BTCBridge\Api\Wallet
      *
      */
-    public function removeAddress(Wallet $wallet, $address)
+    public function removeAddresses(Wallet $wallet, array $addresses)
     {
-        if ("string" != gettype($address) || ("" == $address)) {
-            throw new \InvalidArgumentException("address variable must be non empty string.");
+        if (empty($addresses)) {
+            throw new \InvalidArgumentException("addresses variable must be non empty array of strings.");
         }
 
         /** @var $resultWallets Wallet[] */
@@ -744,7 +751,7 @@ class Bridge
 
         for ($i = 0, $ic = count($this->handlers); $i < $ic; ++$i) {
             try {
-                $wallet = $this->handlers[$i]->removeAddress($wallet, $address);
+                $wallet = $this->handlers[$i]->removeAddresses($wallet, $addresses);
             } catch (\RuntimeException $ex) {
                 $this->loggerHandler->error($ex->getMessage());
                 $errorHandler = $this->handlers[$i];
@@ -759,7 +766,7 @@ class Bridge
             if (!empty($successHandlers)) {
                 $this->resultHandler->setHandlers($successHandlers);
                 try {
-                    $resultWallet = $this->resultHandler->removeAddress($resultWallets);
+                    $resultWallet = $this->resultHandler->removeAddresses($resultWallets);
                 } catch (\InvalidArgumentException $ex) {
                     $this->resultHandler->setHandlers($this->handlers);
                     throw $ex;
@@ -777,11 +784,11 @@ class Bridge
                 $errorHandler,
                 $unusedHandlers,
                 $resultWallet,
-                '"' . $errorHandler->getHandlerName() . '" handler raised error (method removeAddress).'
+                '"' . $errorHandler->getHandlerName() . '" handler raised error (method removeAddresses).'
             );
         }
-        $this->conflictHandler->removeAddress($resultWallets);
-        return $this->resultHandler->removeAddress($resultWallets);
+        $this->conflictHandler->removeAddresses($resultWallets);
+        return $this->resultHandler->removeAddresses($resultWallets);
     }
 
 

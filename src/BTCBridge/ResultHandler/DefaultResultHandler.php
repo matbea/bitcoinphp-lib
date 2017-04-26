@@ -192,7 +192,7 @@ class DefaultResultHandler extends AbstractResultHandler
     /**
      * {@inheritdoc}
      */
-    public function removeAddress($data)
+    public function removeAddresses($data)
     {
         if (1 == count($data)) {
             $systemData = $this->handlers[0]->getSystemDataForWallet($data[0]);
