@@ -544,7 +544,7 @@ class Bridge
      */
     public function sendrawtransaction($Transaction)
     {
-        if ("string" != gettype($Transaction) || ("" == $Transaction)) {
+        if ((!is_string($Transaction)) || empty($Transaction)) {
             throw new \InvalidArgumentException("Transaction variable must be non empty string.");
         }
         $result = null;

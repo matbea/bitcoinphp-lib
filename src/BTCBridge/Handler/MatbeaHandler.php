@@ -482,8 +482,53 @@ class MatbeaHandler extends AbstractHandler
      */
     public function sendrawtransaction($Transaction)
     {
-        /** @noinspection PhpUnusedLocalVariableInspection */
-        return "721dca6852f828af1057d5bf5f324a6d2b27328a27882229048cf340c1e3ec10" ;
+        if ((!is_string($Transaction)) && (empty($Transaction))) {
+            throw new \InvalidArgumentException("\$Transaction variable array must be non empty strings.");
+        }
+
+        //HUERAGA - может быть стоит проверять средствами bitwasp'а корректность транзы перед отправкой?
+        $url = $this->getOption(self::OPT_BASE_URL) . "/sendrawtransaction?data=" . $Transaction;
+        //$url = str_replace("/btcbridge","",$url); //HUERAGA
+        if ($this->token) {
+            $url .= "&token=" . $this->token;
+        }
+
+        $curl = curl_init();
+        $curl_options = [
+            CURLOPT_URL            => $url,
+            CURLOPT_USERAGENT      => $this->getOption(self::OPT_BASE_BROWSER),
+            CURLOPT_RETURNTRANSFER => 1,
+            CURLOPT_SSL_VERIFYHOST => 0,
+            CURLOPT_SSL_VERIFYPEER => 0
+        ];
+        if ( FALSE === curl_setopt_array($curl, $curl_options)) {
+            throw new \RuntimeException(
+                "curl_setopt_array failed url:\"" . $url . "\", parameters: " . serialize($curl_options) . ")."
+            );
+        }
+
+        $content = curl_exec($curl);
+        if ((false === $content) || (null === $content)) {
+            throw new \RuntimeException("curl does not return a json object (url:\"" . $url . "\").");
+        }
+        $content = json_decode($content, true);
+        if (isset($content['error']) && (null!=$content['error'])) {
+            throw new \RuntimeException(
+                "Error (code " . $content["error"]["code"] . ") \"" .
+                $content['error']["message"] . "\" returned (url: \"" . $url . "\")."
+            );
+        }
+        if (!isset($content['result'])) {
+            throw new \RuntimeException(
+                "Answer does not contain \"result\" field (url: \"" . $url . "\")."
+            );
+        }
+        if (empty($content['result'])) {
+            throw new \RuntimeException(
+                "Answer contains empty \"result\" field (url: \"" . $url . "\")."
+            );
+        }
+        return $content['result'];
     }
 
     /**

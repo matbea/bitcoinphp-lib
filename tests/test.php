@@ -90,8 +90,8 @@ try {
 
     $bridge = new \BTCBridge\Bridge(
         [
-            $blockCypherHandler
-            ,
+            //$blockCypherHandler
+            //,
             $matbeaHandler
             //,
             //(new \BTCBridge\Handler\BlockCypherHandler())->setToken("dc20a175f3594965a8f4707cdcf58a32")
@@ -102,6 +102,12 @@ try {
     );
 
     $bridge->setOption(\BTCBridge\Bridge::OPT_LOCAL_PATH_OF_WALLET_DATA, __DIR__ . "/data/wallet.dat");
+
+    $res = $bridge->sendrawtransaction("0100000001c94a679002e334674ad4d4e56deaaf3c6e7df1700c11812f319342c59641b8150".
+    "10000006b483045022100df9befbf00083719716e03310bceed664e7810b27eac884559f6dc6a4fe05dd7022060d4126d70ff399a9f90a".
+    "d2352e837497163aacf50d61f423c2b8924bb537aec01210267af6c6bf4ae6e37f019fbfbc7df70acf48663adbf19161bd874f3babd6bf".
+    "15c00000000027c150000000000001976a914df5d6e3c76eb3f38744fbe3b4a4f32aaaf7d607088ac5c951200000000001976a9140fb50".
+    "d2ec6bb62bd690bb55142101ca28a678be188ac00000000", 0);
 
 
     //$res = $bridge->getnewaddress();

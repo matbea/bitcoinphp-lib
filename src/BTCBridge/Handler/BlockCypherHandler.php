@@ -738,6 +738,9 @@ class BlockCypherHandler extends AbstractHandler
      */
     public function sendrawtransaction($Transaction)
     {
+        if ((!is_string($Transaction)) || empty($Transaction)) {
+            throw new \InvalidArgumentException("Transaction variable must be non empty string.");
+        }
         $url = $this->getOption(self::OPT_BASE_URL) . "txs/push";
         if ($this->token) {
             $url .= "?token=" . $this->token;
