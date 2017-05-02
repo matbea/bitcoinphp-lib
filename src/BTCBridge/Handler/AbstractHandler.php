@@ -141,7 +141,7 @@ abstract class AbstractHandler
      * @link https://bitcoin.org/en/developer-reference#listtransactions Official bitcoin documentation.
      * @link https://www.blockcypher.com/dev/bitcoin/?shell#address-endpoint Official blockcypher documentation
      *
-     * @param string $address  An account name (or address) to get transactions from
+     * @param string $walletName  An account name (or address) to get transactions from
      * @param array $options  Array containing the optional params
      * $options = [
      *   ['unspentOnly']           bool      If unspentOnly is true, filters response to only include unspent
@@ -174,7 +174,7 @@ abstract class AbstractHandler
      *
      * @return Address object
      */
-    abstract public function listtransactions($address, array $options = array());
+    abstract public function listtransactions($walletName, array $options = array());
 
     /**
      * The gettransaction RPC gets detailed information about an in-wallet transaction.

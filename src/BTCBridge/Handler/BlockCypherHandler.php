@@ -115,13 +115,13 @@ class BlockCypherHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function listtransactions($address, array $options = array())
+    public function listtransactions($walletName, array $options = array())
     {
         //$unspentOnly=false,$includeScript=false,$includeConfidence=false,$before=NULL,$after=NULL,$limit=200,$confirmations=NULL,$confidence=NULL,$omitWalletAddresses=false
-        if ("string" != gettype($address) || ("" == $address)) {
+        if ("string" != gettype($walletName) || ("" == $walletName)) {
             throw new \InvalidArgumentException("address variable must be non empty string.");
         }
-        $url = $this->getOption(self::OPT_BASE_URL) . "addrs/" . $address;
+        $url = $this->getOption(self::OPT_BASE_URL) . "addrs/" . $walletName;
         $sep = "?";
         if ($this->token) {
             $url .= "?token=" . $this->token;
@@ -222,9 +222,9 @@ class BlockCypherHandler extends AbstractHandler
                 $txr->setTxOutputN($txref["tx_output_n"]);
                 $txr->setValue($txref["value"]);
                 if (isset($txref['address'])) {
-                    $txr->setAddress($content['address']);
+                    $txr->setAddress($txref['address']);
                 } else {
-                    $txr->setAddress($address);
+                    $txr->setAddress($walletName);
                 }
                 $addrObject->addTxref($txr);
             }
@@ -243,7 +243,7 @@ class BlockCypherHandler extends AbstractHandler
                 if (isset($txref['address'])) {
                     $txr->setAddress($content['address']);
                 } else {
-                    $txr->setAddress($address);
+                    $txr->setAddress($walletName);
                 }
                 $addrObject->addUnconfirmedTxref($txr);
             }

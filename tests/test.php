@@ -102,12 +102,10 @@ try {
     );
 
     $bridge->setOption(\BTCBridge\Bridge::OPT_LOCAL_PATH_OF_WALLET_DATA, __DIR__ . "/data/wallet.dat");
+    $res = $bridge->listtransactions("deadushka1");
 
-    $res = $bridge->sendrawtransaction("0100000001c94a679002e334674ad4d4e56deaaf3c6e7df1700c11812f319342c59641b8150".
-    "10000006b483045022100df9befbf00083719716e03310bceed664e7810b27eac884559f6dc6a4fe05dd7022060d4126d70ff399a9f90a".
-    "d2352e837497163aacf50d61f423c2b8924bb537aec01210267af6c6bf4ae6e37f019fbfbc7df70acf48663adbf19161bd874f3babd6bf".
-    "15c00000000027c150000000000001976a914df5d6e3c76eb3f38744fbe3b4a4f32aaaf7d607088ac5c951200000000001976a9140fb50".
-    "d2ec6bb62bd690bb55142101ca28a678be188ac00000000", 0);
+    die;
+
 
 
     //$res = $bridge->getnewaddress();
@@ -125,16 +123,16 @@ try {
     //$res = $bridge->getbalance("19LtvgLf6ciPVLNAFqfQ3bpbmz1h7nGbjE");
     //$res = $bridge->gettransactions(["0000005f67276a9d277507f1439ff6c322d7e969b855e449aec6b34b0b6d1655","00000005aca88ceece655e19070dbfe9416b0c2850da0463f1e4c823bb41f295"],[]);
 
-    $wallet = new \BTCBridge\Api\Wallet();
+    //$wallet = new \BTCBridge\Api\Wallet();
     //$wallet->setSystemDataByHandler($blockCypherHandler->getHandlerName(), ["name"=>"deadushka"]);
     //$bridge->deleteWallet($wallet);
-    $wallet = $bridge->createWallet("deadushka1",['1MN3cT9Ro927h4kgpSZ5V7SfYjrwTysXv7']);
+    /*$wallet = $bridge->createWallet("deadushka1",['1MN3cT9Ro927h4kgpSZ5V7SfYjrwTysXv7']);
     $addresses = $bridge->getAddresses($wallet);
     $wallet = $bridge->addAddresses($wallet,['1BdxBor4JG76RKLAwJZfHC58fWbgidYukz','1MN3cT9Ro927h4kgpSZ5V7SfYjrwTysXv7']);
     $addresses = $bridge->getAddresses($wallet);
     $wallet = $bridge->removeAddresses($wallet,['1BdxBor4JG76RKLAwJZfHC58fWbgidYukz','1MN3cT9Ro927h4kgpSZ5V7SfYjrwTysXv7']);
     $bridge->deleteWallet($wallet);
-    die;
+    die;*/
 
     //$res = $bridge->gettransaction("0000297bd516c501aa9b143a5eac8adaf457fa78431e844092a7112815411d03"); //multisig !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -167,6 +165,11 @@ try {
     $wallet = $bridge->removeAddress($wallet, "1BdxBor4JG76RKLAwJZfHC58fWbgidYukz");
     $wallet = $bridge->removeAddress($wallet, "1BdxBor4JG76RKLAwJZfHC58fWbgidYukz");
 
+    $res = $bridge->sendrawtransaction("0100000001c94a679002e334674ad4d4e56deaaf3c6e7df1700c11812f319342c59641b8150".
+    "10000006b483045022100df9befbf00083719716e03310bceed664e7810b27eac884559f6dc6a4fe05dd7022060d4126d70ff399a9f90a".
+    "d2352e837497163aacf50d61f423c2b8924bb537aec01210267af6c6bf4ae6e37f019fbfbc7df70acf48663adbf19161bd874f3babd6bf".
+    "15c00000000027c150000000000001976a914df5d6e3c76eb3f38744fbe3b4a4f32aaaf7d607088ac5c951200000000001976a9140fb50".
+    "d2ec6bb62bd690bb55142101ca28a678be188ac00000000", 0);
 
 
     //$balance = $bridge->getbalance("1BdxBor4JG76RKLAwJZfHC58fWbgidYukz");

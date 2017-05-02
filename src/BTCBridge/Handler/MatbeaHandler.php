@@ -61,9 +61,112 @@ class MatbeaHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function listtransactions($address, array $options = array())
+    public function listtransactions($walletName, array $options = array())
     {
-        return new Address();
+        if ("string" != gettype($walletName)) {
+            throw new \InvalidArgumentException("Account variable must be non empty string.");
+        }
+        if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
+            throw new \InvalidArgumentException(
+                "Wallet name have to contain only alphanumeric, underline and dash symbols (\"" .
+                $walletName . "\" passed)."
+            );
+        }
+        $url = $this->getOption(self::OPT_BASE_URL) . "/" . "listtransactions" . "?accountId=" . $walletName;
+        $sep = "?";
+        if ($this->token) {
+            $url .= "&token=" . $this->token;
+            $sep = "&";
+        }
+        if (array_key_exists('before', $options) && (null !== $options['before'])) {
+            $url .= $sep . "before=" . $options['before'];
+            $sep = "&";
+        }
+        if (array_key_exists('after', $options) && (null !== $options['after'])) {
+            $url .= $sep . "after=" . $options['after'];
+            $sep = "&";
+        }
+        if (array_key_exists('limit', $options) && (200 !== $options['limit'])) {
+            $url .= $sep . "limit=" . $options['limit'];
+            $sep = "&";
+        }
+        if (array_key_exists('confirmations', $options) && (null !== $options['confirmations'])) {
+            $url .= $sep . "confirmations=" . $options['confirmations'];
+            //$sep = "&";
+        }
+
+        $awaiting_params = [
+            'before',
+            'after',
+            'limit',
+            'confirmations'
+        ];
+        foreach ($options as $opt_name => $opt_val) {
+            if (!in_array($opt_name, $awaiting_params)) {
+                $this->logger->warning("Method \"" . __METHOD__ . "\" does not accept option \"" . $opt_name . "\".");
+            }
+        }
+
+        $ch = curl_init();
+        $this->prepareCurl($ch, $url);
+        $content = curl_exec($ch);
+        if (false === $content) {
+            throw new \RuntimeException("curl error occured (url:\"" . $url . "\")");
+        }
+        $content = json_decode($content, true);
+        if ((false === $content) || (null === $content)) {
+            throw new \RuntimeException("curl does not return a json object (url:\"" . $url . "\").");
+        }
+        if (isset($content['error'])) {
+            throw new \RuntimeException(
+                "Error (code: " . $content["error"]["code"] . ") \""
+                . $content['error']["message"] . "\" returned (url:\"" . $url . "\")."
+            );
+        }
+
+        /** @var $result Address */
+        $addrObject = new Address();
+
+        if (isset($content['address'])) {
+            $addrObject->setAddress($content['address']);
+        } else {
+            if (isset($content['wallet'])) {
+                $wallet = new Wallet();
+                $wallet->setAddresses($content['wallet']['addresses']);
+                $wallet->setName($content['wallet']['name']);
+                $addrObject->setWallet($wallet);
+            }
+        }
+
+
+
+        /** @var $txrefs TransactionReference[] */
+        $txrefs = [];
+
+        foreach ($content["transactions"] as $txref) {
+            $txr = new TransactionReference();
+            $txr->setBlockHeight($txref["block_height"]);
+            $txr->setConfirmations($txref["confirmations"]);
+            $txr->setDoubleSpend($txref["double_spend"]);
+            //$txr->setSpent($txref["spent"]);
+            $txr->setTxHash($txref["txid"]);
+            //$txr->setTxInputN($txref["tx_input_n"]);
+            $txr->setTxOutputN($txref["amount"]);
+            if ( false !== strpos($txref["amount"],"E") ) {
+                $txref["amount"] = sprintf('%f', $txref["amount"]); //Exponential form
+            }
+            $v = gmp_init(strval($txref["amount"]*100*1000*1000));
+            $txr->setValue($v);
+            $txr->setAddress($txref['address']);
+            $filteredTxs = array_filter($result, function (TransactionReference $tx) use ($txr) {
+                    return $tx->isEqual($txr);
+                });
+            if (empty($filteredTxs)) {
+                $txrefs [] = $txr;
+            }
+        }
+        $addrObject->setTxrefs($txrefs);
+        return $addrObject;
     }
 
     /**
@@ -472,8 +575,6 @@ class MatbeaHandler extends AbstractHandler
                 $result [] = $txr;
             }
         }
-
-
         return $result;
     }
 
