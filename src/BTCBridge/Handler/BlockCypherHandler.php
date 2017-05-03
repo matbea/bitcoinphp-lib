@@ -21,6 +21,8 @@ use BitWasp\Bitcoin\Script\ScriptFactory;
 use BitWasp\Bitcoin\Script\Classifier\OutputClassifier;
 use BitWasp\Bitcoin\Key\PublicKeyFactory;
 use BitWasp\Bitcoin\Script\Script;
+use BitWasp\Bitcoin\Crypto\EcAdapter\Impl\PhpEcc\Key\PublicKey;
+use BitWasp\Bitcoin\Script\Opcodes;
 
 /**
  * Returns data to user's btc-requests using BlockCypher-API
@@ -58,6 +60,51 @@ class BlockCypherHandler extends AbstractHandler
     }
 
     /**
+     * Decode Multisig or Nonstandard type of signature from array with data
+     *
+     * @param array $decoded An token for accessing to the blockcypher data
+     *
+     * @return array
+     */
+    /** @noinspection PhpUndefinedClassInspection */
+    private function decodeMultisig(array $decoded) {
+        $count = count($decoded);
+        if ($count <= 3) {
+            return [];
+        }
+
+        $mOp = $decoded[0];
+        $nOp = $decoded[$count - 2];
+        $checksig = $decoded[$count - 1];
+        /** @noinspection PhpUndefinedMethodInspection */
+        if ($mOp->isPush() || $nOp->isPush() || $checksig->isPush()) {
+            return [];
+        }
+
+        /** @var Operation[] $vKeys */
+        $vKeys = array_slice($decoded, 1, -2);
+        $solutions = [];
+        foreach ($vKeys as $key) {
+            /** @noinspection PhpUndefinedMethodInspection */
+            if (!$key->isPush() || !PublicKey::isCompressedOrUncompressed($key->getData())) {
+                continue;
+            }
+            /** @noinspection PhpUndefinedMethodInspection */
+            $solutions[] = $key->getData();
+        }
+
+        /** @noinspection PhpUndefinedMethodInspection */
+        /** @noinspection PhpUndefinedMethodInspection */
+        /** @noinspection PhpUndefinedMethodInspection */
+        if ($mOp->getOp() >= Opcodes::OP_0
+            && $nOp->getOp() <= Opcodes::OP_16
+            && $checksig->getOp() === Opcodes::OP_CHECKMULTISIG) {
+            return $solutions;
+        }
+        return $solutions;
+    }
+
+    /**
      * Extract destination bitcoin-addresses from the multisig output
      *
      * @param string $script hex of ScriptPubKey of output, must be multisig
@@ -68,6 +115,7 @@ class BlockCypherHandler extends AbstractHandler
      * @return \string addresses
      */
 
+    /** @noinspection PhpUnusedPrivateMethodInspection */
     private function extractAddressesFromMultisigScript($script)
     {
         if (("string" != gettype($script)) || ("" == $script)) {
@@ -83,16 +131,21 @@ class BlockCypherHandler extends AbstractHandler
         }
         //$decode = (new OutputClassifier())->decode($script);
         $solutions = null;
-        $type = (new OutputClassifier())->classify($objScript,$solutions);
-        if ( in_array($type,["multisig","nonstandard"]) ) {
+        $decoded = $objScript->getScriptParser()->decode();
+        $classifier = new OutputClassifier();
+        $type = $classifier->classify($objScript,$solutions);
+        if ( "nonstandard" == $type ) {
+            $solutions = $this->decodeMultisig($decoded);
+        }
+
+        /*if ( in_array($type,["multisig","nonstandard"]) ) {
             return []; //This moment we'll not elaborate this case
         } else {
             throw new \InvalidArgumentException(
                 "Type of passed scriptPubKey is not multisig or nonstandard (" . $script . ")."
             );
-        }
+        }*/
 
-        /*
         if (("multisig" !== $type) && ("nonstandard" !== $type)) {
             throw new \InvalidArgumentException("Type of signature of passed scriptPubkey (" . $script . ") is not multisig.");
         }
@@ -109,7 +162,6 @@ class BlockCypherHandler extends AbstractHandler
             }
         }
         return $addresses;
-        */
     }
 
     /**
@@ -341,11 +393,10 @@ class BlockCypherHandler extends AbstractHandler
             $output = new TransactionOutput();
             $output->setAddresses((isset($outp["addresses"]) && (null!==$outp["addresses"]))?$outp["addresses"]:[]);
             $output->setValue(gmp_init(strval($outp["value"])));
-            if ("pay-to-multi-pubkey-hash" == $outp["script_type"]) {
+            /*if ("pay-to-multi-pubkey-hash" == $outp["script_type"]) {
                 //TODO after fixing bug in bit-wasp with the multisig/nonstandard
-                /** @noinspection PhpUnusedLocalVariableInspection */
                 $multisigAddresses = $this->extractAddressesFromMultisigScript($outp["script"]);
-                /*$previousOutputAddresses = $output->getAddresses();
+                $previousOutputAddresses = $output->getAddresses();
                 $output->setAddresses($multisigAddresses);
                 $txAddresses = $tx->getAddresses();
                 if (!empty($previousOutputAddresses)) {
@@ -359,8 +410,8 @@ class BlockCypherHandler extends AbstractHandler
                         }
                     }
                     $tx->setAddresses($txAddresses);
-                }*/
-            }
+                }
+            }*/
             $options = [];
             $script_type = $this->getTransformedTypeOfSignature($outp["script_type"], $options);
             $output->setScriptType($script_type);
@@ -377,103 +428,69 @@ class BlockCypherHandler extends AbstractHandler
         if (empty($txHashes)) {
             throw new \InvalidArgumentException("txHashes variable must be non empty array of non empty strings.");
         }
-
-        $urls = [];
+        $maxCountOfTransactions = 100;
+        if (count($maxCountOfTransactions) > 100) {
+            throw new \InvalidArgumentException("txHashes variable size could not be bigger than " . $maxCountOfTransactions . ".");
+        }
 
         foreach ( $txHashes as $txHash ) {
             if ((!is_string($txHash)) && (""==$txHash)) {
                 throw new \InvalidArgumentException("All hashes is \$txHashes array must be non empty strings.");
             }
-
-            $url = $this->getOption(self::OPT_BASE_URL) . "txs/" . $txHash;
-
-            $sep = "?";
-            if (array_key_exists('limit', $options) && (20 !== $options['limit'])) {
-                $url .= $sep . "limit=" . $options['limit'];
-                $sep = "&";
-            }
-            if (array_key_exists('instart', $options) && (null !== $options['instart'])) {
-                $url .= $sep . "instart=" . $options['instart'];
-                $sep = "&";
-            }
-            if (array_key_exists('outstart', $options) && (null !== $options['outstart'])) {
-                $url .= $sep . "outstart=" . $options['outstart'];
-                $sep = "&";
-            }
-            if (array_key_exists('includeHex', $options) && (true === $options['includeHex'])) {
-                $url .= $sep . "includeHex=true";
-                $sep = "&";
-            }
-            if (array_key_exists('includeConfidence', $options) && (true === $options['includeConfidence'])) {
-                $url .= $sep . "includeConfidence=true";
-            }
-
-            $awaiting_params = ['limit', 'instart', 'outstart', 'includeHex', 'includeConfidence'];
-
-            foreach ($options as $opt_name => $opt_val) {
-                if (!in_array($opt_name, $awaiting_params)) {
-                    $this->logger->warning("Method \"" . __METHOD__ . "\" does not accept option \"" . $opt_name . "\".");
-                }
-            }
-            $urls[$url] = [];
-            $urls[$url]["ch"] = "";
         }
 
-        $multi = curl_multi_init();
-        $allResults = [];
-        foreach ($urls as $url => $urlData) {
-            $ch = curl_init();
-            $this->prepareCurl($ch, $url);
-            //curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-            curl_multi_add_handle($multi, $ch);
-            $urls[$url]["ch"] = $ch;
+        $url = $this->getOption(self::OPT_BASE_URL) . "txs/" . implode(";",$txHashes);
+
+        $sep = "?";
+        if (array_key_exists('limit', $options) && (20 !== $options['limit'])) {
+            $url .= $sep . "limit=" . $options['limit'];
+            $sep = "&";
+        }
+        if (array_key_exists('instart', $options) && (null !== $options['instart'])) {
+            $url .= $sep . "instart=" . $options['instart'];
+            $sep = "&";
+        }
+        if (array_key_exists('outstart', $options) && (null !== $options['outstart'])) {
+            $url .= $sep . "outstart=" . $options['outstart'];
+            $sep = "&";
+        }
+        if (array_key_exists('includeHex', $options) && (true === $options['includeHex'])) {
+            $url .= $sep . "includeHex=true";
+            $sep = "&";
+        }
+        if (array_key_exists('includeConfidence', $options) && (true === $options['includeConfidence'])) {
+            $url .= $sep . "includeConfidence=true";
         }
 
-        $active = null;
-        do {
-            $mrc = curl_multi_exec($multi, $active);
-        } while ($mrc == CURLM_CALL_MULTI_PERFORM);
+        $awaiting_params = ['limit', 'instart', 'outstart', 'includeHex', 'includeConfidence'];
 
-        while ($active && $mrc == CURLM_OK) {
-            # for php 7+
-//            if (curl_multi_select($multi) == -1) {
-//                continue;
-//            }
-            # For php 5.6
-            if (curl_multi_select($multi) == -1) {
-                usleep(500);
+        foreach ($options as $opt_name => $opt_val) {
+            if (!in_array($opt_name, $awaiting_params)) {
+                $this->logger->warning("Method \"" . __METHOD__ . "\" does not accept option \"" . $opt_name . "\".");
             }
-            do {
-                $mrc = curl_multi_exec($multi, $active);
-            } while ($mrc == CURLM_CALL_MULTI_PERFORM);
         }
 
-
-        //Пока все соединения не отработают
-        //do { curl_multi_exec($multi,$active); } while ($active);
-
-        foreach ($urls as $url => $urlData) {
-            $content = curl_multi_getcontent($urlData['ch']);
-            if ( (!$content) || (""==$content) ) {
-                curl_multi_close($multi);
-                throw new \RuntimeException("curl did not return content (url:\"" . $url . "\")");
-            }
-            $content = json_decode($content, true);
-            if ((false === $content) || (null === $content)) {
-                curl_multi_close($multi); //???
-                throw new \RuntimeException("curl does not return a json object (url:\"" . $url . "\").");
-            }
-            $allResults [] = ["url" => $url, "content" => $content];
-            curl_multi_remove_handle($multi, $urlData['ch']);
+        $ch = curl_init();
+        $this->prepareCurl($ch, $url);
+        $fullContent = curl_exec($ch);
+        if (false === $fullContent) {
+            throw new \RuntimeException("curl error occured (url:\"" . $url . "\")");
         }
-        curl_multi_close($multi);
+        $fullContent = json_decode($fullContent, true);
+        if ((false === $fullContent) || (null === $fullContent)) {
+            throw new \RuntimeException("curl does not return a json object (url:\"" . $url . "\").");
+        }
+        if (isset($fullContent['error'])) {
+            throw new \RuntimeException("Error \"" . $fullContent['error'] . "\" returned (url:\"" . $url . "\").");
+        }
 
-        $txs = [];
+        $txs = array_fill(0, count($txHashes), null);
+        if ( 1 == count($txHashes) ) {
+            $fullContent = [$fullContent];
+        }
+        //$key2 = array_search($txHashes[1], array_column($fullContent, 'hash'));
 
-        foreach ($allResults as $result) {
-            $url = &$result["url"];
-            $content = &$result["content"];
+        foreach ($fullContent as $content) {
             if (isset($content['error'])) {
                 throw new \RuntimeException("Error \"" . $content['error'] . "\" returned (url:\"" . $url . "\").");
             }
@@ -503,6 +520,27 @@ class BlockCypherHandler extends AbstractHandler
                 }
                 $val = gmp_init(strval($inp["output_value"]));
                 $input->setOutputValue($val);
+                //////////////////////////////////////////
+                /*
+                if ("pay-to-multi-pubkey-hash" == $inp["script_type"]) {
+                    $multisigAddresses = $this->extractAddressesFromMultisigScript($inp["script"]);
+                    $previousInputAddresses = $input->getAddresses();
+                    $input->setAddresses($multisigAddresses);
+                    $txAddresses = $tx->getAddresses();
+                    if (!empty($previousInputAddresses)) {
+                        $tx->setAddresses(array_diff($txAddresses, $previousInputAddresses));
+                        $txAddresses = $tx->getAddresses();
+                    }
+                    if ( !empty($multisigAddresses) ) {
+                        foreach ( $multisigAddresses as $addr ) {
+                            if ( !in_array($addr,$txAddresses) ) {
+                                $txAddresses [] = $addr;
+                            }
+                        }
+                        $tx->setAddresses($txAddresses);
+                    }
+                }*/
+                //////////////////////////////////////////
                 $options = [];
                 if ( $input->getOutputIndex() == -1 ) {
                     $options["newlyminted"] = true;
@@ -514,11 +552,9 @@ class BlockCypherHandler extends AbstractHandler
                 $output = new TransactionOutput();
                 $output->setAddresses((isset($outp["addresses"]) && (null!==$outp["addresses"]))?$outp["addresses"]:[]);
                 $output->setValue(gmp_init(strval($outp["value"])));
-                if ("pay-to-multi-pubkey-hash" == $outp["script_type"]) {
-                    //TODO after fixing bug in bit-wasp with the multisig/nonstandard
-                    /** @noinspection PhpUnusedLocalVariableInspection */
+                /*if ("pay-to-multi-pubkey-hash" == $outp["script_type"]) {
                     $multisigAddresses = $this->extractAddressesFromMultisigScript($outp["script"]);
-                    /*$previousOutputAddresses = $output->getAddresses();
+                    $previousOutputAddresses = $output->getAddresses();
                     $output->setAddresses($multisigAddresses);
                     $txAddresses = $tx->getAddresses();
                     if (!empty($previousOutputAddresses)) {
@@ -532,14 +568,15 @@ class BlockCypherHandler extends AbstractHandler
                             }
                         }
                         $tx->setAddresses($txAddresses);
-                    }*/
-                }
+                    }
+                }*/
                 $options = [];
                 $script_type = $this->getTransformedTypeOfSignature($outp["script_type"], $options);
                 $output->setScriptType($script_type);
                 $tx->addOutput($output);
             }
-            $txs [] = $tx;
+            $index = array_search($content["hash"], $txHashes);
+            $txs[$index] = $tx;
         }
         return $txs;
     }

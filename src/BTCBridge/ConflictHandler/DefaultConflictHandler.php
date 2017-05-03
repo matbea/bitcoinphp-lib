@@ -14,6 +14,7 @@ namespace BTCBridge\ConflictHandler;
 //use BitWasp\Bitcoin\Transaction\Transaction;
 //use BitWasp\Bitcoin\Transaction\TransactionOutput;
 use BTCBridge\Api\Transaction;
+use BTCBridge\Api\TransactionInput;
 use BTCBridge\Api\TransactionOutput;
 use BTCBridge\Api\Address;
 use \BTCBridge\Api\TransactionReference;
@@ -197,11 +198,15 @@ class DefaultConflictHandler implements ConflictHandlerInterface
         }
         $addressesArr1 = $tx1->getAddresses();
         $addressesArr2 = $tx2->getAddresses();
-        //If at least one of outputs is multisig/nonstandard - we'll not make strong check
+        //If at least one of outputs/inputs is multisig/nonstandard - we'll not make strong check
         $multisigOrnonstandardOutputs = array_filter($tx1->getOutputs(), function (TransactionOutput $output) /*use ($txr)*/ {
                 return in_array($output->getScriptType(),["multisig","nonstandard"]);
             });
-        if (empty($multisigOrnonstandardOutputs)) {
+        $multisigOrnonstandardInputs = array_filter($tx1->getInputs(), function (TransactionInput $input) {
+                return in_array($input->getScriptType(),["multisig","nonstandard"]);
+            });
+
+        if (empty($multisigOrnonstandardOutputs) && empty($multisigOrnonstandardInputs)) {
             if ($addressesArr1 != $addressesArr2) {
                 throw new ConflictHandlerException(
                     "Different addresses ( " . implode(",", $addressesArr1)
@@ -233,7 +238,6 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                         break;
                     }
                 }
-
             }
         }
         if ($error) {
@@ -275,20 +279,27 @@ class DefaultConflictHandler implements ConflictHandlerInterface
             $input2 = & $inputs2[$i];
             if (($input1->getPrevHash() != $input2->getPrevHash()) ||
                 ($input1->getOutputIndex() != $input2->getOutputIndex()) ||
-                ($input1->getAddresses() != $input2->getAddresses()) ||
+                //($input1->getAddresses() != $input2->getAddresses()) ||
                 ( gmp_cmp($input1->getOutputValue(), $input2->getOutputValue()) != 0 ) ||
                 ($input1->getScriptType() != $input2->getScriptType())
             ) {
-                /** @noinspection PhpUnusedLocalVariableInspection */
                 $error = true;
                 break;
-            }
-            if ($error) {
-                throw new ConflictHandlerException(
-                    "Inputs are not equal ( " . serialize($inputs1) . " ), ( " . serialize($inputs2) . " )."
-                );
+            } else {
+                if (!in_array($input1->getScriptType(),["multisig","nonstandard"])) {
+                    if ($input1->getAddresses() != $input2->getAddresses()) {
+                        $error = true;
+                        break;
+                    }
+                }
             }
         }
+        if ($error) {
+            throw new ConflictHandlerException(
+                "Inputs are not equal ( " . serialize($inputs1) . " ), ( " . serialize($inputs2) . " )."
+            );
+        }
+
         /*for ($i = 0, $ic = count($inputs1); $i < $ic; ++$i) {
             $input = & $inputs1[$i];
             $found = false;
@@ -364,7 +375,11 @@ class DefaultConflictHandler implements ConflictHandlerInterface
             $multisigOrnonstandardOutputs = array_filter($tx1->getOutputs(), function (TransactionOutput $output) /*use ($txr)*/ {
                     return in_array($output->getScriptType(),["multisig","nonstandard"]);
                 });
-            if (empty($multisigOrnonstandardOutputs)) {
+            $multisigOrnonstandardInputs = array_filter($tx1->getInputs(), function (TransactionInput $input) {
+                    return in_array($input->getScriptType(),["multisig","nonstandard"]);
+                });
+
+            if (empty($multisigOrnonstandardOutputs) && empty($multisigOrnonstandardInputs)) {
                 if ($addressesArr1 != $addressesArr2) {
                     throw new ConflictHandlerException(
                         "Different addresses ( " . implode(",", $addressesArr1)
@@ -396,7 +411,6 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                             break;
                         }
                     }
-
                 }
             }
             if ($error) {
@@ -438,19 +452,26 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                 $input2 = & $inputs2[$i];
                 if (($input1->getPrevHash() != $input2->getPrevHash()) ||
                     ($input1->getOutputIndex() != $input2->getOutputIndex()) ||
-                    ($input1->getAddresses() != $input2->getAddresses()) ||
+                    //($input1->getAddresses() != $input2->getAddresses()) ||
                     ( gmp_cmp($input1->getOutputValue(), $input2->getOutputValue()) != 0 ) ||
                     ($input1->getScriptType() != $input2->getScriptType())
                 ) {
                     /** @noinspection PhpUnusedLocalVariableInspection */
                     $error = true;
                     break;
+                } else {
+                    if (!in_array($input1->getScriptType(),["multisig","nonstandard"])) {
+                        if ($input1->getAddresses() != $input2->getAddresses()) {
+                            $error = true;
+                            break;
+                        }
+                    }
                 }
-                if ($error) {
-                    throw new ConflictHandlerException(
-                        "Inputs are not equal ( " . serialize($inputs1) . " ), ( " . serialize($inputs2) . " )."
-                    );
-                }
+            }
+            if ($error) {
+                throw new ConflictHandlerException(
+                    "Inputs are not equal ( " . serialize($inputs1) . " ), ( " . serialize($inputs2) . " )."
+                );
             }
             /*for ($i = 0, $ic = count($inputs1); $i < $ic; ++$i) {
                 $input = & $inputs1[$i];
