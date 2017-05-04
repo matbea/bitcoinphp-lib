@@ -25,7 +25,7 @@ use \BTCBridge\Api\TransactionReference;
 abstract class AbstractHandler
 {
     /** @const HANDLER_UNSUPPORTED_METHOD this value returned if method is unsupported */
-    const HANDLER_UNSUPPORTED_METHOD = 1;
+    const HANDLER_UNSUPPORTED_METHOD = "HANDLER_UNSUPPORTED_METHOD";
 
     /** This group of constants are options */
     const OPT_BASE_URL = 1;
