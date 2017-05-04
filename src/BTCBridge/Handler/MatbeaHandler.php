@@ -159,7 +159,7 @@ class MatbeaHandler extends AbstractHandler
             $v = gmp_init(strval($txref["amount"]*100*1000*1000));
             $txr->setValue($v);
             $txr->setAddress($txref['address']);
-            $filteredTxs = array_filter($result,
+            $filteredTxs = array_filter($txrefs,
                 function (TransactionReference $tx) use ($txr) {
                     return $tx->isEqual($txr);
                 });
