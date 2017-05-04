@@ -333,7 +333,7 @@ class Bridge
         $results = [];
         foreach ($this->handlers as $handle) {
             $result = $handle->listtransactions($address, $options);
-            if ( AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $result ) {
+            if (AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $result) {
                 $results [] = $result;
             }
         }
@@ -372,7 +372,7 @@ class Bridge
         $results = [];
         foreach ($this->handlers as $handle) {
             $result = $handle->gettransaction($TXHASH, $options);
-            if ( AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $result ) {
+            if (AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $result) {
                 $results [] = $result;
             }
         }
@@ -400,14 +400,15 @@ class Bridge
      *
      * @return Transaction[]
      */
-    public function gettransactions(array $txHashes, array $options = array()) {
+    public function gettransactions(array $txHashes, array $options = array())
+    {
         if (empty($txHashes)) {
             throw new \InvalidArgumentException("txHashes variable must be non empty array of non empty strings.");
         }
         $results = [];
         foreach ($this->handlers as $handle) {
             $result = $handle->gettransactions($txHashes, $options);
-            if ( AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $result ) {
+            if (AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $result) {
                 $results [] = $result;
             }
         }
@@ -448,7 +449,7 @@ class Bridge
         $results = [];
         foreach ($this->handlers as $handle) {
             $result = $handle->getbalance($walletName, $Confirmations, $IncludeWatchOnly);
-            if ( AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $result ) {
+            if (AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $result) {
                 $results [] = $result;
             }
         }
@@ -486,7 +487,7 @@ class Bridge
         foreach ($this->handlers as $handle) {
             //$result = call_user_func_array([$handle, "getunconfirmedbalance"], [$Account]);
             $result = $handle->getunconfirmedbalance($walletName);
-            if ( AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $result ) {
+            if (AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $result) {
                 $results [] = $result;
             }
         }
@@ -523,7 +524,7 @@ class Bridge
                 $walletName . "\" passed)."
             );
         }
-        if ( !is_int($MinimumConfirmations) || $MinimumConfirmations < 0 ) {
+        if (!is_int($MinimumConfirmations) || $MinimumConfirmations < 0) {
             throw new \InvalidArgumentException(
                 "\$MinumumConfirmations variable must be nonnegative integerymbols ( " .
                 $MinimumConfirmations . " passed)."
@@ -532,7 +533,7 @@ class Bridge
         $results = [];
         foreach ($this->handlers as $handle) {
             $result = $handle->listunspent($walletName, $MinimumConfirmations);
-            if ( AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $result ) {
+            if (AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $result) {
                 $results [] = $result;
             }
         }
@@ -563,7 +564,7 @@ class Bridge
         for ($i = 0, $ic = count($this->handlers); $i < $ic; ++$i) {
             try {
                 $result = $this->handlers[$i]->sendrawtransaction($Transaction);
-                if ( AbstractHandler::HANDLER_UNSUPPORTED_METHOD === $result ) {
+                if (AbstractHandler::HANDLER_UNSUPPORTED_METHOD === $result) {
                     $result = null;
                     continue;
                 }
@@ -628,7 +629,7 @@ class Bridge
                 break;
             }
             $successHandlers [] = $this->handlers[$i];
-            if ( AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $resultWallet ) {
+            if (AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $resultWallet) {
                 $resultWallets [] = $resultWallet;
             }
         }
@@ -847,7 +848,7 @@ class Bridge
                 $successHandlers,
                 $errorHandler,
                 $unusedHandlers,
-                null,/*This method does not return wallet, so we can pass null only*/
+                null, /*This method does not return wallet, so we can pass null only*/
                 '"' . $errorHandler->getHandlerName() . '" handler raised error (method deleteWallet).'
             );
         }
@@ -1091,7 +1092,7 @@ class Bridge
         foreach ($outputsForSpent as $output) {
             $txSource = new \stdClass();
             $txSource->address = AddressFactory::fromString($output->getAddress());
-            $txSource->privateKey = $this->dumpprivkey($walletName, $output->getAddress());
+            $txSource->privateKey = $this->dumpprivkey($output->getAddress());
             if (!$txSource->privateKey) {
                 throw new \RuntimeException(
                     "dumpprivkey did not return object on address \"" . $output->getAddress() . "\"."
@@ -1229,7 +1230,7 @@ class Bridge
         foreach ($outputsForSpent as $output) {
             $txSource = new \stdClass();
             $txSource->address = AddressFactory::fromString($output->getAddress());
-            $txSource->privateKey = $this->dumpprivkey($walletName, $output->getAddress());
+            $txSource->privateKey = $this->dumpprivkey($output->getAddress());
             if (!$txSource->privateKey) {
                 throw new \RuntimeException(
                     "dumpprivkey did not return object on address \"" . $output->getAddress() . "\"."
@@ -1252,7 +1253,9 @@ class Bridge
         }
         $transaction = $transaction->payToAddress($amount, AddressFactory::fromString($address));
         if ($change >= $this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT)) {
-            $addressForChange = ("" != $sendMoneyOptions) ? $sendMoneyOptions->getAddressForChange() : $outputsForSpent[0]->getAddress();
+            $addressForChange = ("" != $sendMoneyOptions)
+                ? $sendMoneyOptions->getAddressForChange()
+                : $outputsForSpent[0]->getAddress();
             /** @noinspection PhpUndefinedMethodInspection */
             $transaction = $transaction->payToAddress($change, AddressFactory::fromString($addressForChange));
         }
@@ -1378,7 +1381,7 @@ class Bridge
         foreach ($outputsForSpent as $output) {
             $txSource = new \stdClass();
             $txSource->address = AddressFactory::fromString($output->getAddress());
-            $txSource->privateKey = $this->dumpprivkey($walletName, $output->getAddress());
+            $txSource->privateKey = $this->dumpprivkey($output->getAddress());
             if (!$txSource->privateKey) {
                 throw new \RuntimeException(
                     "dumpprivkey did not return object on address \"" . $output->getAddress() . "\"."
@@ -1507,7 +1510,7 @@ class Bridge
             } elseif ($change > 0) {
                 if ($change < intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT))) {
                     $amount = $amount - (intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT)) - $change);
-                    if ( $amount < intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT)) ) {
+                    if ($amount < intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT))) {
                         throw new \InvalidArgumentException(
                             "The transaction amount is too small to send after the fee has been deducted."
                         );
@@ -1525,7 +1528,7 @@ class Bridge
         foreach ($outputsForSpent as $output) {
             $txSource = new \stdClass();
             $txSource->address = AddressFactory::fromString($output->getAddress());
-            $txSource->privateKey = $this->dumpprivkey($walletName, $output->getAddress());
+            $txSource->privateKey = $this->dumpprivkey($output->getAddress());
             if (!$txSource->privateKey) {
                 throw new \RuntimeException(
                     "dumpprivkey did not return object on address \"" . $output->getAddress() . "\"."

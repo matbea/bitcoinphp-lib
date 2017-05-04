@@ -152,13 +152,15 @@ class MatbeaHandler extends AbstractHandler
             $txr->setTxHash($txref["txid"]);
             //$txr->setTxInputN($txref["tx_input_n"]);
             $txr->setTxOutputN($txref["amount"]);
-            if ( false !== strpos($txref["amount"],"E") ) {
+            if (false !== strpos($txref["amount"],"E"))
+            {
                 $txref["amount"] = sprintf('%f', $txref["amount"]); //Exponential form
             }
             $v = gmp_init(strval($txref["amount"]*100*1000*1000));
             $txr->setValue($v);
             $txr->setAddress($txref['address']);
-            $filteredTxs = array_filter($result, function (TransactionReference $tx) use ($txr) {
+            $filteredTxs = array_filter($result,
+                function (TransactionReference $tx) use ($txr) {
                     return $tx->isEqual($txr);
                 });
             if (empty($filteredTxs)) {
@@ -234,7 +236,7 @@ class MatbeaHandler extends AbstractHandler
             );
         }
         $tx = new Transaction;
-        if ( -1 != $content["transaction"]["block_height"] ) {
+        if (-1 != $content["transaction"]["block_height"]) {
             $tx->setConfirmed(strtotime($content["transaction"]["confirmed"]));
             $tx->setBlockHash($content["transaction"]["block_hash"]);
             $tx->setBlockHeight($content["transaction"]["block_height"]);
@@ -289,16 +291,15 @@ class MatbeaHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function gettransactions(array $txHashes, array $options = array()) {
-
+    public function gettransactions(array $txHashes, array $options = array())
+    {
         if (empty($txHashes)) {
             throw new \InvalidArgumentException("txHashes variable must be non empty array of non empty strings.");
         }
-
         $url = $this->getOption(self::OPT_BASE_URL) . "/gettransactions";
         $sep = "?";
-
-        foreach ( $txHashes as $txHash ) {
+        foreach ($txHashes as $txHash)
+        {
             if ((!is_string($txHash)) && (""==$txHash)) {
                 throw new \InvalidArgumentException("All hashes is \$txHashes array must be non empty strings.");
             }
@@ -361,7 +362,8 @@ class MatbeaHandler extends AbstractHandler
 
         $txs = [];
 
-        foreach ( $content["transactions"] as $tr ) {
+        foreach ($content["transactions"] as $tr)
+        {
             $tx = new Transaction;
             if (-1 != $tr["block_height"]) {
                 $tx->setConfirmed(strtotime($tr["confirmed"]));
@@ -527,7 +529,7 @@ class MatbeaHandler extends AbstractHandler
         if ($this->token) {
             $url .= "&token=" . $this->token;
         }
-        if ( $MinimumConfirmations > 0 ) {
+        if ($MinimumConfirmations > 0) {
             $url .= "&confirmations=" . intval($MinimumConfirmations);
         }
         $ch = curl_init();
@@ -564,11 +566,12 @@ class MatbeaHandler extends AbstractHandler
             $txr->setTxOutputN($txref["tx_output_n"]);
             $v = gmp_init(strval($txref["value"]*100*1000*1000));
             $txr->setValue($v);
-            if ( isset($txref["address"]) ) {
+            if (isset($txref["address"])) {
                 $txr->setAddress($txref['address']);
             }
             $txr->setConfirmed(strtotime($txref["confirmed"]));
-            $filteredTxs = array_filter($result, function (TransactionReference $tx) use ($txr) {
+            $filteredTxs = array_filter($result,
+                function (TransactionReference $tx) use ($txr) {
                     return $tx->isEqual($txr);
                 });
             if (empty($filteredTxs)) {
@@ -602,7 +605,7 @@ class MatbeaHandler extends AbstractHandler
             CURLOPT_SSL_VERIFYHOST => 0,
             CURLOPT_SSL_VERIFYPEER => 0
         ];
-        if ( FALSE === curl_setopt_array($curl, $curl_options)) {
+        if (false === curl_setopt_array($curl, $curl_options)) {
             throw new \RuntimeException(
                 "curl_setopt_array failed url:\"" . $url . "\", parameters: " . serialize($curl_options) . ")."
             );
@@ -647,7 +650,7 @@ class MatbeaHandler extends AbstractHandler
             );
         }
         $url = $this->getOption(self::OPT_BASE_URL) . "/wallet/create?name=" . $walletName;
-        $url = str_replace("/btcbridge","",$url); //HUERAGA
+        $url = str_replace("/btcbridge", "", $url); //HUERAGA
         if ($this->token) {
             $url .= "&token=" . $this->token;
         }
@@ -694,7 +697,8 @@ class MatbeaHandler extends AbstractHandler
         }
         if (isset($content['error'])) {
             throw new \RuntimeException(
-                "Error (code " . $content["error"]["code"] . ") \"" . $content['error']["message"] . "\" returned (url: \"" . $url . "\", post: \""
+                "Error (code " . $content["error"]["code"] . ") \""
+                . $content['error']["message"] . "\" returned (url: \"" . $url . "\", post: \""
                 . serialize($post_data) . "\")."
             );
         }
@@ -737,7 +741,7 @@ class MatbeaHandler extends AbstractHandler
         }
 
         $url = $this->getOption(self::OPT_BASE_URL) . "/wallet/addaddresses?id=" . $walletId;
-        $url = str_replace("/btcbridge","",$url); //HUERAGA
+        $url = str_replace("/btcbridge", "", $url); //HUERAGA
         if ($this->token) {
             $url .= "&token=" . $this->token;
         }
@@ -759,7 +763,8 @@ class MatbeaHandler extends AbstractHandler
         ];
         if ( FALSE === curl_setopt_array($curl, $curl_options)) {
             throw new \RuntimeException(
-                "curl_setopt_array failed url:\"" . $url . "\", parameters: " . serialize($curl_options) . ")."
+                "curl_setopt_array failed url:\"" . $url . "\", parameters: "
+                . serialize($curl_options) . ")."
             );
         }
 
@@ -798,7 +803,7 @@ class MatbeaHandler extends AbstractHandler
         }
 
         $url = $this->getOption(self::OPT_BASE_URL) . "/wallet/removeaddresses?id=" . $walletId;
-        $url = str_replace("/btcbridge","",$url); //HUERAGA
+        $url = str_replace("/btcbridge", "", $url); //HUERAGA
         if ($this->token) {
             $url .= "&token=" . $this->token;
         }
@@ -821,7 +826,7 @@ class MatbeaHandler extends AbstractHandler
             CURLOPT_HTTPHEADER     => ['Content-Type:application/json'],
             CURLOPT_POSTFIELDS     => json_encode($post_data)
         ];
-        if ( FALSE === curl_setopt_array($curl, $curl_options)) {
+        if (FALSE === curl_setopt_array($curl, $curl_options)) {
             throw new \RuntimeException(
                 "curl_setopt_array failed url:\"" . $url . "\", parameters: " . serialize($curl_options) . ")."
             );
@@ -858,7 +863,7 @@ class MatbeaHandler extends AbstractHandler
         }
         $walletId = $walletSystemData["id"];
         $url = $this->getOption(self::OPT_BASE_URL) . "/wallet/delete?id=" . intval($walletId);
-        $url = str_replace("/btcbridge","",$url); //HUERAGA
+        $url = str_replace("/btcbridge", "", $url); //HUERAGA
         if ($this->token) {
             $url .= "&token=" . $this->token;
         }
@@ -913,7 +918,7 @@ class MatbeaHandler extends AbstractHandler
         }
         $walletId = $walletSystemData["id"];
         $url = $this->getOption(self::OPT_BASE_URL) . "/wallet/getaddresses?id=" . intval($walletId);
-        $url = str_replace("/btcbridge","",$url); //HUERAGA
+        $url = str_replace("/btcbridge", "", $url); //HUERAGA
         if ($this->token) {
             $url .= "&token=" . $this->token;
         }

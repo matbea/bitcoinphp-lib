@@ -67,7 +67,8 @@ class BlockCypherHandler extends AbstractHandler
      * @return array
      */
     /** @noinspection PhpUndefinedClassInspection */
-    private function decodeMultisig(array $decoded) {
+    private function decodeMultisig(array $decoded)
+    {
         $count = count($decoded);
         if ($count <= 3) {
             return [];
@@ -127,14 +128,16 @@ class BlockCypherHandler extends AbstractHandler
             throw new \InvalidArgumentException($ex->getMessage());
         }
         if (!$objScript instanceof Script) {
-            throw new \InvalidArgumentException("Passed string is not valid hex of scriptPubkey hex (" . $script . ").");
+            throw new \InvalidArgumentException(
+                "Passed string is not valid hex of scriptPubkey hex (" . $script . ")."
+            );
         }
         //$decode = (new OutputClassifier())->decode($script);
         $solutions = null;
         $decoded = $objScript->getScriptParser()->decode();
         $classifier = new OutputClassifier();
-        $type = $classifier->classify($objScript,$solutions);
-        if ( "nonstandard" == $type ) {
+        $type = $classifier->classify($objScript, $solutions);
+        if ("nonstandard" == $type) {
             $solutions = $this->decodeMultisig($decoded);
         }
 
@@ -147,7 +150,9 @@ class BlockCypherHandler extends AbstractHandler
         }*/
 
         if (("multisig" !== $type) && ("nonstandard" !== $type)) {
-            throw new \InvalidArgumentException("Type of signature of passed scriptPubkey (" . $script . ") is not multisig.");
+            throw new \InvalidArgumentException(
+                "Type of signature of passed scriptPubkey (" . $script . ") is not multisig."
+            );
         }
         if (!is_array($solutions) || empty($solutions)) {
             throw new \InvalidArgumentException("Incorrect solutions of passed scriptPubkey (" . $script . ").");
@@ -158,7 +163,9 @@ class BlockCypherHandler extends AbstractHandler
                 $addr =  PublicKeyFactory::fromHex($solution)->getAddress();
                 $addresses [] = $addr->getAddress();
             } catch (\Exception $ex) {
-                throw new \InvalidArgumentException("Passed scriptPubkey does not ontain valid addresses (" . $script . ").");
+                throw new \InvalidArgumentException(
+                    "Passed scriptPubkey does not ontain valid addresses (" . $script . ")."
+                );
             }
         }
         return $addresses;
@@ -252,7 +259,7 @@ class BlockCypherHandler extends AbstractHandler
             $val = gmp_init(strval($inp["output_value"]));
             $input->setOutputValue($val);
             $options = [];
-            if ( $input->getOutputIndex() == -1 ) {
+            if ($input->getOutputIndex() == -1) {
                 $options["newlyminted"] = true;
             }
             $input->setScriptType($this->getTransformedTypeOfSignature($inp["script_type"], $options));
@@ -298,17 +305,21 @@ class BlockCypherHandler extends AbstractHandler
             throw new \InvalidArgumentException("txHashes variable must be non empty array of non empty strings.");
         }
         $maxCountOfTransactions = 100;
-        if (count($maxCountOfTransactions) > 100) {
-            throw new \InvalidArgumentException("txHashes variable size could not be bigger than " . $maxCountOfTransactions . ".");
+        if (count($txHashes) > $maxCountOfTransactions) {
+            throw new \InvalidArgumentException(
+                "txHashes variable size could not be bigger than " . $maxCountOfTransactions . "."
+            );
         }
 
         foreach ( $txHashes as $txHash ) {
             if ((!is_string($txHash)) && (""==$txHash)) {
-                throw new \InvalidArgumentException("All hashes is \$txHashes array must be non empty strings.");
+                throw new \InvalidArgumentException(
+                    "All hashes is \$txHashes array must be non empty strings."
+                );
             }
         }
 
-        $url = $this->getOption(self::OPT_BASE_URL) . "txs/" . implode(";",$txHashes);
+        $url = $this->getOption(self::OPT_BASE_URL) . "txs/" . implode(";", $txHashes);
 
         $sep = "?";
         if (array_key_exists('limit', $options) && (20 !== $options['limit'])) {
@@ -354,7 +365,7 @@ class BlockCypherHandler extends AbstractHandler
         }
 
         $txs = array_fill(0, count($txHashes), null);
-        if ( 1 == count($txHashes) ) {
+        if (1 == count($txHashes)) {
             $fullContent = [$fullContent];
         }
         //$key2 = array_search($txHashes[1], array_column($fullContent, 'hash'));
@@ -400,7 +411,7 @@ class BlockCypherHandler extends AbstractHandler
                         $tx->setAddresses(array_diff($txAddresses, $previousInputAddresses));
                         $txAddresses = $tx->getAddresses();
                     }
-                    if ( !empty($multisigAddresses) ) {
+                    if (!empty($multisigAddresses)) {
                         foreach ( $multisigAddresses as $addr ) {
                             if ( !in_array($addr,$txAddresses) ) {
                                 $txAddresses [] = $addr;
@@ -411,7 +422,7 @@ class BlockCypherHandler extends AbstractHandler
                 }*/
                 //////////////////////////////////////////
                 $options = [];
-                if ( $input->getOutputIndex() == -1 ) {
+                if ($input->getOutputIndex() == -1) {
                     $options["newlyminted"] = true;
                 }
                 $input->setScriptType($this->getTransformedTypeOfSignature($inp["script_type"], $options));
@@ -528,21 +539,28 @@ class BlockCypherHandler extends AbstractHandler
     {
         switch ($type) {
             case "pay-to-multi-pubkey-hash":
-                return "multisig"; break;
+                return "multisig";
+                break;
             case "pay-to-pubkey-hash":
-                return "pubkeyhash"; break;
+                return "pubkeyhash";
+                break;
             case "pay-to-pubkey":
-                return "pubkey"; break;
+                return "pubkey";
+                break;
             case "empty": {
-                if ( isset($options["newlyminted"]) ) {
-                    return "pubkey"; break;
+                if (isset($options["newlyminted"])) {
+                    return "pubkey";
+                    break;
                 }
-                return "nonstandard"; break;
+                return "nonstandard";
+                break;
             }
             case "null-data":
-                return "nulldata"; break;
+                return "nulldata";
+                break;
             case "pay-to-script-hash":
-                return "scripthash"; break;
+                return "scripthash";
+                break;
             default:
                 return $type;
                 break;

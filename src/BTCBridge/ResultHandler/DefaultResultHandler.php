@@ -76,7 +76,9 @@ class DefaultResultHandler extends AbstractResultHandler
         $txs1 = & $data[0];
         $txs2 = & $data[1];
         if ((!is_array($txs1)) || (!is_array($txs2))) {
-            throw new \InvalidArgumentException("Elements of Data array must be array of instances of Transaction class.");
+            throw new \InvalidArgumentException(
+                "Elements of Data array must be array of instances of Transaction class."
+            );
         }
         return $txs1;
     }

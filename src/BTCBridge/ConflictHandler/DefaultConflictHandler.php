@@ -199,13 +199,14 @@ class DefaultConflictHandler implements ConflictHandlerInterface
         $addressesArr1 = $tx1->getAddresses();
         $addressesArr2 = $tx2->getAddresses();
         //If at least one of outputs/inputs is multisig/nonstandard - we'll not make strong check
-        $multisigOrnonstandardOutputs = array_filter($tx1->getOutputs(), function (TransactionOutput $output) /*use ($txr)*/ {
+        $multisigOrnonstandardOutputs = array_filter($tx1->getOutputs(),
+            function (TransactionOutput $output) /*use ($txr)*/ {
                 return in_array($output->getScriptType(),["multisig","nonstandard"]);
             });
-        $multisigOrnonstandardInputs = array_filter($tx1->getInputs(), function (TransactionInput $input) {
+        $multisigOrnonstandardInputs = array_filter($tx1->getInputs(),
+            function (TransactionInput $input) {
                 return in_array($input->getScriptType(),["multisig","nonstandard"]);
             });
-
         if (empty($multisigOrnonstandardOutputs) && empty($multisigOrnonstandardInputs)) {
             if ($addressesArr1 != $addressesArr2) {
                 throw new ConflictHandlerException(
@@ -214,7 +215,6 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                 );
             }
         }
-
         $outputs1 = $tx1->getOutputs();
         $outputs2 = $tx2->getOutputs();
         if (count($outputs1) != count($outputs2)) {
@@ -232,7 +232,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                 $error = true;
                 break;
             } else {
-                if (!in_array($output1->getScriptType(),["multisig","nonstandard"])) {
+                if (!in_array($output1->getScriptType(), ["multisig","nonstandard"])) {
                     if ($output1->getAddresses() != $output2->getAddresses()) {
                         $error = true;
                         break;
@@ -286,7 +286,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                 $error = true;
                 break;
             } else {
-                if (!in_array($input1->getScriptType(),["multisig","nonstandard"])) {
+                if (!in_array($input1->getScriptType(), ["multisig","nonstandard"])) {
                     if ($input1->getAddresses() != $input2->getAddresses()) {
                         $error = true;
                         break;
@@ -339,7 +339,9 @@ class DefaultConflictHandler implements ConflictHandlerInterface
         $txs1 = & $data[0];
         $txs2 = & $data[1];
         if ((!is_array($txs1)) || (!is_array($txs2))) {
-            throw new \InvalidArgumentException("Elements of Data array must be array of instances of Transaction class.");
+            throw new \InvalidArgumentException(
+                "Elements of Data array must be array of instances of Transaction class."
+            );
         }
 
         $ic1 = count($txs1);
@@ -372,11 +374,13 @@ class DefaultConflictHandler implements ConflictHandlerInterface
             $addressesArr1 = $tx1->getAddresses();
             $addressesArr2 = $tx2->getAddresses();
             //If at least one of outputs is multisig/nonstandard - we'll not make strong check
-            $multisigOrnonstandardOutputs = array_filter($tx1->getOutputs(), function (TransactionOutput $output) /*use ($txr)*/ {
-                    return in_array($output->getScriptType(),["multisig","nonstandard"]);
+            $multisigOrnonstandardOutputs = array_filter($tx1->getOutputs(),
+                function (TransactionOutput $output) /*use ($txr)*/ {
+                    return in_array($output->getScriptType(), ["multisig","nonstandard"]);
                 });
-            $multisigOrnonstandardInputs = array_filter($tx1->getInputs(), function (TransactionInput $input) {
-                    return in_array($input->getScriptType(),["multisig","nonstandard"]);
+            $multisigOrnonstandardInputs = array_filter($tx1->getInputs(),
+                function (TransactionInput $input) {
+                    return in_array($input->getScriptType(), ["multisig","nonstandard"]);
                 });
 
             if (empty($multisigOrnonstandardOutputs) && empty($multisigOrnonstandardInputs)) {
@@ -405,7 +409,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                     $error = true;
                     break;
                 } else {
-                    if (!in_array($output1->getScriptType(),["multisig","nonstandard"])) {
+                    if (!in_array($output1->getScriptType(), ["multisig","nonstandard"])) {
                         if ($output1->getAddresses() != $output2->getAddresses()) {
                             $error = true;
                             break;
@@ -460,7 +464,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                     $error = true;
                     break;
                 } else {
-                    if (!in_array($input1->getScriptType(),["multisig","nonstandard"])) {
+                    if (!in_array($input1->getScriptType(), ["multisig","nonstandard"])) {
                         if ($input1->getAddresses() != $input2->getAddresses()) {
                             $error = true;
                             break;

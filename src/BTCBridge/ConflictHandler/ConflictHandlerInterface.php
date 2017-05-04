@@ -14,6 +14,7 @@ namespace BTCBridge\ConflictHandler;
 use BTCBridge\Exception\ConflictHandlerException;
 use BTCBridge\Api\Transaction;
 use BTCBridge\Api\Address;
+
 //use BTCBridge\Api\TransactionReference;
 
 /**

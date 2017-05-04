@@ -29,7 +29,8 @@ class HandlerErrorException extends BridgeException
      * @param int $code
      * @param BridgeException $previous
      */
-    public function __construct(array $successHandlers, AbstractHandler $errorHandler, array $unusedHandlers, $result, $message, $code = 0, BridgeException $previous = null)
+    public function __construct(array $successHandlers, AbstractHandler $errorHandler,
+        array $unusedHandlers, $result, $message, $code = 0, BridgeException $previous = null)
     {
         $this->successHandlers = $successHandlers;
         $this->errorHandler = $errorHandler;
