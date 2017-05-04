@@ -146,15 +146,20 @@ class DefaultResultHandler extends AbstractResultHandler
             if (!$data[0] instanceof Wallet) {
                 throw new \InvalidArgumentException("Elements of Data array must be instances of Wallet class.");
             }
-            $systemData = $this->handlers[0]->getSystemDataForWallet($data[0]);
+            $handlerIndex = 0;
+            $systemData = $this->handlers[$handlerIndex]->getSystemDataForWallet($data[0]);
+            if (!$systemData) {
+                $handlerIndex = 1;
+                $systemData = $this->handlers[$handlerIndex]->getSystemDataForWallet($data[0]);
+            }
             if (!$systemData) {
                 throw new ResultHandlerException(
-                    "No handlers data (\"" . $this->handlers[0]->getHandlerName() .
+                    "No handlers data (\"" . $this->handlers[1]->getHandlerName() .
                     "\") in the passed wallet ( " . serialize($data[0]) . ")"
                 );
             }
             $data[0]->setSystemDataByHandler(
-                $this->handlers[0]->getHandlerName(),
+                $this->handlers[$handlerIndex]->getHandlerName(),
                 $systemData
             );
             return $data[0];
@@ -194,17 +199,28 @@ class DefaultResultHandler extends AbstractResultHandler
      */
     public function removeAddresses($data)
     {
+        if (!is_array($data)) {
+            throw new \InvalidArgumentException("\$data variable must be the array of instances of Wallet class.");
+        }
         if (1 == count($data)) {
-            $systemData = $this->handlers[0]->getSystemDataForWallet($data[0]);
+            if (!$data[0] instanceof Wallet) {
+                throw new \InvalidArgumentException("Elements of Data array must be instances of Wallet class.");
+            }
+            $handlerIndex = 0;
+            $systemData = $this->handlers[$handlerIndex]->getSystemDataForWallet($data[0]);
+            if (!$systemData) {
+                $handlerIndex = 1;
+                $systemData = $this->handlers[$handlerIndex]->getSystemDataForWallet($data[0]);
+            }
             if (!$systemData) {
                 throw new ResultHandlerException(
-                    "No handlers data (\"" . $this->handlers[0]->getHandlerName() .
+                    "No handlers data (\"" . $this->handlers[1]->getHandlerName() .
                     "\") in the passed wallet ( " . serialize($data[0]) . ")"
                 );
             }
             /** @var $data Wallet[] */
             $data[0]->setSystemDataByHandler(
-                $this->handlers[0]->getHandlerName(),
+                $this->handlers[$handlerIndex]->getHandlerName(),
                 $systemData
             );
             return $data[0];
@@ -228,17 +244,28 @@ class DefaultResultHandler extends AbstractResultHandler
      */
     public function addAddresses($data)
     {
+        if (!is_array($data)) {
+            throw new \InvalidArgumentException("\$data variable must be the array of instances of Wallet class.");
+        }
         if (1 == count($data)) {
-            $systemData = $this->handlers[0]->getSystemDataForWallet($data[0]);
+            if (!$data[0] instanceof Wallet) {
+                throw new \InvalidArgumentException("Elements of Data array must be instances of Wallet class.");
+            }
+            $handlerIndex = 0;
+            $systemData = $this->handlers[$handlerIndex]->getSystemDataForWallet($data[0]);
+            if (!$systemData) {
+                $handlerIndex = 1;
+                $systemData = $this->handlers[$handlerIndex]->getSystemDataForWallet($data[0]);
+            }
             if (!$systemData) {
                 throw new ResultHandlerException(
-                    "No handlers data (\"" . $this->handlers[0]->getHandlerName() .
+                    "No handlers data (\"" . $this->handlers[1]->getHandlerName() .
                     "\") in the passed wallet ( " . serialize($data[0]) . ")"
                 );
             }
             /** @var $data Wallet[] */
             $data[0]->setSystemDataByHandler(
-                $this->handlers[0]->getHandlerName(),
+                $this->handlers[$handlerIndex]->getHandlerName(),
                 $systemData
             );
             return $data[0];

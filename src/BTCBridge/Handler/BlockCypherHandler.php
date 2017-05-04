@@ -14,9 +14,9 @@ namespace BTCBridge\Handler;
 use BTCBridge\Api\Transaction;
 use BTCBridge\Api\TransactionInput;
 use BTCBridge\Api\TransactionOutput;
-use BTCBridge\Api\Address;
+//use BTCBridge\Api\Address;
 use BTCBridge\Api\Wallet;
-use BTCBridge\Api\TransactionReference;
+//use BTCBridge\Api\TransactionReference;
 use BitWasp\Bitcoin\Script\ScriptFactory;
 use BitWasp\Bitcoin\Script\Classifier\OutputClassifier;
 use BitWasp\Bitcoin\Key\PublicKeyFactory;
@@ -169,138 +169,7 @@ class BlockCypherHandler extends AbstractHandler
      */
     public function listtransactions($walletName, array $options = array())
     {
-        //$unspentOnly=false,$includeScript=false,$includeConfidence=false,$before=NULL,$after=NULL,$limit=200,$confirmations=NULL,$confidence=NULL,$omitWalletAddresses=false
-        if ("string" != gettype($walletName) || ("" == $walletName)) {
-            throw new \InvalidArgumentException("address variable must be non empty string.");
-        }
-        $url = $this->getOption(self::OPT_BASE_URL) . "addrs/" . $walletName;
-        $sep = "?";
-        if ($this->token) {
-            $url .= "?token=" . $this->token;
-            $sep = "&";
-        }
-
-        if (array_key_exists('unspentOnly', $options) && (true === $options['unspentOnly'])) {
-            $url .= $sep . "unspentOnly=true";
-            $sep = "&";
-        }
-        if (array_key_exists('includeScript', $options) && (true === $options['includeScript'])) {
-            $url .= $sep . "includeScript=true";
-            $sep = "&";
-        }
-        if (array_key_exists('includeConfidence', $options) && (true === $options['includeConfidence'])) {
-            $url .= $sep . "includeConfidence=true";
-            $sep = "&";
-        }
-        if (array_key_exists('before', $options) && (null !== $options['before'])) {
-            $url .= $sep . "before=" . $options['before'];
-            $sep = "&";
-        }
-        if (array_key_exists('after', $options) && (null !== $options['after'])) {
-            $url .= $sep . "after=" . $options['after'];
-            $sep = "&";
-        }
-        if (array_key_exists('limit', $options) && (200 !== $options['limit'])) {
-            $url .= $sep . "limit=" . $options['limit'];
-            $sep = "&";
-        }
-        if (array_key_exists('confirmations', $options) && (null !== $options['confirmations'])) {
-            $url .= $sep . "confirmations=" . $options['confirmations'];
-            $sep = "&";
-        }
-        if (array_key_exists('confidence', $options) && (null !== $options['confidence'])) {
-            $url .= $sep . "confidence=" . $options['$confidence'];
-            $sep = "&";
-        }
-        if (array_key_exists('omitWalletAddresses', $options) && (true !== $options['omitWalletAddresses'])) {
-            $url .= $sep . "omitWalletAddresses=true";
-        }
-
-        $awaiting_params = [
-            'unspentOnly',
-            'includeScript',
-            'includeConfidence',
-            'before',
-            'after',
-            'limit',
-            'confirmations',
-            'confidence',
-            'omitWalletAddresses'
-        ];
-
-        foreach ($options as $opt_name => $opt_val) {
-            if (!in_array($opt_name, $awaiting_params)) {
-                $this->logger->warning("Method \"" . __METHOD__ . "\" does not accept option \"" . $opt_name . "\".");
-            }
-        }
-
-        $ch = curl_init();
-        $this->prepareCurl($ch, $url);
-        $content = curl_exec($ch);
-        if (false === $content) {
-            throw new \RuntimeException("curl error occured (url:\"" . $url . "\")");
-        }
-        $content = json_decode($content, true);
-        if ((false === $content) || (null === $content)) {
-            throw new \RuntimeException("curl does not return a json object (url:\"" . $url . "\").");
-        }
-        if (isset($content['error'])) {
-            throw new \RuntimeException("Error \"" . $content['error'] . "\" returned (url:\"" . $url . "\").");
-        }
-        $addrObject = new Address();
-        if (isset($content['address'])) {
-            $addrObject->setAddress($content['address']);
-        } else {
-            if (isset($content['wallet'])) {
-                $wallet = new Wallet();
-                $wallet->setAddresses($content['wallet']['addresses']);
-                $wallet->setName($content['wallet']['name']);
-                $addrObject->setWallet($wallet);
-            }
-        }
-        $addrObject->setBalance($content["balance"]);
-        $addrObject->setUnconfirmedBalance($content["unconfirmed_balance"]);
-        $addrObject->setFinalBalance($content["final_balance"]);
-        if (isset($content["txrefs"])) {
-            foreach ($content["txrefs"] as $txref) {
-                $txr = new TransactionReference();
-                $txr->setBlockHeight($txref["block_height"]);
-                $txr->setConfirmations($txref["confirmations"]);
-                $txr->setDoubleSpend($txref["double_spend"]);
-                $txr->setSpent($txref["spent"]);
-                $txr->setConfirmed($txref["confirmed"]);
-                $txr->setTxHash($txref["tx_hash"]);
-                $txr->setTxInputN($txref["tx_input_n"]);
-                $txr->setTxOutputN($txref["tx_output_n"]);
-                $txr->setValue($txref["value"]);
-                if (isset($txref['address'])) {
-                    $txr->setAddress($txref['address']);
-                } else {
-                    $txr->setAddress($walletName);
-                }
-                $addrObject->addTxref($txr);
-            }
-        }
-        if (isset($content["unconfirmed_txrefs"])) {
-            foreach ($content["unconfirmed_txrefs"] as $txref) {
-                $txr = new TransactionReference();
-                $txr->setBlockHeight($txref["block_height"]);
-                $txr->setConfirmations($txref["confirmations"]);
-                $txr->setDoubleSpend($txref["double_spend"]);
-                $txr->setSpent($txref["spent"]);
-                $txr->setTxHash($txref["tx_hash"]);
-                $txr->setTxInputN($txref["tx_input_n"]);
-                $txr->setTxOutputN($txref["tx_output_n"]);
-                $txr->setValue($txref["value"]);
-                if (isset($txref['address'])) {
-                    $txr->setAddress($content['address']);
-                } else {
-                    $txr->setAddress($walletName);
-                }
-                $addrObject->addUnconfirmedTxref($txr);
-            }
-        }
-        return $addrObject;
+        return AbstractHandler::HANDLER_UNSUPPORTED_METHOD;
     }
 
     /**
@@ -586,43 +455,7 @@ class BlockCypherHandler extends AbstractHandler
      */
     public function getbalance($walletName, $Confirmations = 1, $IncludeWatchOnly = false)
     {
-        if ("string" != gettype($walletName)) {
-            throw new \InvalidArgumentException("Account variable must be non empty string.");
-        }
-        if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
-            throw new \InvalidArgumentException(
-                "Wallet name have to contain only alphanumeric, underline and dash symbols (\"" .
-                $walletName . "\" passed)."
-            );
-        }
-        $url = $this->getOption(self::OPT_BASE_URL) . "addrs/" . $walletName;
-        if ($this->token) {
-            $url .= "?token=" . $this->token . "&confirmations=" . $Confirmations;
-        } else {
-            $url .= "?confirmations=" . $Confirmations;
-        }
-
-        $ch = curl_init();
-        $this->prepareCurl($ch, $url);
-        $content = curl_exec($ch);
-        if (false === $content) {
-            throw new \RuntimeException("curl error occured (url:\"" . $url . "\")");
-        }
-        $content = json_decode($content, true);
-        if ((false === $content) || (null === $content)) {
-            throw new \RuntimeException("curl does not return a json object (url:\"" . $url . "\").");
-        }
-        if (isset($content['error'])) {
-            throw new \RuntimeException("Error \"" . $content['error'] . "\" returned (url:\"" . $url . "\").");
-        }
-        if (!isset($content["balance"])) {
-            $this->logger->error(
-                "Answer of url: \"" . $url . "\")  does not contain a \"balance\" field.",
-                ["data" => $content]
-            );
-            throw new \RuntimeException("Answer of url: \"" . $url . "\")  does not contain a \"balance\" field.");
-        }
-        return intval($content["balance"]);
+        return AbstractHandler::HANDLER_UNSUPPORTED_METHOD;
     }
 
     /**
@@ -630,43 +463,7 @@ class BlockCypherHandler extends AbstractHandler
      */
     public function getunconfirmedbalance($walletName)
     {
-        if ("string" != gettype($walletName) || ("" == $walletName)) {
-            throw new \InvalidArgumentException("Account variable must be non empty string.");
-        }
-        if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
-            throw new \InvalidArgumentException(
-                "Wallet name have to contain only alphanumeric, underline and dash symbols (\"" .
-                $walletName . "\" passed)."
-            );
-        }
-        $url = $this->getOption(self::OPT_BASE_URL) . "addrs/" . $walletName;
-        if ($this->token) {
-            $url .= "?token=" . $this->token;
-        }
-
-        $ch = curl_init();
-        $this->prepareCurl($ch, $url);
-        $content = curl_exec($ch);
-        if (false === $content) {
-            throw new \RuntimeException("curl error occured (url:\"" . $url . "\")");
-        }
-        $content = json_decode($content, true);
-        if ((false === $content) || (null === $content)) {
-            throw new \RuntimeException("curl does not return a json object (url:\"" . $url . "\").");
-        }
-        if (isset($content['error'])) {
-            throw new \RuntimeException("Error \"" . $content['error'] . "\" returned (url:\"" . $url . "\").");
-        }
-        if (!isset($content["unconfirmed_balance"])) {
-            $this->logger->error(
-                "Answer of url: \"" . $url . "\")  does not contain a \"unconfirmed_balance\" field.",
-                ["data" => $content]
-            );
-            throw new \RuntimeException(
-                "Answer of url: \"" . $url . "\")  does not contain a \"unconfirmed_balance\" field."
-            );
-        }
-        return intval($content["unconfirmed_balance"]);
+        return AbstractHandler::HANDLER_UNSUPPORTED_METHOD;
     }
 
     /**
@@ -674,100 +471,7 @@ class BlockCypherHandler extends AbstractHandler
      */
     public function listunspent($walletName, $MinimumConfirmations = 1)
     {
-        if ("string" != gettype($walletName)) {
-            throw new \InvalidArgumentException("Account variable must be non empty string.");
-        }
-        if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
-            throw new \InvalidArgumentException(
-                "Wallet name have to contain only alphanumeric, underline and dash symbols (\"" .
-                $walletName . "\" passed)."
-            );
-        }
-        $url = $this->getOption(self::OPT_BASE_URL) . "addrs/" . $walletName;
-        if ($this->token) {
-            $url .= "?token=" . $this->token . "&";
-        } else {
-            $url .= "?";
-        }
-        $url .= "&unspentOnly=true&confirmations=" . intval($MinimumConfirmations);
-        $ch = curl_init();
-        $this->prepareCurl($ch, $url);
-        $content = curl_exec($ch);
-        if (false === $content) {
-            throw new \RuntimeException("curl error occured (url:\"" . $url . "\")");
-        }
-        $content = json_decode($content, true);
-        if ((false === $content) || (null === $content)) {
-            throw new \RuntimeException("curl does not return a json object (url:\"" . $url . "\").");
-        }
-        if (isset($content['error'])) {
-            throw new \RuntimeException("Error \"" . $content['error'] . "\" returned (url:\"" . $url . "\").");
-        }
-        if ((!isset($content["txrefs"])) && (!isset($content["unconfirmed_txrefs"]))) {
-            return [];
-        }
-
-        /** @var $result TransactionReference[] */
-        $result = [];
-
-        if (0 == $MinimumConfirmations) {
-            if (isset($content["unconfirmed_txrefs"])) {
-                foreach ($content["unconfirmed_txrefs"] as $rec) {
-                    if (intval($rec['tx_output_n']) < 0) {
-                        //according to https://www.blockcypher.com/dev/bitcoin/?shell#txref
-                        //if tx_output_n is negative then this is input, we look for outputs only
-                        continue;
-                    }
-                    $txr = new TransactionReference();
-                    $txr->setBlockHeight($rec["block_height"]);
-                    $txr->setConfirmations($rec["confirmations"]);
-                    $txr->setDoubleSpend($rec["double_spend"]);
-                    $txr->setSpent($rec["spent"]);
-                    $txr->setTxHash($rec["tx_hash"]);
-                    $txr->setTxInputN($rec["tx_input_n"]);
-                    $txr->setTxOutputN($rec["tx_output_n"]);
-                    $txr->setValue($rec["value"]);
-                    $txr->setAddress($rec['address']);
-                    $filteredTxs = array_filter($result, function (TransactionReference $tx) use ($txr) {
-                            return $tx->isEqual($txr);
-                    });
-                    if (empty($filteredTxs)) {
-                        $result [] = $txr;
-                    }
-                }
-            }
-            return $result;
-        }
-
-        if (isset($content["txrefs"])) {
-            foreach ($content["txrefs"] as $txref) {
-                if (intval($txref['tx_output_n']) < 0) {
-                    //according to https://www.blockcypher.com/dev/bitcoin/?shell#txref
-                    //if tx_output_n is negative then this is input, we look for outputs only
-                    continue;
-                }
-                $txr = new TransactionReference();
-                $txr->setBlockHeight($txref["block_height"]);
-                $txr->setConfirmations($txref["confirmations"]);
-                $txr->setDoubleSpend($txref["double_spend"]);
-                $txr->setSpent($txref["spent"]);
-                $txr->setTxHash($txref["tx_hash"]);
-                $txr->setTxInputN($txref["tx_input_n"]);
-                $txr->setTxOutputN($txref["tx_output_n"]);
-                $txr->setValue($txref["value"]);
-                if ( isset($txref["address"]) ) {
-                    $txr->setAddress($txref['address']);
-                }
-                $txr->setConfirmed(strtotime($txref["confirmed"]));
-                $filteredTxs = array_filter($result, function (TransactionReference $tx) use ($txr) {
-                        return $tx->isEqual($txr);
-                });
-                if (empty($filteredTxs)) {
-                    $result [] = $txr;
-                }
-            }
-        }
-        return $result;
+        return AbstractHandler::HANDLER_UNSUPPORTED_METHOD;
     }
 
     /**
@@ -775,64 +479,7 @@ class BlockCypherHandler extends AbstractHandler
      */
     public function sendrawtransaction($Transaction)
     {
-        if ((!is_string($Transaction)) || empty($Transaction)) {
-            throw new \InvalidArgumentException("Transaction variable must be non empty string.");
-        }
-        $url = $this->getOption(self::OPT_BASE_URL) . "txs/push";
-        if ($this->token) {
-            $url .= "?token=" . $this->token;
-        }
-        $post_data = '{"tx":"' . $Transaction . '"}';
-        $curl = curl_init();
-        if (!curl_setopt($curl, CURLOPT_URL, $url)) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_USERAGENT, $this->getOption(self::OPT_BASE_BROWSER))) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1)) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0)) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0)) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_POST, 1)) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_HTTPHEADER, ['Content-Type:application/json'])) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_POSTFIELDS, $post_data)) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        $content = curl_exec($curl);
-        if (false === $content) {
-            throw new \RuntimeException("curl error occured (url:\"" . $url . "\", post: \"" . $post_data . "\").");
-        }
-        $content = json_decode($content, true);
-        if ((false === $content) || (null === $content)) {
-            throw new \RuntimeException("curl does not return a json object (url:\"" . $url . "\").");
-        }
-        if (isset($content['error'])) {
-            throw new \RuntimeException(
-                "Error \"" . $content['error'] . "\" returned (url:\"" . $url . "\", post: \"" . $post_data . "\")."
-            );
-        }
-        if (!isset($content['tx'])) {
-            throw new \RuntimeException(
-                "Answer does not contain \"tx\" field (url:\"" . $url . "\", post: \"" . $post_data . "\")."
-            );
-        }
-        if (!isset($content['tx']['hash'])) {
-            throw new \RuntimeException(
-                "Answer does not contain \"hash\" field in \"tx\" array (url:\""
-                . $url . "\", post: \"" . $post_data . "\")."
-            );
-        }
-        return $content['tx']['hash'];
+        return AbstractHandler::HANDLER_UNSUPPORTED_METHOD;
     }
 
     /**
@@ -840,79 +487,7 @@ class BlockCypherHandler extends AbstractHandler
      */
     public function createWallet($walletName, array $addresses)
     {
-        if ("string" != gettype($walletName)) {
-            throw new \InvalidArgumentException("name variable must be non empty string.");
-        }
-        if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
-            throw new \InvalidArgumentException(
-                "Wallet name can't be empty and have to contain only alphanumeric, underline and dash symbols (\"" .
-                $walletName . "\" passed)."
-            );
-        }
-        $url = $this->getOption(self::OPT_BASE_URL) . "wallets";
-        if ($this->token) {
-            $url .= "?token=" . $this->token;
-        }
-        $post_data = ["name" => $walletName];
-        if (count($addresses) > 0) {
-            $post_data["addresses"] = [];
-            foreach ($addresses as $address) {
-                $post_data["addresses"] [] = $address;
-            }
-        }
-        $curl = curl_init();
-        if (!curl_setopt($curl, CURLOPT_URL, $url)) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_USERAGENT, $this->getOption(self::OPT_BASE_BROWSER))) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1)) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0)) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0)) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_POST, 1)) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_HTTPHEADER, ['Content-Type:application/json'])) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($post_data))) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        $content = curl_exec($curl);
-        if (false === $content) {
-            throw new \RuntimeException("curl error occured (url:\"" . $url . "\", post: \"" . $post_data . "\").");
-        }
-        $content = json_decode($content, true);
-        if ((false === $content) || (null === $content)) {
-            throw new \RuntimeException("curl does not return a json object (url:\"" . $url . "\").");
-        }
-        if (isset($content['error'])) {
-            throw new \RuntimeException(
-                "Error \"" . $content['error'] . "\" returned (url:\"" . $url . "\", post: \""
-                . json_encode($post_data) . "\")."
-            );
-        }
-        if (!isset($content['name'])) {
-            throw new \RuntimeException(
-                "Answer does not contain \"tx\" field (url:\"" . $url
-                . "\", post: \"" . $post_data . "\")."
-            );
-        }
-        $wallet = new Wallet;
-        $wallet->setName($content['name']);
-        if (!isset($content['addresses'])) {
-            $content["addresses"] = [];
-        }
-        $wallet->setAddresses($content["addresses"]);
-        $wallet->setSystemDataByHandler($this->getHandlerName(), ["name"=>$walletName]);
-        return $wallet;
+        return AbstractHandler::HANDLER_UNSUPPORTED_METHOD;
     }
 
     /**
@@ -920,84 +495,7 @@ class BlockCypherHandler extends AbstractHandler
      */
     public function addAddresses(Wallet $wallet, array $addresses)
     {
-        $walletSystemData = $this->getSystemDataForWallet($wallet);
-        if (!$walletSystemData) {
-            throw new \InvalidArgumentException(
-                "No handlers data (\"" . $this->getHandlerName()
-                . "\") in the passed wallet ( " . serialize($wallet) . ")."
-            );
-        }
-        $walletName = $walletSystemData["name"];
-        if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
-            throw new \InvalidArgumentException(
-                "Wallet name cant't be empty and have to contain only alphanumeric, underline and dash symbols (\"" .
-                $walletName . "\" passed)."
-            );
-        }
-        if (empty($addresses)) {
-            throw new \InvalidArgumentException("addresses variable must be non empty array.");
-        }
-        $url = $this->getOption(self::OPT_BASE_URL) . "wallets/" . $walletName . "/addresses";
-        if ($this->token) {
-            $url .= "?token=" . $this->token;
-        }
-        $post_data["addresses"] = [];
-        foreach ($addresses as $address) {
-            $post_data["addresses"] [] = $address;
-        }
-        $curl = curl_init();
-        if (!curl_setopt($curl, CURLOPT_URL, $url)) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_USERAGENT, $this->getOption(self::OPT_BASE_BROWSER))) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1)) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0)) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0)) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_POST, 1)) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_HTTPHEADER, ['Content-Type:application/json'])) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($post_data))) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        $content = curl_exec($curl);
-        if ((false === $content) || (null === $content)) {
-            throw new \RuntimeException(
-                "curl error occured (url:\"" . $url . "\", post: \"" . serialize($post_data) . "\")."
-            );
-        }
-        $content = json_decode($content, true);
-        if ((false === $content) || (null === $content)) {
-            throw new \RuntimeException("curl does not return a json object (url:\"" . $url . "\").");
-        }
-        if (isset($content['error'])) {
-            throw new \RuntimeException(
-                "Error \"" . $content['error'] . "\" returned (url:\"" . $url . "\", post: \""
-                . json_encode($post_data) . "\")."
-            );
-        }
-        if (!isset($content['name'])) {
-            throw new \RuntimeException(
-                "Answer does not contain \"tx\" field (url:\"" . $url . "\", post: \"" . serialize($post_data) . "\")."
-            );
-        }
-        if (!isset($content['addresses'])) {
-            throw new \RuntimeException(
-                "Answer does not contain \"addresses\" field (url:\"" . $url . "\", post: \"" . $post_data . "\")."
-            );
-        }
-        $wallet->setAddresses($content["addresses"]);
-        return $wallet;
+        return AbstractHandler::HANDLER_UNSUPPORTED_METHOD;
     }
 
     /**
@@ -1005,70 +503,7 @@ class BlockCypherHandler extends AbstractHandler
      */
     public function removeAddresses(Wallet $wallet, array $addresses)
     {
-        if (empty($addresses)) {
-            throw new \InvalidArgumentException("addresses variable must be non empty array of strings.");
-        }
-        $walletSystemData = $this->getSystemDataForWallet($wallet);
-        if (!$walletSystemData) {
-            throw new \InvalidArgumentException(
-                "No handlers data (\"" . $this->getHandlerName()
-                . "\") in the passed wallet ( " . serialize($wallet) . ")."
-            );
-        }
-        $walletName = $walletSystemData["name"];
-        if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
-            throw new \InvalidArgumentException(
-                "Wallet name cant't be empty and have to contain only alphanumeric, underline and dash symbols (\"" .
-                $walletName . "\" passed)."
-            );
-        }
-
-        $post_data = [];
-        $post_data["name"] = $walletName;
-        $post_data["addresses"] = [];
-        foreach ($addresses as $address) {
-            if (!is_string($address) || empty($address)) {
-                throw new \InvalidArgumentException("address variable must be non empty string.");
-            }
-            $post_data["addresses"] [] = $address;
-
-        }
-
-        $url = $this->getOption(self::OPT_BASE_URL) . "wallets/" . $walletName . "/addresses";
-        if ($this->token) {
-            $url .= "?token=" . $this->token;
-        }
-
-        $curl = curl_init();
-        $curl_options = [
-            CURLOPT_URL            => $url,
-            CURLOPT_USERAGENT      => $this->getOption(self::OPT_BASE_BROWSER),
-            CURLOPT_RETURNTRANSFER => 1,
-            CURLOPT_SSL_VERIFYHOST => 0,
-            CURLOPT_SSL_VERIFYPEER => 0,
-            CURLOPT_CUSTOMREQUEST  => "DELETE",
-            CURLOPT_POST           => 1,
-            CURLOPT_HTTPHEADER     => ['Content-Type:application/json'],
-            CURLOPT_POSTFIELDS     => json_encode($post_data)
-        ];
-        if ( FALSE === curl_setopt_array($curl, $curl_options)) {
-            throw new \RuntimeException(
-                "curl_setopt_array failed url:\"" . $url . "\", parameters: " . serialize($curl_options) . ")."
-            );
-        }
-
-        $content = curl_exec($curl);
-        if (false === $content) {
-            throw new \RuntimeException("curl error occured (url:\"" . $url . "\".");
-        }
-        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-        if (204 !== $httpCode) {
-            throw new \RuntimeException(
-                "curl query does not return error occured (url:\"" . $url . "\", httpcode =  " . $httpCode . ".)"
-            );
-        }
-        $wallet->setAddresses(array_diff($wallet->getAddresses(), $addresses));
-        return $wallet;
+        return AbstractHandler::HANDLER_UNSUPPORTED_METHOD;
     }
 
     /**
@@ -1076,63 +511,6 @@ class BlockCypherHandler extends AbstractHandler
      */
     public function deleteWallet(Wallet $wallet)
     {
-        $walletSystemData = $this->getSystemDataForWallet($wallet);
-        if (!$walletSystemData) {
-            throw new \InvalidArgumentException(
-                "System data of passed wallet is empty (for handler \"" . $this->getHandlerName() . "\")."
-            );
-        }
-        $walletName = $walletSystemData["name"];
-        if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
-            throw new \InvalidArgumentException(
-                "Wallet name can't be empty and have to contain only alphanumeric, underline and dash symbols (\"" .
-                $walletName . "\" passed)."
-            );
-        }
-        $url = $this->getOption(self::OPT_BASE_URL) . "wallets/" . $walletName;
-        if ($this->token) {
-            $url .= "?token=" . $this->token;
-        }
-        $curl = curl_init();
-        if (!curl_setopt($curl, CURLOPT_URL, $url)) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_USERAGENT, $this->getOption(self::OPT_BASE_BROWSER))) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1)) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0)) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0)) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_POST, 1)) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_HTTPHEADER, ['Content-Type:application/json'])) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "DELETE")) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        $content = curl_exec($curl);
-        if (false === $content) {
-            throw new \RuntimeException("curl error occured (url:\"" . $url . "\".");
-        }
-        $content = json_decode($content, true);
-        if (/*(null === $content) || */(false === $content)) {
-            throw new \RuntimeException("curl does not return an awaiting value (url:\"" . $url . "\").");
-        }
-        if (isset($content['error'])) {
-            if ("Error: wallet not found" != $content['error']) {
-                throw new \RuntimeException(
-                    "Error \"" . $content['error'] . "\" returned (url:\"" . $url . "\"."
-                );
-            }
-        }
     }
 
     /**
@@ -1140,46 +518,7 @@ class BlockCypherHandler extends AbstractHandler
      */
     public function getAddresses(Wallet $wallet)
     {
-        $walletSystemData = $this->getSystemDataForWallet($wallet);
-        if (!$walletSystemData) {
-            throw new \InvalidArgumentException(
-                "System data of passed wallet is empty (for handler \"" . $this->getHandlerName() . "\")."
-            );
-        }
-        $walletName = $walletSystemData["name"];
-        if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
-            throw new \InvalidArgumentException(
-                "Wallet name can't be empty and have to contain only alphanumeric, underline and dash symbols (\"" .
-                $walletName . "\" passed)."
-            );
-        }
-        $url = $this->getOption(self::OPT_BASE_URL) . "wallets/" . $walletName;
-        /** @noinspection PhpUnusedLocalVariableInspection */
-        $sep = "?";
-        if ($this->token) {
-            $url .= "?token=" . $this->token;
-            /** @noinspection PhpUnusedLocalVariableInspection */
-            $sep = "&";
-        }
-
-        $ch = curl_init();
-        $this->prepareCurl($ch, $url);
-        $content = curl_exec($ch);
-        if (false === $content) {
-            throw new \RuntimeException("curl error occured (url:\"" . $url . "\")");
-        }
-        $content = json_decode($content, true);
-        if ((false === $content) || (null === $content)) {
-            throw new \RuntimeException("curl does not return a json object (url:\"" . $url . "\").");
-        }
-        if (isset($content['error'])) {
-            throw new \RuntimeException("Error \"" . $content['error'] . "\" returned (url:\"" . $url . "\").");
-        }
-        if (!isset($content['addresses'])) {
-            $content['addresses'] = [];
-        }
-        $wallet->setAddresses($content['addresses']);
-        return $wallet->getAddresses();
+        return AbstractHandler::HANDLER_UNSUPPORTED_METHOD;
     }
 
     /**

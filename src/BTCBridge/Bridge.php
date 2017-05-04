@@ -333,7 +333,9 @@ class Bridge
         $results = [];
         foreach ($this->handlers as $handle) {
             $result = $handle->listtransactions($address, $options);
-            $results [] = $result;
+            if ( AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $result ) {
+                $results [] = $result;
+            }
         }
         $this->conflictHandler->listtransactions($results);
         return $this->resultHandler->listtransactions($results);
@@ -370,7 +372,9 @@ class Bridge
         $results = [];
         foreach ($this->handlers as $handle) {
             $result = $handle->gettransaction($TXHASH, $options);
-            $results [] = $result;
+            if ( AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $result ) {
+                $results [] = $result;
+            }
         }
         $this->conflictHandler->gettransaction($results);
         return $this->resultHandler->gettransaction($results);
@@ -403,7 +407,9 @@ class Bridge
         $results = [];
         foreach ($this->handlers as $handle) {
             $result = $handle->gettransactions($txHashes, $options);
-            $results [] = $result;
+            if ( AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $result ) {
+                $results [] = $result;
+            }
         }
         $this->conflictHandler->gettransactions($results);
         return $this->resultHandler->gettransactions($results);
@@ -442,7 +448,9 @@ class Bridge
         $results = [];
         foreach ($this->handlers as $handle) {
             $result = $handle->getbalance($walletName, $Confirmations, $IncludeWatchOnly);
-            $results [] = $result;
+            if ( AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $result ) {
+                $results [] = $result;
+            }
         }
         $this->conflictHandler->getbalance($results);
         return $this->resultHandler->getbalance($results);
@@ -478,7 +486,9 @@ class Bridge
         foreach ($this->handlers as $handle) {
             //$result = call_user_func_array([$handle, "getunconfirmedbalance"], [$Account]);
             $result = $handle->getunconfirmedbalance($walletName);
-            $results [] = $result;
+            if ( AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $result ) {
+                $results [] = $result;
+            }
         }
         $this->conflictHandler->getunconfirmedbalance($results);
         return $this->resultHandler->getunconfirmedbalance($results);
@@ -522,7 +532,9 @@ class Bridge
         $results = [];
         foreach ($this->handlers as $handle) {
             $result = $handle->listunspent($walletName, $MinimumConfirmations);
-            $results [] = $result;
+            if ( AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $result ) {
+                $results [] = $result;
+            }
         }
         $this->conflictHandler->listunspent($results);
         return $this->resultHandler->listunspent($results);
@@ -551,6 +563,10 @@ class Bridge
         for ($i = 0, $ic = count($this->handlers); $i < $ic; ++$i) {
             try {
                 $result = $this->handlers[$i]->sendrawtransaction($Transaction);
+                if ( AbstractHandler::HANDLER_UNSUPPORTED_METHOD === $result ) {
+                    $result = null;
+                    continue;
+                }
             } catch (\InvalidArgumentException $ex) {
                 $this->loggerHandler->addError($ex->getMessage());
                 continue;
@@ -605,10 +621,6 @@ class Bridge
         for ($i = 0, $ic = count($this->handlers); $i < $ic; ++$i) {
             try {
                 $resultWallet = $this->handlers[$i]->createWallet($walletName, $addresses);
-                /*$resultWallet->setSystemDataByHandler(
-                    $this->handlers[$i]->getHandlerName(),
-                    $this->handlers[$i]->getSystemDataForWallet($resultWallet)
-                );*/
             } catch (\RuntimeException $ex) {
                 $this->loggerHandler->error($ex->getMessage());
                 $errorHandler = $this->handlers[$i];
@@ -616,12 +628,14 @@ class Bridge
                 break;
             }
             $successHandlers [] = $this->handlers[$i];
-            $resultWallets [] = $resultWallet;
+            if ( AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $resultWallet ) {
+                $resultWallets [] = $resultWallet;
+            }
         }
 
         if ($errorHandler) {
             $resultWallet = null;
-            if (!empty($successHandlers)) {
+            if (!empty($resultWallets)) {
                 $this->resultHandler->setHandlers($successHandlers);
                 try {
                     $resultWallet = $this->resultHandler->createWallet($resultWallets);
@@ -680,19 +694,21 @@ class Bridge
 
         for ($i = 0, $ic = count($this->handlers); $i < $ic; ++$i) {
             try {
-                $wallet = $this->handlers[$i]->addAddresses($wallet, $addresses);
+                $resultWallet = $this->handlers[$i]->addAddresses($wallet, $addresses);
             } catch (\RuntimeException $ex) {
                 $this->loggerHandler->error($ex->getMessage());
                 $errorHandler = $this->handlers[$i];
                 break;
             }
             $successHandlers [] = $this->handlers[$i];
-            $resultWallets [] = $wallet;
+            if (AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $resultWallet) {
+                $resultWallets [] = $resultWallet;
+            }
         }
 
         if ($errorHandler) {
             $resultWallet = null;
-            if (!empty($successHandlers)) {
+            if (!empty($resultWallets)) {
                 $this->resultHandler->setHandlers($successHandlers);
                 try {
                     $resultWallet = $this->resultHandler->addAddresses($resultWallets);
@@ -751,19 +767,21 @@ class Bridge
 
         for ($i = 0, $ic = count($this->handlers); $i < $ic; ++$i) {
             try {
-                $wallet = $this->handlers[$i]->removeAddresses($wallet, $addresses);
+                $resultWallet = $this->handlers[$i]->removeAddresses($wallet, $addresses);
             } catch (\RuntimeException $ex) {
                 $this->loggerHandler->error($ex->getMessage());
                 $errorHandler = $this->handlers[$i];
                 break;
             }
             $successHandlers [] = $this->handlers[$i];
-            $resultWallets [] = $wallet;
+            if (AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $resultWallet) {
+                $resultWallets [] = $resultWallet;
+            }
         }
 
         if ($errorHandler) {
             $resultWallet = null;
-            if (!empty($successHandlers)) {
+            if (!empty($resultWallets)) {
                 $this->resultHandler->setHandlers($successHandlers);
                 try {
                     $resultWallet = $this->resultHandler->removeAddresses($resultWallets);
@@ -853,7 +871,9 @@ class Bridge
         $results = [];
         foreach ($this->handlers as $handle) {
             $result = $handle->getAddresses($wallet);
-            $results [] = $result;
+            if (AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $result) {
+                $results [] = $result;
+            }
         }
         $this->conflictHandler->getAddresses($results);
         return $this->resultHandler->getAddresses($results);

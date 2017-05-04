@@ -90,9 +90,11 @@ try {
 
     $bridge = new \BTCBridge\Bridge(
         [
-            $blockCypherHandler
-            ,
+            //$blockCypherHandler
+            //,
             $matbeaHandler
+            ,
+            $blockCypherHandler
             //,
             //(new \BTCBridge\Handler\BlockCypherHandler())->setToken("dc20a175f3594965a8f4707cdcf58a32")
         ],
@@ -102,10 +104,11 @@ try {
     );
 
     $bridge->setOption(\BTCBridge\Bridge::OPT_LOCAL_PATH_OF_WALLET_DATA, __DIR__ . "/data/wallet.dat");
+
     //$res = $bridge->listtransactions("deadushka1");
 
     //$txs = $bridge->gettransactions(["0000005f67276a9d277507f1439ff6c322d7e969b855e449aec6b34b0b6d1655","00000005aca88ceece655e19070dbfe9416b0c2850da0463f1e4c823bb41f295"],[]);
-    $txs = [
+    /*$txs = [
         '0000354c3112e062f26df428ab831ff33ae2aca1381982931a33e40c778cbca2',
         '00004973ccacb026732e8751ef8e9dedd1706b1cf27d5308a5097fd98cca09e7',
         '0000a524025cca89db9743a6ec940d2a987bbb7f19f392adb3912b85c7a9a12f', //CRASH
@@ -114,13 +117,13 @@ try {
         '0000fa31b80b4da025c65c32f06881e321d8eefcd949e0e96deb6e43b9bfc219', //CRASH
         '00010dea7f32ece989228fc2b8d3209aa165f74742bf14c5435edd3d27239b4e',
         '00011c29277fc948629be3f9c00fd26d11ec19b952402d1b0df7658fdb33ebeb'  //CRASH
-    ];
+    ];*/
     //$txs = array_slice($txs, 0, 3);
     //$txs = $bridge->gettransactions($txs,[]);
-    foreach ( $txs as $tx ) {
-        $r = $bridge->gettransaction($tx,[]);
-    }
-    die;
+    //foreach ( $txs as $tx ) {
+        //$r = $bridge->gettransaction($tx,[]);
+    //}
+    //die;
 
 
 
@@ -139,16 +142,16 @@ try {
     //$res = $bridge->getbalance("19LtvgLf6ciPVLNAFqfQ3bpbmz1h7nGbjE");
     //$res = $bridge->gettransactions(["0000005f67276a9d277507f1439ff6c322d7e969b855e449aec6b34b0b6d1655","00000005aca88ceece655e19070dbfe9416b0c2850da0463f1e4c823bb41f295"],[]);
 
-    //$wallet = new \BTCBridge\Api\Wallet();
+    $wallet = new \BTCBridge\Api\Wallet;
     //$wallet->setSystemDataByHandler($blockCypherHandler->getHandlerName(), ["name"=>"deadushka"]);
     //$bridge->deleteWallet($wallet);
-    /*$wallet = $bridge->createWallet("deadushka1",['1MN3cT9Ro927h4kgpSZ5V7SfYjrwTysXv7']);
+    $wallet = $bridge->createWallet("deadushka1",['1MN3cT9Ro927h4kgpSZ5V7SfYjrwTysXv7']);
     $addresses = $bridge->getAddresses($wallet);
     $wallet = $bridge->addAddresses($wallet,['1BdxBor4JG76RKLAwJZfHC58fWbgidYukz','1MN3cT9Ro927h4kgpSZ5V7SfYjrwTysXv7']);
     $addresses = $bridge->getAddresses($wallet);
     $wallet = $bridge->removeAddresses($wallet,['1BdxBor4JG76RKLAwJZfHC58fWbgidYukz','1MN3cT9Ro927h4kgpSZ5V7SfYjrwTysXv7']);
     $bridge->deleteWallet($wallet);
-    die;*/
+    die;
 
     //$res = $bridge->gettransaction("0000297bd516c501aa9b143a5eac8adaf457fa78431e844092a7112815411d03"); //multisig !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
