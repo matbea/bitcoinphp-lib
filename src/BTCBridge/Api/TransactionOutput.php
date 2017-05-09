@@ -2,6 +2,8 @@
 
 namespace BTCBridge\Api;
 
+use BTCBridge\Api\BTCValue;
+
 /**
  * Class TransactionOutput
  *
@@ -51,9 +53,9 @@ class TransactionOutput
 
 
     /**
-     * Value transferred by the transaction output, in satoshi.
+     * Value transferred by the transaction output
      *
-     * @return \GMP
+     * @return BTCValue
      */
     public function getValue()
     {
@@ -61,12 +63,12 @@ class TransactionOutput
     }
 
     /**
-     * Value transferred by the transaction output, in satoshi.
+     * Value transferred by the transaction output
      *
-     * @param \GMP $value
+     * @param BTCValue $value
      * @return $this
      */
-    public function setValue($value)
+    public function setValue(BTCValue $value)
     {
         $this->value = $value;
         return $this;

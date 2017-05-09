@@ -15,6 +15,7 @@ use BTCBridge\Api\Transaction;
 use BTCBridge\Api\Address;
 use BTCBridge\Api\Wallet;
 use BTCBridge\Exception\ResultHandlerException;
+use BTCBridge\Api\BTCValue;
 
 /**
  * Default Conflict Handler class providing the default behaviour
@@ -43,24 +44,7 @@ class DefaultResultHandler extends AbstractResultHandler
         return $address1;
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function gettransaction($data)
-    {
-        if (1 == count($data)) {
-            return $data[0];
-        }
-        if (2 != count($data)) {
-            throw new \InvalidArgumentException("Data array for verification must have size 1 or 2.");
-        }
-        $tx1 = & $data[0];
-        $tx2 = & $data[1];
-        if ((!$tx1 instanceof Transaction) || (!$tx2 instanceof Transaction)) {
-            throw new \InvalidArgumentException("Elements of Data array must be instances of Transaction class.");
-        }
-        return $tx1;
-    }
+
 
     /**
      * {@inheritdoc}
@@ -94,10 +78,13 @@ class DefaultResultHandler extends AbstractResultHandler
         if (2 != count($data)) {
             throw new \InvalidArgumentException("Data array for verification must have size 1 or 2.");
         }
+        /** @var $balance1 BTCValue */
         $balance1 = & $data[0];
+        /** @var $balance2 BTCValue */
         $balance2 = & $data[1];
-        if ((gettype($balance1) != 'integer') || (gettype($balance2) != 'integer')) {
-            throw new \InvalidArgumentException("Elements of Data array must be integer.");
+        if ((!$balance1 instanceof BTCValue) || (!$balance2 instanceof BTCValue))
+        {
+            throw new \InvalidArgumentException("Elements of data array must be BTCValue.");
         }
         return $balance1;
     }
@@ -111,14 +98,17 @@ class DefaultResultHandler extends AbstractResultHandler
             return $data[0];
         }
         if (2 != count($data)) {
-            throw new \InvalidArgumentException("Data array for verification must have size 1 or 2.");
+            throw new \InvalidArgumentException("data array for verification must have size 1 or 2.");
         }
-        $unconfirmedbalance1 = & $data[0];
-        $unconfirmedbalance2 = & $data[1];
-        if ((gettype($unconfirmedbalance1) != 'integer') || (gettype($unconfirmedbalance2) != 'integer')) {
-            throw new \InvalidArgumentException("Elements of Data array must be integer.");
+        /** @var $uncbal1 BTCValue */
+        $uncbal1 = & $data[0];
+        /** @var $uncbal2 BTCValue */
+        $uncbal2 = & $data[1];
+        if ((!$uncbal1 instanceof BTCValue) || (!$uncbal2 instanceof BTCValue))
+        {
+            throw new \InvalidArgumentException("Elements of data array must be BTCValue.");
         }
-        return $unconfirmedbalance1;
+        return $uncbal1;
     }
 
     /**

@@ -17,6 +17,7 @@ use BTCBridge\Api\Wallet;
 use BTCBridge\Exception\ResultHandlerException;
 use BTCBridge\Api\Transaction;
 use BTCBridge\Api\Address;
+use BTCBridge\Api\BTCValue;
 
 /**
  * Abstract class that all BTCBridge ResultHandlers must extend and implement.
@@ -66,20 +67,6 @@ abstract class AbstractResultHandler
     abstract public function listtransactions($data);
 
     /**
-     * The gettransaction RPC gets detailed information about an in-wallet transaction.
-     * The Transaction Hash Endpoint returns detailed information about a given transaction based on its hash.
-     * @link https://bitcoin.org/en/developer-reference#gettransaction Official bitcoin documentation.
-     * @link https://www.blockcypher.com/dev/bitcoin/?php#transaction-hash-endpoint
-     *
-     * @param Transaction[] $data  Result from method gettransaction (from all handlers)
-     *
-     * @throws ResultHandlerException in case of any error
-     *
-     * @return Transaction
-     */
-    abstract public function gettransaction($data);
-
-    /**
      * The gettransactions RPC gets detailed information about an in-wallet transaction.
      *
      * @param Transaction[][] $data  Result from method gettransactions (from all handlers)
@@ -102,7 +89,7 @@ abstract class AbstractResultHandler
      *
      * @throws ResultHandlerException in case of any error
      *
-     * @return integer        The balance in satoshi
+     * @return BTCValue The balance
      */
     abstract public function getbalance($data);
 
@@ -117,7 +104,7 @@ abstract class AbstractResultHandler
      *
      * @throws ResultHandlerException in case of any error
      *
-     * @return integer        The total number of bitcoins paid to this wallet in unconfirmed transactions (in satoshi)
+     * @return BTCValue The total number of bitcoins paid to this wallet in unconfirmed transactions
      */
     abstract public function getunconfirmedbalance($data);
 

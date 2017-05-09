@@ -2,6 +2,8 @@
 
 namespace BTCBridge\Api;
 
+use BTCBridge\Api\BTCValue;
+
 /**
  * Class TransactionInput
  *
@@ -18,7 +20,7 @@ class TransactionInput
      * Does not exist for coinbase transactions.
      * @var string
      */
-    protected $prevHash;
+    //protected $prevHash;
 
     /**
      * Index in the previous transaction of the output being spent. Does not exist for coinbase transactions.
@@ -28,7 +30,7 @@ class TransactionInput
 
     /**
      * Value of the output being spent. Does not exist for coinbase transactions.
-     * @var \GMP
+     * @var BTCValue
      */
     protected $outputValue;
 
@@ -51,10 +53,10 @@ class TransactionInput
      *
      * @return string
      */
-    public function getPrevHash()
+    /*public function getPrevHash()
     {
         return $this->prevHash;
-    }
+    }*/
 
     /**
      * Hash of the transaction for which an output is being spent by this input.
@@ -63,11 +65,11 @@ class TransactionInput
      * @param string $prevHash
      * @return $this
      */
-    public function setPrevHash($prevHash)
+    /*public function setPrevHash($prevHash)
     {
         $this->prevHash = $prevHash;
         return $this;
-    }
+    }*/
 
     /**
      * Index in the previous transaction of the output being spent. Does not exist for coinbase transactions.
@@ -94,7 +96,7 @@ class TransactionInput
     /**
      * Value of the output being spent. Does not exist for coinbase transactions.
      *
-     * @return \GMP
+     * @return BTCValue
      */
     public function getOutputValue()
     {
@@ -104,10 +106,10 @@ class TransactionInput
     /**
      * Value of the output being spent. Does not exist for coinbase transactions.
      *
-     * @param \GMP $outputValue
+     * @param BTCValue $outputValue
      * @return $this
      */
-    public function setOutputValue($outputValue)
+    public function setOutputValue(BTCValue $outputValue)
     {
         $this->outputValue = $outputValue;
         return $this;

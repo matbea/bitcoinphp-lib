@@ -180,30 +180,6 @@ abstract class AbstractHandler
     abstract public function listtransactions($walletName, array $options = array());
 
     /**
-     * The gettransaction RPC gets detailed information about an in-wallet transaction.
-     * The Transaction Hash Endpoint returns detailed information about a given transaction based on its hash.
-     * @link https://bitcoin.org/en/developer-reference#gettransaction Official bitcoin documentation.
-     * @link https://www.blockcypher.com/dev/bitcoin/?php#transaction-hash-endpoint
-     *
-     * @param string $TXHASH a transaction identifier
-     * @param array $options  Array containing the optional params
-     * $options = [
-     *   ['limit']               integer    Filters TXInputs/TXOutputs, if unset, default is 20.
-     *   ['instart']           integer    Filters TX to only include TXInputs from this input index and above.
-     *   ['outstart']           integer    Filters TX to only include TXOutputs from this output index and above.
-     *   ['includeHex']        bool    If true, includes hex-encoded raw transaction; false by default.
-     *   ['includeConfidence'] bool    If true, includes the confidence attribute (useful for unconfirmed transactions).
-     *   For more info about this figure, check the Confidence Factor documentation.
-     * ]
-     *
-     * @throws \RuntimeException in case of any error
-     * @throws \InvalidArgumentException if error of this type
-     *
-     * @return Transaction
-     */
-    abstract public function gettransaction($TXHASH, array $options = array());
-
-    /**
      * The gettransactions RPC gets detailed information about an in-wallet transaction.
      * @param string[] $txHashes transaction identifiers
      * @param array $options  Array containing the optional params
@@ -239,7 +215,7 @@ abstract class AbstractHandler
      * @throws \RuntimeException in case of any error
      * @throws \InvalidArgumentException if error of this type
      *
-     * @return integer                            The balance in satoshi
+     * @return BTCValue The total number of bitcoins paid to the passed wallet in unconfirmed transactions
      */
     abstract public function getbalance($walletName, $Confirmations = 1, $IncludeWatchOnly = false);
 
@@ -255,7 +231,7 @@ abstract class AbstractHandler
      * @throws \RuntimeException in case of any error
      * @throws \InvalidArgumentException if error of this type
      *
-     * @return integer The total number of bitcoins paid to the passed wallet in unconfirmed transactions (in satoshi)
+     * @return BTCValue The total number of bitcoins paid to the passed wallet in unconfirmed transactions
      */
     abstract public function getunconfirmedbalance($Account);
 

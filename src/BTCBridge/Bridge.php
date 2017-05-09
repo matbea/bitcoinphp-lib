@@ -37,6 +37,12 @@ use BitWasp\Bitcoin\Transaction\Factory\Signer;
  */
 class Bridge
 {
+    /** This group of constants are bridge options */
+    const OPT_TIME_MEASUREMENT_BEFORE_HANDLERS = 0;
+    const OPT_TIME_MEASUREMENT_AFTER_HANDLERS = 1;
+    const OPT_TIME_MEASUREMENT_AFTER_CONFLICT_HANDLER = 2;
+    const OPT_TIME_MEASUREMENT_AFTER_RESULT_HANDLER = 3;
+    const OPT_TIME_MEASUREMENT_METHOD_NAME = 4;
 
     /** This group of constants are bridge options */
     const OPT_LOCAL_PATH_OF_WALLET_DATA = 1;
@@ -45,6 +51,9 @@ class Bridge
 
     /** @var array options */
     protected $options = [];
+
+    /** @var array timeMeasurementStatistics */
+    protected $timeMeasurementStatistics = [];
 
     /**
      * The handler stack
@@ -116,6 +125,12 @@ class Bridge
         $this->setOption(self::OPT_LOCAL_PATH_OF_WALLET_DATA, __DIR__."/wallet.dat");
         $this->setOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT, "5500");
         $this->setOption(self::OPT_MINIMAL_FEE_PER_KB, "10000");
+
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_BEFORE_HANDLERS] = null;
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_AFTER_HANDLERS] = [];
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_AFTER_CONFLICT_HANDLER] = null;
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_AFTER_RESULT_HANDLER] = null;
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_METHOD_NAME] = null;
     }
 
     /**
@@ -173,6 +188,15 @@ class Bridge
             throw new \RuntimeException("No option with name \"" . $optionName . "\" exists in the class)");
         }
         return $this->options[$optionName];
+    }
+
+    /** Returns time measurement statistics
+     *
+     * @return array
+     */
+    public function getTimeMeasurementStatistics()
+    {
+        return $this->timeMeasurementStatistics;
     }
 
     /**
@@ -330,54 +354,22 @@ class Bridge
         if ("string" != gettype($address) || ("" == $address)) {
             throw new \InvalidArgumentException("address variable must be non empty string.");
         }
+        $this->timeMeasurementStatistics = [];
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_METHOD_NAME] = __METHOD__;
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_BEFORE_HANDLERS] = microtime(true);
         $results = [];
-        foreach ($this->handlers as $handle) {
+        foreach ($this->handlers as $handle_num => $handle) {
             $result = $handle->listtransactions($address, $options);
             if (AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $result) {
+                $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_AFTER_HANDLERS][$handle_num] = microtime(true);
                 $results [] = $result;
             }
         }
         $this->conflictHandler->listtransactions($results);
-        return $this->resultHandler->listtransactions($results);
-    }
-
-    /**
-     * The gettransaction RPC gets detailed information about an in-wallet transaction.
-     * The Transaction Hash Endpoint returns detailed information about a given transaction based on its hash.
-     * @link https://bitcoin.org/en/developer-reference#gettransaction Official bitcoin documentation.
-     * @link https://www.blockcypher.com/dev/bitcoin/?php#transaction-hash-endpoint
-     *
-     * @param string $TXHASH   a transaction identifier
-     * @param array $options   Array containing the optional params
-     * $options = [
-     *   ['limit']             integer    Filters TXInputs/TXOutputs, if unset, default is 20.
-     *   ['instart']           integer    Filters TX to only include TXInputs from this input index and above.
-     *   ['outstart']          integer    Filters TX to only include TXOutputs from this output index and above.
-     *   ['includeHex']        bool    If true, includes hex-encoded raw transaction; false by default.
-     *   ['includeConfidence'] bool    If true, includes the confidence attribute (useful for unconfirmed transactions).
-     *   For more info about this figure, check the Confidence Factor documentation.
-     * ]
-     *
-     * @throws \RuntimeException in case of any runtime error
-     * @throws \InvalidArgumentException if error of this type
-     * @throws ConflictHandlerException in case of any error of this type
-     *
-     * @return Transaction
-     */
-    public function gettransaction($TXHASH, array $options = array())
-    {
-        if ("string" != gettype($TXHASH) || ("" == $TXHASH)) {
-            throw new \InvalidArgumentException("TXHASH variable must be non empty string.");
-        }
-        $results = [];
-        foreach ($this->handlers as $handle) {
-            $result = $handle->gettransaction($TXHASH, $options);
-            if (AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $result) {
-                $results [] = $result;
-            }
-        }
-        $this->conflictHandler->gettransaction($results);
-        return $this->resultHandler->gettransaction($results);
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_AFTER_CONFLICT_HANDLER] = microtime(true);
+        $ret = $this->resultHandler->listtransactions($results);
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_AFTER_RESULT_HANDLER] = microtime(true);
+        return $ret;
     }
 
     /**
@@ -405,15 +397,22 @@ class Bridge
         if (empty($txHashes)) {
             throw new \InvalidArgumentException("txHashes variable must be non empty array of non empty strings.");
         }
+        $this->timeMeasurementStatistics = [];
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_METHOD_NAME] = __METHOD__;
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_BEFORE_HANDLERS] = microtime(true);
         $results = [];
-        foreach ($this->handlers as $handle) {
+        foreach ($this->handlers as $handle_num => $handle) {
             $result = $handle->gettransactions($txHashes, $options);
             if (AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $result) {
+                $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_AFTER_HANDLERS][$handle_num] = microtime(true);
                 $results [] = $result;
             }
         }
         $this->conflictHandler->gettransactions($results);
-        return $this->resultHandler->gettransactions($results);
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_AFTER_CONFLICT_HANDLER] = microtime(true);
+        $ret = $this->resultHandler->gettransactions($results);
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_AFTER_RESULT_HANDLER] = microtime(true);
+        return $ret;
     }
 
 
@@ -433,7 +432,7 @@ class Bridge
      * @throws \InvalidArgumentException if error of this type
      * @throws ConflictHandlerException in case of any error of this type
      *
-     * @return integer                   The balance in bitcoins (in satoshi)
+     * @return BTCValue The balance
      */
     public function getbalance($walletName, $Confirmations = 1, $IncludeWatchOnly = false)
     {
@@ -446,15 +445,22 @@ class Bridge
                 $walletName . "\" passed)."
             );
         }
+        $this->timeMeasurementStatistics = [];
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_METHOD_NAME] = __METHOD__;
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_BEFORE_HANDLERS] = microtime(true);
         $results = [];
-        foreach ($this->handlers as $handle) {
+        foreach ($this->handlers as $handle_num => $handle) {
             $result = $handle->getbalance($walletName, $Confirmations, $IncludeWatchOnly);
             if (AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $result) {
+                $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_AFTER_HANDLERS][$handle_num] = microtime(true);
                 $results [] = $result;
             }
         }
         $this->conflictHandler->getbalance($results);
-        return $this->resultHandler->getbalance($results);
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_AFTER_CONFLICT_HANDLER] = microtime(true);
+        $ret = $this->resultHandler->getbalance($results);
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_AFTER_RESULT_HANDLER] = microtime(true);
+        return $ret;
     }
 
     /**
@@ -470,7 +476,7 @@ class Bridge
      * @throws \InvalidArgumentException if error of this type
      * @throws ConflictHandlerException in case of any error of this type
      *
-     * @return integer The total number of bitcoins paid to the passed wallet in unconfirmed transactions (in satoshi)
+     * @return BTCValue The unconfirmed balance
      */
     public function getunconfirmedbalance($walletName)
     {
@@ -483,16 +489,23 @@ class Bridge
                 $walletName . "\" passed)."
             );
         }
+        $this->timeMeasurementStatistics = [];
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_METHOD_NAME] = __METHOD__;
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_BEFORE_HANDLERS] = microtime(true);
         $results = [];
-        foreach ($this->handlers as $handle) {
+        foreach ($this->handlers as $handle_num => $handle) {
             //$result = call_user_func_array([$handle, "getunconfirmedbalance"], [$Account]);
             $result = $handle->getunconfirmedbalance($walletName);
             if (AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $result) {
+                $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_AFTER_HANDLERS][$handle_num] = microtime(true);
                 $results [] = $result;
             }
         }
         $this->conflictHandler->getunconfirmedbalance($results);
-        return $this->resultHandler->getunconfirmedbalance($results);
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_AFTER_CONFLICT_HANDLER] = microtime(true);
+        $ret = $this->resultHandler->getunconfirmedbalance($results);
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_AFTER_RESULT_HANDLER] = microtime(true);
+        return $ret;
     }
 
     /**
@@ -530,15 +543,22 @@ class Bridge
                 $MinimumConfirmations . " passed)."
             );
         }
+        $this->timeMeasurementStatistics = [];
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_METHOD_NAME] = __METHOD__;
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_BEFORE_HANDLERS] = microtime(true);
         $results = [];
-        foreach ($this->handlers as $handle) {
+        foreach ($this->handlers as $handle_num => $handle) {
             $result = $handle->listunspent($walletName, $MinimumConfirmations);
             if (AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $result) {
+                $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_AFTER_HANDLERS][$handle_num] = microtime(true);
                 $results [] = $result;
             }
         }
         $this->conflictHandler->listunspent($results);
-        return $this->resultHandler->listunspent($results);
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_AFTER_CONFLICT_HANDLER] = microtime(true);
+        $ret = $this->resultHandler->listunspent($results);
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_AFTER_RESULT_HANDLER] = microtime(true);
+        return $ret;
     }
 
     /**
@@ -560,7 +580,7 @@ class Bridge
         if ((!is_string($Transaction)) || empty($Transaction)) {
             throw new \InvalidArgumentException("Transaction variable must be non empty string.");
         }
-        $result = null;
+        $result = null; //HUERAGA - timing прикрутить бы
         for ($i = 0, $ic = count($this->handlers); $i < $ic; ++$i) {
             try {
                 $result = $this->handlers[$i]->sendrawtransaction($Transaction);
@@ -619,6 +639,10 @@ class Bridge
         $unusedHandlers = [];
         $errMsg = "";
 
+        $this->timeMeasurementStatistics = [];
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_METHOD_NAME] = __METHOD__;
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_BEFORE_HANDLERS] = microtime(true);
+
         for ($i = 0, $ic = count($this->handlers); $i < $ic; ++$i) {
             try {
                 $resultWallet = $this->handlers[$i]->createWallet($walletName, $addresses);
@@ -630,6 +654,7 @@ class Bridge
             }
             $successHandlers [] = $this->handlers[$i];
             if (AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $resultWallet) {
+                $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_AFTER_HANDLERS][$i] = microtime(true);
                 $resultWallets [] = $resultWallet;
             }
         }
@@ -661,7 +686,10 @@ class Bridge
             );
         }
         $this->conflictHandler->createWallet($resultWallets); //In case of error throw will be raised
-        return $this->resultHandler->createWallet($resultWallets);
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_AFTER_CONFLICT_HANDLER] = microtime(true);
+        $ret =  $this->resultHandler->createWallet($resultWallets);
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_AFTER_RESULT_HANDLER] = microtime(true);
+        return $ret;
     }
 
     /**
@@ -693,6 +721,10 @@ class Bridge
         /** @var $unusedHandlers AbstractHandler[] */
         $unusedHandlers = [];
 
+        $this->timeMeasurementStatistics = [];
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_METHOD_NAME] = __METHOD__;
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_BEFORE_HANDLERS] = microtime(true);
+
         for ($i = 0, $ic = count($this->handlers); $i < $ic; ++$i) {
             try {
                 $resultWallet = $this->handlers[$i]->addAddresses($wallet, $addresses);
@@ -703,6 +735,7 @@ class Bridge
             }
             $successHandlers [] = $this->handlers[$i];
             if (AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $resultWallet) {
+                $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_AFTER_HANDLERS][$i] = microtime(true);
                 $resultWallets [] = $resultWallet;
             }
         }
@@ -734,7 +767,10 @@ class Bridge
             );
         }
         $this->conflictHandler->addAddresses($resultWallets);
-        return $this->resultHandler->addAddresses($resultWallets);
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_AFTER_CONFLICT_HANDLER] = microtime(true);
+        $ret = $this->resultHandler->addAddresses($resultWallets);
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_AFTER_RESULT_HANDLER] = microtime(true);
+        return $ret;
     }
 
     /**
@@ -766,6 +802,10 @@ class Bridge
         /** @var $unusedHandlers AbstractHandler[] */
         $unusedHandlers = [];
 
+        $this->timeMeasurementStatistics = [];
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_METHOD_NAME] = __METHOD__;
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_BEFORE_HANDLERS] = microtime(true);
+
         for ($i = 0, $ic = count($this->handlers); $i < $ic; ++$i) {
             try {
                 $resultWallet = $this->handlers[$i]->removeAddresses($wallet, $addresses);
@@ -776,6 +816,7 @@ class Bridge
             }
             $successHandlers [] = $this->handlers[$i];
             if (AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $resultWallet) {
+                $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_AFTER_HANDLERS][$i] = microtime(true);
                 $resultWallets [] = $resultWallet;
             }
         }
@@ -807,7 +848,10 @@ class Bridge
             );
         }
         $this->conflictHandler->removeAddresses($resultWallets);
-        return $this->resultHandler->removeAddresses($resultWallets);
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_AFTER_CONFLICT_HANDLER] = microtime(true);
+        $ret = $this->resultHandler->removeAddresses($resultWallets);
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_AFTER_RESULT_HANDLER] = microtime(true);
+        return $ret;
     }
 
 
@@ -830,6 +874,10 @@ class Bridge
         /** @var $unusedHandlers AbstractHandler[] */
         $unusedHandlers = [];
 
+        $this->timeMeasurementStatistics = [];
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_METHOD_NAME] = __METHOD__;
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_BEFORE_HANDLERS] = microtime(true);
+
         for ($i = 0, $ic = count($this->handlers); $i < $ic; ++$i) {
             try {
                 $this->handlers[$i]->deleteWallet($wallet);
@@ -838,6 +886,7 @@ class Bridge
                 $errorHandler = $this->handlers[$i];
                 break;
             }
+            $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_AFTER_HANDLERS][$i] = microtime(true);
             $successHandlers [] = $this->handlers[$i];
         }
         if ($errorHandler) {
@@ -852,6 +901,8 @@ class Bridge
                 '"' . $errorHandler->getHandlerName() . '" handler raised error (method deleteWallet).'
             );
         }
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_AFTER_CONFLICT_HANDLER] = microtime(true);
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_AFTER_RESULT_HANDLER] = microtime(true);
     }
 
     /**
@@ -870,14 +921,23 @@ class Bridge
     public function getAddresses(Wallet $wallet)
     {
         $results = [];
-        foreach ($this->handlers as $handle) {
+
+        $this->timeMeasurementStatistics = [];
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_METHOD_NAME] = __METHOD__;
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_BEFORE_HANDLERS] = microtime(true);
+
+        foreach ($this->handlers as $handle_num => $handle) {
             $result = $handle->getAddresses($wallet);
             if (AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $result) {
+                $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_AFTER_HANDLERS][$handle_num] = microtime(true);
                 $results [] = $result;
             }
         }
         $this->conflictHandler->getAddresses($results);
-        return $this->resultHandler->getAddresses($results);
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_AFTER_CONFLICT_HANDLER] = microtime(true);
+        $ret = $this->resultHandler->getAddresses($results);
+        $this->timeMeasurementStatistics[Bridge::OPT_TIME_MEASUREMENT_AFTER_RESULT_HANDLER] = microtime(true);
+        return $ret;
     }
 
     /**
@@ -1038,7 +1098,9 @@ class Bridge
         $results = [];
         foreach ($this->handlers as $handle) {
             $result = $handle->listunspent($walletName, $confirmations);
-            $results [] = $result;
+            if (AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $result) {
+                $results [] = $result;
+            }
         }
         $this->conflictHandler->listunspent($results);
         $unspents = $this->resultHandler->listunspent($results);
@@ -1180,7 +1242,9 @@ class Bridge
         $results = [];
         foreach ($this->handlers as $handle) {
             $result = $handle->listunspent($walletName, $confirmations);
-            $results [] = $result;
+            if (AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $result) {
+                $results [] = $result;
+            }
         }
         $this->conflictHandler->listunspent($results);
         $unspents = $this->resultHandler->listunspent($results);
@@ -1331,7 +1395,9 @@ class Bridge
         $results = [];
         foreach ($this->handlers as $handle) {
             $result = $handle->listunspent($walletName, $confirmations);
-            $results [] = $result;
+            if (AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $result) {
+                $results [] = $result;
+            }
         }
         $this->conflictHandler->listunspent($results);
         $unspents = $this->resultHandler->listunspent($results);
@@ -1478,7 +1544,9 @@ class Bridge
         $results = [];
         foreach ($this->handlers as $handle) {
             $result = $handle->listunspent($walletName, $confirmations);
-            $results [] = $result;
+            if (AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $result) {
+                $results [] = $result;
+            }
         }
         $this->conflictHandler->listunspent($results);
         $unspents = $this->resultHandler->listunspent($results);

@@ -35,7 +35,7 @@ class Transaction
      * Array of Bitcoin addresses involved in the transaction.
      * @var string[]
      */
-    protected $addresses = null;
+    //protected $addresses = null;
 
     /**
      * Time at which transaction was included in a block; only present for confirmed transactions.
@@ -47,7 +47,7 @@ class Transaction
      * Lock time of transaction
      * @var int
      */
-    protected $lockTime = null;
+    //protected $lockTime = null;
 
     /**
      * Whether the transaction is a double spend.
@@ -59,13 +59,13 @@ class Transaction
      * Total number of inputs
      * @var int
      */
-    protected $vinSz = null;
+    //protected $vinSz = null;
 
     /**
      * Total number of outputs
      * @var int
      */
-    protected $voutSz = null;
+    //protected $voutSz = null;
 
     /**
      * Number of subsequent blocks, including the block the transaction is in.
@@ -117,10 +117,10 @@ class Transaction
      *
      * @return \string[]
      */
-    public function getAddresses()
+    /*public function getAddresses()
     {
         return isset($this->addresses) ? $this->addresses : [];
-    }
+    }*/
 
     /**
      * Array of Bitcoin addresses involved in the transaction.
@@ -128,12 +128,12 @@ class Transaction
      * @param \string[] $addresses
      * @return $this
      */
-    public function setAddresses($addresses)
+    /*public function setAddresses($addresses)
     {
         $this->addresses = $addresses;
         sort($this->addresses);
         return $this;
-    }
+    }*/
 
     /**
      * Time at which transaction was included in a block; only present for confirmed transactions.
@@ -160,20 +160,20 @@ class Transaction
     /**
      * @return int
      */
-    public function getLockTime()
+    /*public function getLockTime()
     {
         return $this->lockTime;
-    }
+    }*/
 
     /**
      * @param int $lockTime
      * @return $this
      */
-    public function setLockTime($lockTime)
+    /*public function setLockTime($lockTime)
     {
         $this->lockTime = $lockTime;
         return $this;
-    }
+    }*/
 
     /**
      * @return boolean
@@ -210,10 +210,10 @@ class Transaction
      *
      * @return int
      */
-    public function getVinSz()
+    /*public function getVinSz()
     {
         return $this->vinSz;
-    }
+    }*/
 
     /**
      * Total number of inputs
@@ -221,21 +221,21 @@ class Transaction
      * @param int $vinSz
      * @return $this
      */
-    public function setVinSz($vinSz)
+    /*public function setVinSz($vinSz)
     {
         $this->vinSz = $vinSz;
         return $this;
-    }
+    }*/
 
     /**
      * Total number of outputs
      *
      * @return int
      */
-    public function getVoutSz()
+    /*public function getVoutSz()
     {
         return $this->voutSz;
-    }
+    }*/
 
     /**
      * Total number of outputs
@@ -243,11 +243,11 @@ class Transaction
      * @param int $voutSz
      * @return $this
      */
-    public function setVoutSz($voutSz)
+    /*public function setVoutSz($voutSz)
     {
         $this->voutSz = $voutSz;
         return $this;
-    }
+    }*/
 
     /**
      * Number of subsequent blocks, including the block the transaction is in.

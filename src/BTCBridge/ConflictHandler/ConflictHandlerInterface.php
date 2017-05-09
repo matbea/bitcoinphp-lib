@@ -39,18 +39,6 @@ interface ConflictHandlerInterface
     public function listtransactions($data);
 
     /**
-     * The gettransaction RPC gets detailed information about an in-wallet transaction.
-     * The Transaction Hash Endpoint returns detailed information about a given transaction based on its hash.
-     * @link https://bitcoin.org/en/developer-reference#gettransaction Official bitcoin documentation.
-     * @link https://www.blockcypher.com/dev/bitcoin/?php#transaction-hash-endpoint
-     *
-     * @param Transaction[] $data  Result from method gettransaction (from all handlers)
-     *
-     * @throws ConflictHandlerException in case of any error
-     */
-    public function gettransaction($data);
-
-    /**
      * The gettransactions RPC gets detailed information about an in-wallet transaction.
      *
      * @param Transaction[][] $data  Result from method gettransactions (from all handlers)

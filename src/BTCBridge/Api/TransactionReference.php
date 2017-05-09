@@ -2,6 +2,8 @@
 
 namespace BTCBridge\Api;
 
+use BTCBridge\Api\BTCValue;
+
 /**
  * Class TransactionReference
  *
@@ -203,7 +205,7 @@ class TransactionReference
     /**
      * The value transferred by the particular input or output.
      *
-     * @return int
+     * @return BTCValue
      */
     public function getValue()
     {
@@ -213,10 +215,10 @@ class TransactionReference
     /**
      * The value transferred by the particular input or output.
      *
-     * @param int $value
+     * @param BTCValue $value
      * @return $this
      */
-    public function setValue($value)
+    public function setValue(BTCValue $value)
     {
         $this->value = $value;
         return $this;
