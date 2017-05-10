@@ -11,7 +11,6 @@
 
 namespace BTCBridge\ResultHandler;
 
-use BTCBridge\Api\Transaction;
 use BTCBridge\Api\Address;
 use BTCBridge\Api\Wallet;
 use BTCBridge\Exception\ResultHandlerException;
@@ -82,8 +81,7 @@ class DefaultResultHandler extends AbstractResultHandler
         $balance1 = & $data[0];
         /** @var $balance2 BTCValue */
         $balance2 = & $data[1];
-        if ((!$balance1 instanceof BTCValue) || (!$balance2 instanceof BTCValue))
-        {
+        if ((!$balance1 instanceof BTCValue) || (!$balance2 instanceof BTCValue)) {
             throw new \InvalidArgumentException("Elements of data array must be BTCValue.");
         }
         return $balance1;
@@ -104,8 +102,7 @@ class DefaultResultHandler extends AbstractResultHandler
         $uncbal1 = & $data[0];
         /** @var $uncbal2 BTCValue */
         $uncbal2 = & $data[1];
-        if ((!$uncbal1 instanceof BTCValue) || (!$uncbal2 instanceof BTCValue))
-        {
+        if ((!$uncbal1 instanceof BTCValue) || (!$uncbal2 instanceof BTCValue)) {
             throw new \InvalidArgumentException("Elements of data array must be BTCValue.");
         }
         return $uncbal1;

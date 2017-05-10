@@ -14,9 +14,7 @@ namespace BTCBridge\Handler;
 use BTCBridge\Api\Transaction;
 use BTCBridge\Api\TransactionInput;
 use BTCBridge\Api\TransactionOutput;
-//use BTCBridge\Api\Address;
 use BTCBridge\Api\Wallet;
-//use BTCBridge\Api\TransactionReference;
 
 /**
  * Returns data to user's btc-requests using BlockCypher-API
@@ -56,7 +54,7 @@ class BlockCypherHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function listtransactions($walletName, array $options = array())
+    public function listtransactions($walletName, array $options = [])
     {
         return AbstractHandler::HANDLER_UNSUPPORTED_METHOD;
     }
@@ -65,7 +63,7 @@ class BlockCypherHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function gettransactions(array $txHashes, array $options = array())
+    public function gettransactions(array $txHashes, array $options = [])
     {
         if (empty($txHashes)) {
             throw new \InvalidArgumentException("txHashes variable must be non empty array of non empty strings.");
@@ -313,14 +311,13 @@ class BlockCypherHandler extends AbstractHandler
             case "pay-to-pubkey":
                 return "pubkey";
                 break;
-            case "empty": {
+            case "empty":
                 if (isset($options["newlyminted"])) {
                     return "pubkey";
                     break;
                 }
                 return "nonstandard";
                 break;
-            }
             case "null-data":
                 return "nulldata";
                 break;

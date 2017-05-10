@@ -180,10 +180,10 @@ class Address
     public function addTxref($txref)
     {
         if (!$this->getTxrefs()) {
-            return $this->setTxrefs(array($txref));
+            return $this->setTxrefs([$txref]);
         } else {
             return $this->setTxrefs(
-                array_merge($this->getTxrefs(), array($txref))
+                array_merge($this->getTxrefs(), [$txref])
             );
         }
     }
@@ -220,10 +220,10 @@ class Address
     public function addUnconfirmedTxref($unconfirmedTxref)
     {
         if (!$this->getUnconfirmedTxrefs()) {
-            return $this->setUnconfirmedTxrefs(array($unconfirmedTxref));
+            return $this->setUnconfirmedTxrefs([$unconfirmedTxref]);
         } else {
             return $this->setUnconfirmedTxrefs(
-                array_merge($this->getUnconfirmedTxrefs(), array($unconfirmedTxref))
+                array_merge($this->getUnconfirmedTxrefs(), [$unconfirmedTxref])
             );
         }
     }
@@ -257,7 +257,7 @@ class Address
      */
     public function getAllTxrefs()
     {
-        $allTxrefs = array();
+        $allTxrefs = [];
         if (is_array($this->txrefs)) {
             $allTxrefs = array_merge($allTxrefs, $this->txrefs);
         }

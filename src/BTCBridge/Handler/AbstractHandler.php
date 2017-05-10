@@ -178,7 +178,7 @@ abstract class AbstractHandler
      *
      * @return Address object
      */
-    abstract public function listtransactions($walletName, array $options = array());
+    abstract public function listtransactions($walletName, array $options = []);
 
     /**
      * The gettransactions RPC gets detailed information about an in-wallet transaction.
@@ -198,7 +198,7 @@ abstract class AbstractHandler
      *
      * @return Transaction[]
      */
-    abstract public function gettransactions(array $txHashes, array $options = array());
+    abstract public function gettransactions(array $txHashes, array $options = []);
 
 
     /**

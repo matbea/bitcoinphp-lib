@@ -283,9 +283,9 @@ class Transaction
     public function addInput($input)
     {
         if (!$this->getInputs()) {
-            $this->setInputs(array($input));
+            $this->setInputs([$input]);
         } else {
-            $this->setInputs(array_merge($this->getInputs(), array($input)));
+            $this->setInputs(array_merge($this->getInputs(), [$input]));
         }
         return $this->getInputs();
     }
@@ -323,9 +323,9 @@ class Transaction
     public function addOutput($output)
     {
         if (!$this->getOutputs()) {
-            $this->setOutputs(array($output));
+            $this->setOutputs([$output]);
         } else {
-            $this->setOutputs(array_merge($this->getOutputs(), array($output)));
+            $this->setOutputs(array_merge($this->getOutputs(), [$output]));
         }
         return $this->getOutputs();
     }

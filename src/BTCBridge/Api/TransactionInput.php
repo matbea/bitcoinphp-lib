@@ -92,9 +92,9 @@ class TransactionInput
     public function addAddress($address)
     {
         if (!$this->getAddresses()) {
-            $this->setAddresses(array($address));
+            $this->setAddresses([$address]);
         } else {
-            $this->setAddresses(array_merge($this->getAddresses(), array($address)));
+            $this->setAddresses(array_merge($this->getAddresses(), [$address]));
         }
         return $this->getAddresses();
     }

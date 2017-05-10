@@ -25,7 +25,7 @@ class BTCValue
      */
     public function __construct($value)
     {
-        if ( !$value instanceof \GMP) {
+        if (!$value instanceof \GMP) {
             throw new \InvalidArgumentException("The given value is not a GMP value");
         }
         $this->value = $value;
@@ -41,7 +41,7 @@ class BTCValue
      */
     public function setGMPValue($value)
     {
-        if ( !$value instanceof \GMP) {
+        if (!$value instanceof \GMP) {
             throw new \InvalidArgumentException("The given value is not a GMP value");
         }
         $this->value = $value;
@@ -78,8 +78,7 @@ class BTCValue
     public function getSatoshiValue()
     {
         $intValue = gmp_intval(gmp_strval($this->value));
-        if ( strval($intValue) !== gmp_strval($this->value) )
-        {
+        if (strval($intValue) !== gmp_strval($this->value)) {
             throw new \RuntimeException("Integer value is not equal string value (" . gmp_strval($this->value) . ").");
         }
         return $intValue;

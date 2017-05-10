@@ -18,6 +18,7 @@ use BTCBridge\Api\TransactionInput;
 use BTCBridge\Api\TransactionOutput;
 use BTCBridge\Api\Address;
 use BTCBridge\Api\BTCValue;
+
 //use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 //use BTCBridge\Api\Wallet;
@@ -63,7 +64,7 @@ class MatbeaHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function listtransactions($walletName, array $options = array())
+    public function listtransactions($walletName, array $options = [])
     {
         if ("string" != gettype($walletName)) {
             throw new \InvalidArgumentException("Account variable must be non empty string.");
@@ -155,8 +156,7 @@ class MatbeaHandler extends AbstractHandler
             //$txr->setTxInputN($txref["tx_input_n"]);
             $txr->setTxOutputN($txref["vout"]);
             $txr->setConfirmed(strtotime($txref["time"]));
-            if (false !== strpos($txref["amount"],"E"))
-            {
+            if (false !== strpos($txref["amount"], "E")) {
                 $txref["amount"] = sprintf('%f', $txref["amount"]); //Exponential form
             }
             $v = gmp_init(strval($txref["amount"]*100*1000*1000));
@@ -177,7 +177,7 @@ class MatbeaHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function gettransactions(array $txHashes, array $options = array())
+    public function gettransactions(array $txHashes, array $options = [])
     {
         if (empty($txHashes)) {
             throw new \InvalidArgumentException("txHashes variable must be non empty array of non empty strings.");
@@ -188,8 +188,7 @@ class MatbeaHandler extends AbstractHandler
             $url .= "?token=" . $this->token;
             $sep = "&";
         }
-        foreach ($txHashes as $txHash)
-        {
+        foreach ($txHashes as $txHash) {
             if ((!is_string($txHash)) && (""==$txHash)) {
                 throw new \InvalidArgumentException("All hashes is \$txHashes array must be non empty strings.");
             }
@@ -252,8 +251,7 @@ class MatbeaHandler extends AbstractHandler
 
         $txs = [];
 
-        foreach ($content["transactions"] as $tr)
-        {
+        foreach ($content["transactions"] as $tr) {
             $tx = new Transaction;
             if (-1 != $tr["block_height"]) {
                 $tx->setConfirmed(strtotime($tr["confirmed"]));
@@ -652,7 +650,7 @@ class MatbeaHandler extends AbstractHandler
             CURLOPT_HTTPHEADER     => ['Content-Type:application/json'],
             CURLOPT_POSTFIELDS     => json_encode($post_data)
         ];
-        if ( FALSE === curl_setopt_array($curl, $curl_options)) {
+        if (false === curl_setopt_array($curl, $curl_options)) {
             throw new \RuntimeException(
                 "curl_setopt_array failed url:\"" . $url . "\", parameters: "
                 . serialize($curl_options) . ")."
@@ -717,7 +715,7 @@ class MatbeaHandler extends AbstractHandler
             CURLOPT_HTTPHEADER     => ['Content-Type:application/json'],
             CURLOPT_POSTFIELDS     => json_encode($post_data)
         ];
-        if (FALSE === curl_setopt_array($curl, $curl_options)) {
+        if (false === curl_setopt_array($curl, $curl_options)) {
             throw new \RuntimeException(
                 "curl_setopt_array failed url:\"" . $url . "\", parameters: " . serialize($curl_options) . ")."
             );

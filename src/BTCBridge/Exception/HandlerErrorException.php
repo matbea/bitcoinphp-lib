@@ -3,6 +3,11 @@ namespace BTCBridge\Exception;
 
 use BTCBridge\Handler\AbstractHandler;
 
+/**
+ * This class describes HandlerError Exceptions
+ *
+ * @package BTCBridge\Exception
+ */
 class HandlerErrorException extends BridgeException
 {
     /** @var AbstractHandler[] */
@@ -29,9 +34,15 @@ class HandlerErrorException extends BridgeException
      * @param int $code
      * @param BridgeException $previous
      */
-    public function __construct(array $successHandlers, AbstractHandler $errorHandler,
-        array $unusedHandlers, $result, $message, $code = 0, BridgeException $previous = null)
-    {
+    public function __construct(
+        array $successHandlers,
+        AbstractHandler $errorHandler,
+        array $unusedHandlers,
+        $result,
+        $message,
+        $code = 0,
+        BridgeException $previous = null
+    ) {
         $this->successHandlers = $successHandlers;
         $this->errorHandler = $errorHandler;
         $this->unusedHandlers = $unusedHandlers;

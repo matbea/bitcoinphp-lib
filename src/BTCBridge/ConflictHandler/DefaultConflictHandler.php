@@ -201,8 +201,12 @@ class DefaultConflictHandler implements ConflictHandlerInterface
 
 
             if (($tx1->getBlockHash() !== $tx2->getBlockHash()) ||
-                // because of txhash=000010ab9378a649fe2d57387afeb4b066a6fa396cefcc6b91328badd49f319f (different time)
-                // because of txhash=0000297bd516c501aa9b143a5eac8adaf457fa78431e844092a7112815411d03 (different confirmed)
+                // because of txhash=
+                //000010ab9378a649fe2d57387afeb4b066a6fa396cefcc6b91328badd49f319f
+                // (different time)
+                // because of txhash=
+                //0000297bd516c501aa9b143a5eac8adaf457fa78431e844092a7112815411d03
+                // (different confirmed)
                 //($tx1->getConfirmed() !== $tx2->getConfirmed()) ||
                 //($tx1->getBlockTime() !== $tx2->getLockTime()) ||
                 //($tx1->getDoubleSpend() !== $tx2->getDoubleSpend()) || HUERAGA - have to develop it
@@ -249,11 +253,9 @@ class DefaultConflictHandler implements ConflictHandlerInterface
             for ($i = 0, $ic = count($outputs1); $i < $ic; ++$i) {
                 $output1 = & $outputs1[$i];
                 $output2 = & $outputs2[$i];
-                if (
-                    (gmp_cmp($output1->getValue()->getGMPValue(),
-                            $output2->getValue()->getGMPValue()) != 0
-                    ) || ($output1->getScriptType() != $output2->getScripttype())
-                ) {
+                $valCmp = gmp_cmp($output1->getValue()->getGMPValue(),
+                    $output2->getValue()->getGMPValue());
+                if ((0!=$valCmp) || ($output1->getScriptType() != $output2->getScriptType())) {
                     $error = true;
                     break;
                 } else {
@@ -302,9 +304,8 @@ class DefaultConflictHandler implements ConflictHandlerInterface
             for ($i = 0, $ic = count($inputs1); $i < $ic; ++$i) {
                 $input1 = & $inputs1[$i];
                 $input2 = & $inputs2[$i];
-                if (
+                if (($input1->getOutputIndex() != $input2->getOutputIndex()) ||
                     //($input1->getPrevHash() != $input2->getPrevHash()) ||
-                    ($input1->getOutputIndex() != $input2->getOutputIndex()) ||
                     //($input1->getAddresses() != $input2->getAddresses()) ||
                     (
                         gmp_cmp(
@@ -371,12 +372,10 @@ class DefaultConflictHandler implements ConflictHandlerInterface
         $balance1 = & $data[0];
         /** @var $balance2 BTCValue */
         $balance2 = & $data[1];
-        if ((!$balance1 instanceof BTCValue) || (!$balance2 instanceof BTCValue))
-        {
+        if ((!$balance1 instanceof BTCValue) || (!$balance2 instanceof BTCValue)) {
             throw new \InvalidArgumentException("Elements of Data array must be BTCValue.");
         }
-        if (gmp_cmp($balance1->getGMPValue(),$balance2->getGMPValue()) != 0)
-        {
+        if (gmp_cmp($balance1->getGMPValue(), $balance2->getGMPValue()) != 0) {
             throw new ConflictHandlerException("No equal results from different services.");
         }
     }
@@ -396,12 +395,10 @@ class DefaultConflictHandler implements ConflictHandlerInterface
         $uncbal1 = & $data[0];
         /** @var $uncbal2 BTCValue */
         $uncbal2 = & $data[1];
-        if ((!$uncbal1 instanceof BTCValue) || (!$uncbal2 instanceof BTCValue))
-        {
+        if ((!$uncbal1 instanceof BTCValue) || (!$uncbal2 instanceof BTCValue)) {
             throw new \InvalidArgumentException("Elements of Data array must be BTCValue.");
         }
-        if (gmp_cmp($uncbal1->getGMPValue(),$uncbal2->getGMPValue()) != 0)
-        {
+        if (gmp_cmp($uncbal1->getGMPValue(), $uncbal2->getGMPValue()) != 0) {
             throw new ConflictHandlerException("No equal results from different services.");
         }
     }

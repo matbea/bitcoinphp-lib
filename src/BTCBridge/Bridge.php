@@ -350,7 +350,7 @@ class Bridge
      *
      * @return Address
      */
-    public function listtransactions($address, array $options = array())
+    public function listtransactions($address, array $options = [])
     {
         //HUERAGA - не все заполняется, а надо ли (баланс etc)?
         if ("string" != gettype($address) || ("" == $address)) {
@@ -363,7 +363,8 @@ class Bridge
         foreach ($this->handlers as $handle_num => $handle) {
             $result = $handle->listtransactions($address, $options);
             if (AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $result) {
-                $this->timeMeasurementStatistics[Bridge::PRIV_TIME_MEASUREMENT_AFTER_HANDLERS][$handle_num] = microtime(true);
+                $this->timeMeasurementStatistics[Bridge::PRIV_TIME_MEASUREMENT_AFTER_HANDLERS]
+                [$handle_num] = microtime(true);
                 $results [] = $result;
             }
         }
@@ -394,7 +395,7 @@ class Bridge
      *
      * @return Transaction[]
      */
-    public function gettransactions(array $txHashes, array $options = array())
+    public function gettransactions(array $txHashes, array $options = [])
     {
         if (empty($txHashes)) {
             throw new \InvalidArgumentException("txHashes variable must be non empty array of non empty strings.");
@@ -406,7 +407,8 @@ class Bridge
         foreach ($this->handlers as $handle_num => $handle) {
             $result = $handle->gettransactions($txHashes, $options);
             if (AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $result) {
-                $this->timeMeasurementStatistics[Bridge::PRIV_TIME_MEASUREMENT_AFTER_HANDLERS][$handle_num] = microtime(true);
+                $this->timeMeasurementStatistics[Bridge::PRIV_TIME_MEASUREMENT_AFTER_HANDLERS]
+                [$handle_num] = microtime(true);
                 $results [] = $result;
             }
         }
@@ -454,7 +456,8 @@ class Bridge
         foreach ($this->handlers as $handle_num => $handle) {
             $result = $handle->getbalance($walletName, $Confirmations, $IncludeWatchOnly);
             if (AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $result) {
-                $this->timeMeasurementStatistics[Bridge::PRIV_TIME_MEASUREMENT_AFTER_HANDLERS][$handle_num] = microtime(true);
+                $this->timeMeasurementStatistics[Bridge::PRIV_TIME_MEASUREMENT_AFTER_HANDLERS]
+                [$handle_num] = microtime(true);
                 $results [] = $result;
             }
         }
@@ -499,7 +502,8 @@ class Bridge
             //$result = call_user_func_array([$handle, "getunconfirmedbalance"], [$Account]);
             $result = $handle->getunconfirmedbalance($walletName);
             if (AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $result) {
-                $this->timeMeasurementStatistics[Bridge::PRIV_TIME_MEASUREMENT_AFTER_HANDLERS][$handle_num] = microtime(true);
+                $this->timeMeasurementStatistics[Bridge::PRIV_TIME_MEASUREMENT_AFTER_HANDLERS]
+                [$handle_num] = microtime(true);
                 $results [] = $result;
             }
         }
@@ -552,7 +556,8 @@ class Bridge
         foreach ($this->handlers as $handle_num => $handle) {
             $result = $handle->listunspent($walletName, $MinimumConfirmations);
             if (AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $result) {
-                $this->timeMeasurementStatistics[Bridge::PRIV_TIME_MEASUREMENT_AFTER_HANDLERS][$handle_num] = microtime(true);
+                $this->timeMeasurementStatistics[Bridge::PRIV_TIME_MEASUREMENT_AFTER_HANDLERS]
+                [$handle_num] = microtime(true);
                 $results [] = $result;
             }
         }
@@ -931,7 +936,8 @@ class Bridge
         foreach ($this->handlers as $handle_num => $handle) {
             $result = $handle->getAddresses($wallet);
             if (AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $result) {
-                $this->timeMeasurementStatistics[Bridge::PRIV_TIME_MEASUREMENT_AFTER_HANDLERS][$handle_num] = microtime(true);
+                $this->timeMeasurementStatistics[Bridge::PRIV_TIME_MEASUREMENT_AFTER_HANDLERS]
+                [$handle_num] = microtime(true);
                 $results [] = $result;
             }
         }
