@@ -130,6 +130,13 @@ try {
 
     $bridge->setOption(\BTCBridge\Bridge::OPT_LOCAL_PATH_OF_WALLET_DATA, __DIR__ . "/data/wallet.dat");
 
+    //$res = $bridge->gettransactions(["0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098"]);
+    //$v = $res[0]->getInputs()[0]->getOutputValue();
+    //$val1 = $v->getGMPValue();
+    //$val3 = $v->getBTCValue();
+    //$val2 = $v->getSatoshiValue();
+    //die;
+
     //$res = $bridge->gettransactions(["7890a6b1d38741a5b019e34c8576165195af9e7b9af7935024b150e870f530d2"]);
     //array_splice($txs, 20, 20);
     //$txs = ["82e406c824b89dd1b6aa1d49e6af6a7420d2bc30be1e3f783ddebeb9ee0da64e"];
@@ -197,8 +204,12 @@ try {
     //$res = $bridge->gettransactions(["0000005f67276a9d277507f1439ff6c322d7e969b855e449aec6b34b0b6d1655","00000005aca88ceece655e19070dbfe9416b0c2850da0463f1e4c823bb41f295"],[]);
 
     $wallet = new \BTCBridge\Api\Wallet;
-    //$wallet->setSystemDataByHandler($blockCypherHandler->getHandlerName(), ["name"=>"deadushka"]);
+    $wallet->setSystemDataByHandler($matbeaHandler->getHandlerName(), ["name"=>"matbea-com-test","id"=>700]);
+    $wallet->setName("matbea-com-test");
+    $res = $bridge->listtransactions($wallet->getName());
+    die;
     //$bridge->deleteWallet($wallet);
+    //$wallet = $bridge->createWallet("matbea-com-test",['12S42ZEw2741DHrivgZHLfX8M58mxb7bFy','1MN3cT9Ro927h4kgpSZ5V7SfYjrwTysXv7']);
     /*$wallet = $bridge->createWallet("deadushka1",['1MN3cT9Ro927h4kgpSZ5V7SfYjrwTysXv7']);
     $addresses = $bridge->getAddresses($wallet);
     $wallet = $bridge->addAddresses($wallet,['1BdxBor4JG76RKLAwJZfHC58fWbgidYukz','1MN3cT9Ro927h4kgpSZ5V7SfYjrwTysXv7']);

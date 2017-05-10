@@ -2,7 +2,7 @@
 
 namespace BTCBridge\Api;
 
-use BTCBridge\Api\BTCValue;
+//use BTCBridge\Api\BTCValue;
 
 /**
  * Class TransactionReference
@@ -48,7 +48,7 @@ class TransactionReference
 
     /**
      * The value transferred by the particular input or output.
-     * @var int
+     * @var BTCValue
      */
     protected $value = null;
 

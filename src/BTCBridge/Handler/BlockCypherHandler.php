@@ -17,12 +17,6 @@ use BTCBridge\Api\TransactionOutput;
 //use BTCBridge\Api\Address;
 use BTCBridge\Api\Wallet;
 //use BTCBridge\Api\TransactionReference;
-use BitWasp\Bitcoin\Script\ScriptFactory;
-use BitWasp\Bitcoin\Script\Classifier\OutputClassifier;
-use BitWasp\Bitcoin\Key\PublicKeyFactory;
-use BitWasp\Bitcoin\Script\Script;
-use BitWasp\Bitcoin\Crypto\EcAdapter\Impl\PhpEcc\Key\PublicKey;
-use BitWasp\Bitcoin\Script\Opcodes;
 
 /**
  * Returns data to user's btc-requests using BlockCypher-API
@@ -57,118 +51,6 @@ class BlockCypherHandler extends AbstractHandler
         }
         $this->token = $token;
         return $this;
-    }
-
-    /**
-     * Decode Multisig or Nonstandard type of signature from array with data
-     *
-     * @param array $decoded An token for accessing to the blockcypher data
-     *
-     * @return array
-     */
-    /** @noinspection PhpUndefinedClassInspection */
-    private function decodeMultisig(array $decoded)
-    {
-        $count = count($decoded);
-        if ($count <= 3) {
-            return [];
-        }
-
-        $mOp = $decoded[0];
-        $nOp = $decoded[$count - 2];
-        $checksig = $decoded[$count - 1];
-        /** @noinspection PhpUndefinedMethodInspection */
-        if ($mOp->isPush() || $nOp->isPush() || $checksig->isPush()) {
-            return [];
-        }
-
-        /** @var Operation[] $vKeys */
-        $vKeys = array_slice($decoded, 1, -2);
-        $solutions = [];
-        foreach ($vKeys as $key) {
-            /** @noinspection PhpUndefinedMethodInspection */
-            if (!$key->isPush() || !PublicKey::isCompressedOrUncompressed($key->getData())) {
-                continue;
-            }
-            /** @noinspection PhpUndefinedMethodInspection */
-            $solutions[] = $key->getData();
-        }
-
-        /** @noinspection PhpUndefinedMethodInspection */
-        /** @noinspection PhpUndefinedMethodInspection */
-        /** @noinspection PhpUndefinedMethodInspection */
-        if ($mOp->getOp() >= Opcodes::OP_0
-            && $nOp->getOp() <= Opcodes::OP_16
-            && $checksig->getOp() === Opcodes::OP_CHECKMULTISIG) {
-            return $solutions;
-        }
-        return $solutions;
-    }
-
-    /**
-     * Extract destination bitcoin-addresses from the multisig output
-     *
-     * @param string $script hex of ScriptPubKey of output, must be multisig
-     *
-     * @throws \InvalidArgumentException in case of error of this type
-     * @throws \RuntimeException in case of error of this type
-     *
-     * @return \string addresses
-     */
-
-    /** @noinspection PhpUnusedPrivateMethodInspection */
-    private function extractAddressesFromMultisigScript($script)
-    {
-        if (("string" != gettype($script)) || ("" == $script)) {
-            throw new \InvalidArgumentException("script variable must be non empty string.");
-        }
-        try {
-            $objScript = ScriptFactory::fromHex($script);
-        } catch (\InvalidArgumentException $ex) {
-            throw new \InvalidArgumentException($ex->getMessage());
-        }
-        if (!$objScript instanceof Script) {
-            throw new \InvalidArgumentException(
-                "Passed string is not valid hex of scriptPubkey hex (" . $script . ")."
-            );
-        }
-        //$decode = (new OutputClassifier())->decode($script);
-        $solutions = null;
-        $decoded = $objScript->getScriptParser()->decode();
-        $classifier = new OutputClassifier();
-        $type = $classifier->classify($objScript, $solutions);
-        if ("nonstandard" == $type) {
-            $solutions = $this->decodeMultisig($decoded);
-        }
-
-        /*if ( in_array($type,["multisig","nonstandard"]) ) {
-            return []; //This moment we'll not elaborate this case
-        } else {
-            throw new \InvalidArgumentException(
-                "Type of passed scriptPubKey is not multisig or nonstandard (" . $script . ")."
-            );
-        }*/
-
-        if (("multisig" !== $type) && ("nonstandard" !== $type)) {
-            throw new \InvalidArgumentException(
-                "Type of signature of passed scriptPubkey (" . $script . ") is not multisig."
-            );
-        }
-        if (!is_array($solutions) || empty($solutions)) {
-            throw new \InvalidArgumentException("Incorrect solutions of passed scriptPubkey (" . $script . ").");
-        }
-        $addresses = [];
-        foreach ($solutions as $solution) {
-            try {
-                $addr =  PublicKeyFactory::fromHex($solution)->getAddress();
-                $addresses [] = $addr->getAddress();
-            } catch (\Exception $ex) {
-                throw new \InvalidArgumentException(
-                    "Passed scriptPubkey does not ontain valid addresses (" . $script . ")."
-                );
-            }
-        }
-        return $addresses;
     }
 
     /**
@@ -264,20 +146,20 @@ class BlockCypherHandler extends AbstractHandler
             }
             $tx->setBlockHeight($content["block_height"]);
             $tx->setHash($content["hash"]);
-            $tx->setAddresses($content["addresses"]);
+            //$tx->setAddresses($content["addresses"]);
             if (isset($content["confirmed"])) {
                 $tx->setConfirmed(strtotime($content["confirmed"]));
             }
-            $tx->setLockTime($content["lock_time"]);
+            //$tx->setLockTime($content["lock_time"]);
             $tx->setDoubleSpend($content["double_spend"]);
-            $tx->setVoutSz($content["vout_sz"]);
-            $tx->setVinSz($content["vin_sz"]);
+            //$tx->setVoutSz($content["vout_sz"]);
+            //$tx->setVinSz($content["vin_sz"]);
             $tx->setConfirmations($content["confirmations"]);
             foreach ($content["inputs"] as $inp) { //20 штук по дефолту выдаётся, надо, чтобы все
                 $input = new TransactionInput();
                 $input->setAddresses((isset($inp["addresses"]) && (null!==$inp["addresses"]))?$inp["addresses"]:[]);
                 if (isset($inp["prev_hash"])) {
-                    $input->setPrevHash($inp["prev_hash"]);
+                    //$input->setPrevHash($inp["prev_hash"]);
                 }
                 if (isset($inp["output_index"])) {
                     $input->setOutputIndex($inp["output_index"]);

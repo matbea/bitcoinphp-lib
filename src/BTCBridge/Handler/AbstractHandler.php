@@ -16,6 +16,7 @@ use \Monolog\Logger;
 use \BTCBridge\Api\Transaction;
 use \BTCBridge\Api\Address;
 use \BTCBridge\Api\TransactionReference;
+use \BTCBridge\Api\BTCValue;
 
 /**
  * Base Handler class providing the Handler structure, must be extended
@@ -164,7 +165,7 @@ abstract class AbstractHandler
      *   This ensures paging by block height never misses TXRefs.
      *   Defaults to 200, maximum is 2000.
      *   ['confirmations']         integer   If set, only returns the balance and TXRefs that have at least this number
-     *   of confirmations.
+     *   of confirmations. By default confirmations = 1
      *   ['confidence']            integer   Filters response to only include TXRefs above confidence in percent; e.g.,
      *   if this is set to 99, will only return TXRefs with 99% confidence or above (including all confirmed TXRefs).
      *   For more detail on confidence, check the Confidence Factor documentation.

@@ -18,7 +18,7 @@ use BTCBridge\Api\TransactionInput;
 use BTCBridge\Api\TransactionOutput;
 use BTCBridge\Api\Address;
 use BTCBridge\Api\BTCValue;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
+//use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 //use BTCBridge\Api\Wallet;
 //use \BTCBridge\Api\TransactionReference;
@@ -95,9 +95,11 @@ class MatbeaHandler extends AbstractHandler
         if (array_key_exists('confirmations', $options) && (null !== $options['confirmations'])) {
             $url .= $sep . "confirmations=" . $options['confirmations'];
             //$sep = "&";
+        } else {
+            $url .= $sep . "confirmations=1";
         }
 
-        $awaiting_params = [
+        /*$awaiting_params = [
             'before',
             'after',
             'limit',
@@ -107,7 +109,7 @@ class MatbeaHandler extends AbstractHandler
             if (!in_array($opt_name, $awaiting_params)) {
                 $this->logger->warning("Method \"" . __METHOD__ . "\" does not accept option \"" . $opt_name . "\".");
             }
-        }
+        }*/
 
         $ch = curl_init();
         $this->prepareCurl($ch, $url);
@@ -140,8 +142,6 @@ class MatbeaHandler extends AbstractHandler
             }
         }
 
-
-
         /** @var $txrefs TransactionReference[] */
         $txrefs = [];
 
@@ -153,7 +153,8 @@ class MatbeaHandler extends AbstractHandler
             //$txr->setSpent($txref["spent"]);
             $txr->setTxHash($txref["txid"]);
             //$txr->setTxInputN($txref["tx_input_n"]);
-            $txr->setTxOutputN($txref["amount"]);
+            $txr->setTxOutputN($txref["vout"]);
+            $txr->setConfirmed(strtotime($txref["time"]));
             if (false !== strpos($txref["amount"],"E"))
             {
                 $txref["amount"] = sprintf('%f', $txref["amount"]); //Exponential form

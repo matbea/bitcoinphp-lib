@@ -16,12 +16,12 @@ use BTCBridge\Api\TransactionInput;
 use BTCBridge\Api\TransactionOutput;
 use BTCBridge\Api\Wallet;
 use BTCBridge\Api\BTCValue;
-use BitWasp\Bitcoin\Script\ScriptFactory;
-use BitWasp\Bitcoin\Script\Classifier\OutputClassifier;
-use BitWasp\Bitcoin\Key\PublicKeyFactory;
-use BitWasp\Bitcoin\Script\Script;
-use BitWasp\Bitcoin\Crypto\EcAdapter\Impl\PhpEcc\Key\PublicKey;
-use BitWasp\Bitcoin\Script\Opcodes;
+//use BitWasp\Bitcoin\Script\ScriptFactory;
+//use BitWasp\Bitcoin\Script\Classifier\OutputClassifier;
+//use BitWasp\Bitcoin\Key\PublicKeyFactory;
+//use BitWasp\Bitcoin\Script\Script;
+//use BitWasp\Bitcoin\Crypto\EcAdapter\Impl\PhpEcc\Key\PublicKey;
+//use BitWasp\Bitcoin\Script\Opcodes;
 
 /**
  * Returns data to user's btc-requests using BlockTrail-API
@@ -173,15 +173,13 @@ class BlockTrailHandler extends AbstractHandler
             foreach ($content["inputs"] as $inp) { //20 штук по дефолту выдаётся, надо, чтобы все
                 $input = new TransactionInput();
                 switch ($inp["type"]) {
-                    case "coinbase": {
+                    case "coinbase":
                         $input->setAddresses([]);
                         break;
-                    };
-                    case "multisig": {
+                    case "multisig":
                         $input->setAddresses($inp["multisig_addresses"]);
                         break;
-                    };
-                    default: {
+                    default:
                         if ( null === $inp["address"] ) {
                             throw new \RuntimeException(
                                 "Error: type of input: \"" . $inp["type"] . "\", address is null (url:\"" . $url . "\")."
@@ -189,7 +187,6 @@ class BlockTrailHandler extends AbstractHandler
                         }
                         $input->setAddresses([$inp["address"]]);
                         break;
-                    };
                 };
 
                 /*$input->setAddresses((isset($inp["addresses"]) && (null!==$inp["addresses"]))?$inp["addresses"]:[]);

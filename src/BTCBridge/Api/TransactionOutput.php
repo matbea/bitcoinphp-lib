@@ -2,7 +2,7 @@
 
 namespace BTCBridge\Api;
 
-use BTCBridge\Api\BTCValue;
+//use BTCBridge\Api\BTCValue;
 
 /**
  * Class TransactionOutput
@@ -29,7 +29,7 @@ class TransactionOutput
 
     /**
      * Value transferred by the transaction output, in satoshi.
-     * @var \GMP
+     * @var BTCValue
      */
     protected $value = null;
 

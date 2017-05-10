@@ -11,15 +11,12 @@
 
 namespace BTCBridge\ConflictHandler;
 
-//use BitWasp\Bitcoin\Transaction\Transaction;
-//use BitWasp\Bitcoin\Transaction\TransactionOutput;
 use BTCBridge\Api\BTCValue;
 use BTCBridge\Api\Transaction;
-use BTCBridge\Api\TransactionInput;
-use BTCBridge\Api\TransactionOutput;
+//use BTCBridge\Api\TransactionInput;
+//use BTCBridge\Api\TransactionOutput;
 use BTCBridge\Api\Address;
 use \BTCBridge\Api\TransactionReference;
-//use BTCBridge\Api\Wallet;
 use BTCBridge\Api\Wallet;
 use BTCBridge\Exception\ConflictHandlerException;
 
@@ -125,7 +122,10 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                     ($tx->getTxHash() != $txc->getTxHash()) ||
                     ($tx->getTxInputN() != $txc->getTxInputN()) ||
                     ($tx->getTxOutputN() != $txc->getTxOutputN()) ||
-                    ($tx->getValue() != $txc->getValue())
+                    (gmp_cmp(
+                        $tx->getValue()->getGMPValue(),
+                        $txc->getValue()->getGMPValue()
+                    ) != 0)
                 ) {
                     continue;
                 }
@@ -151,7 +151,10 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                     ($tx->getTxHash() != $txc->getTxHash()) ||
                     ($tx->getTxInputN() != $txc->getTxInputN()) ||
                     ($tx->getTxOutputN() != $txc->getTxOutputN()) ||
-                    ($tx->getValue() != $txc->getValue())
+                    (gmp_cmp(
+                            $tx->getValue()->getGMPValue(),
+                            $txc->getValue()->getGMPValue()
+                        ) != 0)
                 ) {
                     continue;
                 }
@@ -436,7 +439,10 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                     ($tx->getTxHash() != $txc->getTxHash()) ||
                     ($tx->getTxInputN() != $txc->getTxInputN()) ||
                     ($tx->getTxOutputN() != $txc->getTxOutputN()) ||
-                    ($tx->getValue() != $txc->getValue()) ||
+                    (gmp_cmp(
+                            $tx->getValue()->getGMPValue(),
+                            $txc->getValue()->getGMPValue()
+                        ) != 0) ||
                     ($tx->getAddress() != $txc->getAddress())
                 ) {
                     continue;
