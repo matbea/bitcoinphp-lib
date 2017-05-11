@@ -166,7 +166,8 @@ class MatbeaHandler extends AbstractHandler
                 $txrefs,
                 function (TransactionReference $tx) use ($txr) {
                     return $tx->isEqual($txr);
-                });
+                }
+                );
             if (empty($filteredTxs)) {
                 $txrefs [] = $txr;
             }
@@ -468,7 +469,8 @@ class MatbeaHandler extends AbstractHandler
                 $result,
                 function (TransactionReference $tx) use ($txr) {
                     return $tx->isEqual($txr);
-                });
+                }
+                );
             if (empty($filteredTxs)) {
                 $result [] = $txr;
             }

@@ -1325,10 +1325,12 @@ class Bridge
         }
         $transaction = $transaction->payToAddress($amount, AddressFactory::fromString($address));
         if ($change >= $this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT)) {
-            $addressForChange =
-                ("" != $sendMoneyOptions)
-                ? $sendMoneyOptions->getAddressForChange()
-                : $outputsForSpent[0]->getAddress();
+            $addressForChange = null;
+            if ("" != $sendMoneyOptions) {
+                $addressForChange = $sendMoneyOptions->getAddressForChange();
+            } else {
+                $addressForChange = $outputsForSpent[0]->getAddress();
+            }
             /** @noinspection PhpUndefinedMethodInspection */
             $transaction = $transaction->payToAddress($change, AddressFactory::fromString($addressForChange));
         }
@@ -1579,7 +1581,7 @@ class Bridge
             }
             //http://bitzuma.com/posts/making-sense-of-bitcoin-transaction-fees/     size = 181 * in + 34 * out + 10
             $requiredFeeWithChange = intval(
-                ceil((count($outputsForSpent) * 181 + 34*(count($smoutputs) + 1) + 10) * $feePerKb / 1024)
+                ceil((count($outputsForSpent) * 181 + 34 * (count($smoutputs) + 1) + 10) * $feePerKb / 1024)
             );
             $change = $sumFromOutputs - $amount - $requiredFeeWithChange;
             if ($change < 0) {
@@ -1633,10 +1635,12 @@ class Bridge
             );
         }
         if ($change > $this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT)) {
-            $addressForChange =
-                ("" != $sendMoneyOptions)
-                ? $sendMoneyOptions->getAddressForChange()
-                : $outputsForSpent[0]->getAddress();
+            $addressForChange = null;
+            if ("" != $sendMoneyOptions) {
+                $addressForChange = $sendMoneyOptions->getAddressForChange();
+            } else {
+                $addressForChange = $outputsForSpent[0]->getAddress();
+            }
             /** @noinspection PhpUndefinedMethodInspection */
             $transaction = $transaction->payToAddress($change, AddressFactory::fromString($addressForChange));
         }
