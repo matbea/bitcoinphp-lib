@@ -309,7 +309,7 @@ class TransactionReference
                 &&
             ($this->getTxOutputN() == $o->getTxOutputN())
                 &&
-            ($this->getValue() == $o->getValue())
+            ($this->getValue()->getSatoshiValue() == $o->getValue()->getSatoshiValue())
                 &&
             ($this->getSpent() == $o->getSpent())
                 &&

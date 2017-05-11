@@ -216,13 +216,13 @@ class Bridge
      */
     private function binarySearch(array $outputs, $first, $last, $searchedValue)
     {
-        if ($outputs[$last-1]->getValue() < $searchedValue) {
+        if ($outputs[$last - 1]->getValue()->getSatoshiValue() < $searchedValue) {
             return -1;
         }
         $count = $last - $first;
         while ($count > 0) {
             $it = $first;
-            $step = intval(floor($count/2));
+            $step = intval(floor($count / 2));
             $it += $step;
             if ($outputs[$it]->getValue() < $searchedValue) {
                 ++$it;
@@ -294,12 +294,12 @@ class Bridge
 
         while (true) {
             //Firstly we'll try to find 1 output which has enough money
-            $outputIndex =  $this->binarySearch($outputs, 0, count($outputs), $amount);
+            $outputIndex = $this->binarySearch($outputs, 0, count($outputs), $amount);
             if (-1 != $outputIndex) {
                 $result [] = $outputs[$outputIndex];
                 return $result;
             }
-            $amountOfBigOutput = $outputs[count($outputs)-1]->getValue();
+            $amountOfBigOutput = $outputs[count($outputs) - 1]->getValue();
             $amount -= $amountOfBigOutput;
             $result [] = array_pop($outputs);
         }
@@ -694,7 +694,7 @@ class Bridge
         }
         $this->conflictHandler->createWallet($resultWallets); //In case of error throw will be raised
         $this->timeMeasurementStatistics[Bridge::PRIV_TIME_MEASUREMENT_AFTER_CONFLICT_HANDLER] = microtime(true);
-        $ret =  $this->resultHandler->createWallet($resultWallets);
+        $ret = $this->resultHandler->createWallet($resultWallets);
         $this->timeMeasurementStatistics[Bridge::PRIV_TIME_MEASUREMENT_AFTER_RESULT_HANDLER] = microtime(true);
         return $ret;
     }
@@ -1115,7 +1115,7 @@ class Bridge
 
         $feePerKb = intval($this->getOption(self::OPT_MINIMAL_FEE_PER_KB));
         //http://bitzuma.com/posts/making-sense-of-bitcoin-transaction-fees/     size = 181 * in + 34 * out + 10
-        $mimimumRequiredFee = intval(ceil((1*181+2*34+10) * $feePerKb / 1024));
+        $mimimumRequiredFee = intval(ceil((1 * 181 + 2 * 34 + 10) * $feePerKb / 1024));
         $requiredCoins = $amount + $mimimumRequiredFee;
         $sumAmount = null;
         $requiredFee = null;
@@ -1132,7 +1132,7 @@ class Bridge
                 $sumFromOutputs += $outputsForSpent[$i]->getValue();
             }
             //http://bitzuma.com/posts/making-sense-of-bitcoin-transaction-fees/     size = 181 * in + 34 * out + 10
-            $requiredFeeWithChange = intval(ceil((count($outputsForSpent)*181+34*2+10) * $feePerKb / 1024));
+            $requiredFeeWithChange = intval(ceil((count($outputsForSpent) * 181 + 34 * 2 + 10) * $feePerKb / 1024));
             $change = $sumFromOutputs - $amount - $requiredFeeWithChange;
             if ($change < 0) {
                 $requiredCoins = $amount + $requiredFeeWithChange;
@@ -1260,7 +1260,7 @@ class Bridge
         $feePerKb = intval($this->getOption(self::OPT_MINIMAL_FEE_PER_KB));
         //http://bitzuma.com/posts/making-sense-of-bitcoin-transaction-fees/     size = 181 * in + 34 * out + 10
         //Ideal case - one input for spend, two outputs - one is for destination addreses, one - for change
-        $mimimumRequiredFee = intval(ceil((1*181+2*34+10) * $feePerKb / 1024));
+        $mimimumRequiredFee = intval(ceil((1 * 181 + 2 * 34 + 10) * $feePerKb / 1024));
         $requiredCoins = $amount + $mimimumRequiredFee;
         $sumAmount = null;
         $requiredFee = null;
@@ -1277,7 +1277,7 @@ class Bridge
                 $sumFromOutputs += $outputsForSpent[$i]->getValue();
             }
             //http://bitzuma.com/posts/making-sense-of-bitcoin-transaction-fees/     size = 181 * in + 34 * out + 10
-            $requiredFeeWithChange = intval(ceil((count($outputsForSpent)*181+34*2+10) * $feePerKb / 1024));
+            $requiredFeeWithChange = intval(ceil((count($outputsForSpent) * 181 + 34 * 2 + 10) * $feePerKb / 1024));
             $change = $sumFromOutputs - $amount - $requiredFeeWithChange;
             if ($change < 0) {
                 $requiredCoins = $amount + $requiredFeeWithChange;
@@ -1325,7 +1325,8 @@ class Bridge
         }
         $transaction = $transaction->payToAddress($amount, AddressFactory::fromString($address));
         if ($change >= $this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT)) {
-            $addressForChange = ("" != $sendMoneyOptions)
+            $addressForChange =
+                ("" != $sendMoneyOptions)
                 ? $sendMoneyOptions->getAddressForChange()
                 : $outputsForSpent[0]->getAddress();
             /** @noinspection PhpUndefinedMethodInspection */
@@ -1411,7 +1412,7 @@ class Bridge
         $unspents = $this->resultHandler->listunspent($results);
 
         $feePerKb = intval($this->getOption(self::OPT_MINIMAL_FEE_PER_KB));
-        $mimimumRequiredFee = intval(ceil((1*181+(count($smoutputs)+1)*34+10) * $feePerKb / 1024));
+        $mimimumRequiredFee = intval(ceil((1 * 181 + (count($smoutputs) + 1) * 34 + 10) * $feePerKb / 1024));
         $requiredCoins = $amount + $mimimumRequiredFee;
         $sumAmount = null;
         $requiredFee = null;
@@ -1429,7 +1430,7 @@ class Bridge
             }
             //http://bitzuma.com/posts/making-sense-of-bitcoin-transaction-fees/     size = 181 * in + 34 * out + 10
             $requiredFeeWithChange = intval(
-                ceil((count($outputsForSpent)*181+34*(count($smoutputs)+1)+10) * $feePerKb / 1024)
+                ceil((count($outputsForSpent) * 181 + 34 * (count($smoutputs) + 1) + 10) * $feePerKb / 1024)
             );
             $change = $sumFromOutputs - $amount - $requiredFeeWithChange;
             if ($change < 0) {
@@ -1560,7 +1561,7 @@ class Bridge
         $unspents = $this->resultHandler->listunspent($results);
 
         $feePerKb = intval($this->getOption(self::OPT_MINIMAL_FEE_PER_KB));
-        $mimimumRequiredFee = intval(ceil((1*181+(count($smoutputs)+1)*34+10) * $feePerKb / 1024));
+        $mimimumRequiredFee = intval(ceil((1 * 181 + (count($smoutputs) + 1) * 34 + 10) * $feePerKb / 1024));
         $requiredCoins = $amount + $mimimumRequiredFee;
         $sumAmount = null;
         $requiredFee = null;
@@ -1578,7 +1579,7 @@ class Bridge
             }
             //http://bitzuma.com/posts/making-sense-of-bitcoin-transaction-fees/     size = 181 * in + 34 * out + 10
             $requiredFeeWithChange = intval(
-                ceil((count($outputsForSpent)*181+34*(count($smoutputs)+1)+10) * $feePerKb / 1024)
+                ceil((count($outputsForSpent) * 181 + 34*(count($smoutputs) + 1) + 10) * $feePerKb / 1024)
             );
             $change = $sumFromOutputs - $amount - $requiredFeeWithChange;
             if ($change < 0) {
@@ -1632,7 +1633,8 @@ class Bridge
             );
         }
         if ($change > $this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT)) {
-            $addressForChange = ("" != $sendMoneyOptions)
+            $addressForChange =
+                ("" != $sendMoneyOptions)
                 ? $sendMoneyOptions->getAddressForChange()
                 : $outputsForSpent[0]->getAddress();
             /** @noinspection PhpUndefinedMethodInspection */
