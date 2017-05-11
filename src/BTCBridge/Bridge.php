@@ -280,10 +280,10 @@ class Bridge
         usort(
             $outputs,
             function (TransactionReference $a, TransactionReference $b) {
-                if ($a->getValue() == $b->getValue()) {
+                if (0 != gmp_cmp($a->getValue()->getGMPValue(), $b->getValue()->getGMPValue())) {
                     return 0;
                 }
-                return ($a->getValue() < $b->getValue()) ? -1 : 1;
+                return ($a->getValue()->getBTCValue() < $b->getValue()->getBTCValue()) ? -1 : 1;
             }
         );
 

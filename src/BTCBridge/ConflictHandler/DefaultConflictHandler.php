@@ -186,7 +186,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
 
         $i_outc1 = count($txs1);
         $i_outc2 = count($txs2);
-        if ($i_outc1!=$i_outc2) {
+        if ($i_outc1 != $i_outc2) {
             throw new \InvalidArgumentException("Elements of Data array must have same dimensions.");
         }
         for ($i_out = 0; $i_out < $i_outc1; ++$i_out) {
@@ -417,7 +417,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
             );
         }
 
-        for ($i = 0, $ic = count($txrefs1); $i<$ic; ++$i) {
+        for ($i = 0, $ic = count($txrefs1); $i < $ic; ++$i) {
             /** @var $tx TransactionReference */
             $tx = & $txrefs1[$i];
             $found = false;

@@ -159,10 +159,11 @@ class MatbeaHandler extends AbstractHandler
             if (false !== strpos($txref["amount"], "E")) {
                 $txref["amount"] = sprintf('%f', $txref["amount"]); //Exponential form
             }
-            $v = gmp_init(strval($txref["amount"]*100*1000*1000));
+            $v = gmp_init(strval($txref["amount"] * 100 * 1000 * 1000));
             $txr->setValue(new BTCValue($v));
             $txr->setAddress($txref['address']);
-            $filteredTxs = array_filter($txrefs,
+            $filteredTxs = array_filter(
+                $txrefs,
                 function (TransactionReference $tx) use ($txr) {
                     return $tx->isEqual($txr);
                 });
@@ -189,7 +190,7 @@ class MatbeaHandler extends AbstractHandler
             $sep = "&";
         }
         foreach ($txHashes as $txHash) {
-            if ((!is_string($txHash)) && (""==$txHash)) {
+            if ((!is_string($txHash)) && ("" == $txHash)) {
                 throw new \InvalidArgumentException("All hashes is \$txHashes array must be non empty strings.");
             }
             $url .= $sep . "txid[]=" . $txHash;
@@ -278,7 +279,7 @@ class MatbeaHandler extends AbstractHandler
                 if (isset($inp["output_index"])) {
                     $input->setOutputIndex($inp["output_index"]);
                 }
-                $v = gmp_init(strval($inp["value"]*100*1000*1000));
+                $v = gmp_init(strval($inp["value"] * 100 * 1000 * 1000));
                 $input->setOutputValue(new BTCValue($v));
                 $input->setScriptType($this->getTransformedTypeOfSignature($inp["script_type"]));
                 $tx->addInput($input);
@@ -288,15 +289,15 @@ class MatbeaHandler extends AbstractHandler
                 $input = new TransactionInput();
                 $input->setOutputIndex(0);
                 $input->setScriptType("coinbase");
-                $divresult = floor($tr["block_height"]/210000);
-                $value = (50*(pow(0.5, $divresult)))*100*1000*1000;
+                $divresult = floor($tr["block_height"] / 210000);
+                $value = (50 * (pow(0.5, $divresult))) * 100 * 1000 * 1000;
                 $input->setOutputValue(new BTCValue(gmp_init(strval($value))));
                 $tx->addInput($input);
             }
             foreach ($tr["outputs"] as $outp) {
                 $output = new TransactionOutput();
                 $output->setAddresses($outp["addresses"]);
-                $v = gmp_init(strval($outp["value"]*100*1000*1000));
+                $v = gmp_init(strval($outp["value"] * 100 * 1000 * 1000));
                 $output->setValue(new BTCValue($v));
                 $output->setScriptType($this->getTransformedTypeOfSignature($outp["script_type"]));
                 $tx->addOutput($output);
@@ -348,7 +349,7 @@ class MatbeaHandler extends AbstractHandler
             );
             throw new \RuntimeException("Answer of url: \"" . $url . "\")  does not contain a \"balance\" field.");
         }
-        $v = gmp_init(strval($content["balance"]*100*1000*1000));
+        $v = gmp_init(strval($content["balance"] * 100 * 1000 * 1000));
         return new BTCValue($v);
     }
 
@@ -393,7 +394,7 @@ class MatbeaHandler extends AbstractHandler
             );
             throw new \RuntimeException("Answer of url: \"" . $url . "\")  does not contain a \"balance\" field.");
         }
-        $v = gmp_init(strval($content["balance"]*100*1000*1000));
+        $v = gmp_init(strval($content["balance"] * 100 * 1000 * 1000));
         return new BTCValue($v);
     }
 
@@ -455,7 +456,7 @@ class MatbeaHandler extends AbstractHandler
             $txr->setTxHash($txref["tx_hash"]);
             $txr->setTxInputN($txref["tx_input_n"]);
             $txr->setTxOutputN($txref["tx_output_n"]);
-            $v = gmp_init(strval($txref["value"]*100*1000*1000));
+            $v = gmp_init(strval($txref["value"] * 100 * 1000 * 1000));
             $txr->setValue(new BTCValue($v));
             if (isset($txref["address"])) {
                 $txr->setAddress($txref['address']);
@@ -463,7 +464,8 @@ class MatbeaHandler extends AbstractHandler
             if (isset($txref["confirmed"])) {
                 $txr->setConfirmed(strtotime($txref["confirmed"]));
             }
-            $filteredTxs = array_filter($result,
+            $filteredTxs = array_filter(
+                $result,
                 function (TransactionReference $tx) use ($txr) {
                     return $tx->isEqual($txr);
                 });
@@ -509,7 +511,7 @@ class MatbeaHandler extends AbstractHandler
             throw new \RuntimeException("curl does not return a json object (url:\"" . $url . "\").");
         }
         $content = json_decode($content, true);
-        if (isset($content['error']) && (null!=$content['error'])) {
+        if (isset($content['error']) && (null != $content['error'])) {
             throw new \RuntimeException(
                 "Error (code " . $content["error"]["code"] . ") \"" .
                 $content['error']["message"] . "\" returned (url: \"" . $url . "\")."
@@ -613,7 +615,7 @@ class MatbeaHandler extends AbstractHandler
             $content["addresses"] = [];
         }
         $wallet->setAddresses($content["addresses"]);
-        $wallet->setSystemDataByHandler($this->getHandlerName(), ["name"=>$walletName,"id"=>$content['id']]);
+        $wallet->setSystemDataByHandler($this->getHandlerName(), ["name" => $walletName, "id" => $content['id']]);
         return $wallet;
     }
 

@@ -83,7 +83,7 @@ class BlockTrailHandler extends AbstractHandler
         }
 
         foreach ($txHashes as $txHash) {
-            if ((!is_string($txHash)) && (""==$txHash)) {
+            if ((!is_string($txHash)) && ("" == $txHash)) {
                 throw new \InvalidArgumentException(
                     "All hashes is \$txHashes array must be non empty strings."
                 );

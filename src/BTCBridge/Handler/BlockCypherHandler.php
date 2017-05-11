@@ -76,7 +76,7 @@ class BlockCypherHandler extends AbstractHandler
         }
 
         foreach ($txHashes as $txHash) {
-            if ((!is_string($txHash)) && (""==$txHash)) {
+            if ((!is_string($txHash)) && ("" == $txHash)) {
                 throw new \InvalidArgumentException(
                     "All hashes is \$txHashes array must be non empty strings."
                 );
@@ -155,7 +155,9 @@ class BlockCypherHandler extends AbstractHandler
             $tx->setConfirmations($content["confirmations"]);
             foreach ($content["inputs"] as $inp) { //20 штук по дефолту выдаётся, надо, чтобы все
                 $input = new TransactionInput();
-                $input->setAddresses((isset($inp["addresses"]) && (null!==$inp["addresses"]))?$inp["addresses"]:[]);
+                $input->setAddresses(
+                    (isset($inp["addresses"]) && (null !== $inp["addresses"])) ? $inp["addresses"] : []
+                );
                 if (isset($inp["prev_hash"])) {
                     //$input->setPrevHash($inp["prev_hash"]);
                 }
@@ -194,7 +196,9 @@ class BlockCypherHandler extends AbstractHandler
             }
             foreach ($content["outputs"] as $outp) {
                 $output = new TransactionOutput();
-                $output->setAddresses((isset($outp["addresses"]) && (null!==$outp["addresses"]))?$outp["addresses"]:[]);
+                $output->setAddresses(
+                    (isset($outp["addresses"]) && (null !== $outp["addresses"])) ? $outp["addresses"] : []
+                );
                 $output->setValue(gmp_init(strval($outp["value"])));
                 /*if ("pay-to-multi-pubkey-hash" == $outp["script_type"]) {
                     $multisigAddresses = $this->extractAddressesFromMultisigScript($outp["script"]);
