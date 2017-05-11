@@ -115,6 +115,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
             $found = false;
             for ($j = 0, $jc = count($txrefs2); $j < $jc; ++$j) {
                 $txc = & $txrefs2[$j];
+                $gmpCmp = gmp_cmp($tx->getValue()->getGMPValue(), $txc->getValue()->getGMPValue());
                 if (($tx->getBlockHeight() != $txc->getBlockHeight()) ||
                     ($tx->getConfirmations() != $txc->getConfirmations()) ||
                     ($tx->getDoubleSpend() != $txc->getDoubleSpend()) ||
@@ -122,10 +123,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                     ($tx->getTxHash() != $txc->getTxHash()) ||
                     ($tx->getTxInputN() != $txc->getTxInputN()) ||
                     ($tx->getTxOutputN() != $txc->getTxOutputN()) ||
-                    (gmp_cmp(
-                        $tx->getValue()->getGMPValue(),
-                        $txc->getValue()->getGMPValue()
-                    ) != 0)
+                    ($gmpCmp != 0)
                 ) {
                     continue;
                 }
@@ -144,6 +142,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
             $found = false;
             for ($j = 0, $jc = count($unconfirmedtxrefs2); $j < $jc; ++$j) {
                 $txc = & $txrefs2[$j];
+                $gmpCmp = gmp_cmp($tx->getValue()->getGMPValue(), $txc->getValue()->getGMPValue());
                 if (($tx->getBlockHeight() != $txc->getBlockHeight()) ||
                     ($tx->getConfirmations() != $txc->getConfirmations()) ||
                     ($tx->getDoubleSpend() != $txc->getDoubleSpend()) ||
@@ -151,10 +150,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                     ($tx->getTxHash() != $txc->getTxHash()) ||
                     ($tx->getTxInputN() != $txc->getTxInputN()) ||
                     ($tx->getTxOutputN() != $txc->getTxOutputN()) ||
-                    (gmp_cmp(
-                            $tx->getValue()->getGMPValue(),
-                            $txc->getValue()->getGMPValue()
-                        ) != 0)
+                    ($gmpCmp != 0)
                 ) {
                     continue;
                 }
@@ -253,9 +249,8 @@ class DefaultConflictHandler implements ConflictHandlerInterface
             for ($i = 0, $ic = count($outputs1); $i < $ic; ++$i) {
                 $output1 = & $outputs1[$i];
                 $output2 = & $outputs2[$i];
-                $valCmp = gmp_cmp($output1->getValue()->getGMPValue(),
-                    $output2->getValue()->getGMPValue());
-                if ((0!=$valCmp) || ($output1->getScriptType() != $output2->getScriptType())) {
+                $valCmp = gmp_cmp($output1->getValue()->getGMPValue(), $output2->getValue()->getGMPValue());
+                if ((0 != $valCmp) || ($output1->getScriptType() != $output2->getScriptType())) {
                     $error = true;
                     break;
                 } else {
@@ -304,15 +299,15 @@ class DefaultConflictHandler implements ConflictHandlerInterface
             for ($i = 0, $ic = count($inputs1); $i < $ic; ++$i) {
                 $input1 = & $inputs1[$i];
                 $input2 = & $inputs2[$i];
+                $gmpCmp = gmp_cmp(
+                    $input1->getOutputValue()->getGMPValue(),
+                    $input2->getOutputValue()->getGMPValue()
+                );
                 if (($input1->getOutputIndex() != $input2->getOutputIndex()) ||
                     //($input1->getPrevHash() != $input2->getPrevHash()) ||
                     //($input1->getAddresses() != $input2->getAddresses()) ||
-                    (
-                        gmp_cmp(
-                            $input1->getOutputValue()->getGMPValue(),
-                            $input2->getOutputValue()->getGMPValue()
-                        ) != 0
-                    ) || ($input1->getScriptType() != $input2->getScriptType())
+                    ( $gmpCmp != 0 ) ||
+                    ($input1->getScriptType() != $input2->getScriptType())
                 ) {
                     /** @noinspection PhpUnusedLocalVariableInspection */
                     $error = true;
@@ -429,6 +424,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
             for ($j = 0, $jc = count($txrefs2); $j < $jc; ++$j) {
                 /** @var $txc TransactionReference */
                 $txc = & $txrefs2[$j];
+                $gmpCmp = gmp_cmp($tx->getValue()->getGMPValue(), $txc->getValue()->getGMPValue());
                 if (($tx->getBlockHeight() != $txc->getBlockHeight()) ||
                     ($tx->getConfirmations() != $txc->getConfirmations()) ||
                     ($tx->getDoubleSpend() != $txc->getDoubleSpend()) ||
@@ -436,10 +432,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                     ($tx->getTxHash() != $txc->getTxHash()) ||
                     ($tx->getTxInputN() != $txc->getTxInputN()) ||
                     ($tx->getTxOutputN() != $txc->getTxOutputN()) ||
-                    (gmp_cmp(
-                            $tx->getValue()->getGMPValue(),
-                            $txc->getValue()->getGMPValue()
-                        ) != 0) ||
+                    ($gmpCmp != 0) ||
                     ($tx->getAddress() != $txc->getAddress())
                 ) {
                     continue;

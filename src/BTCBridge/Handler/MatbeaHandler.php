@@ -320,7 +320,7 @@ class MatbeaHandler extends AbstractHandler
                 $walletName . "\" passed)."
             );
         }
-        $url = $this->getOption(self::OPT_BASE_URL) . "/getbalance?accountId=" . $walletName
+        $url = $this->getOption(self::OPT_BASE_URL) . "/getconfirmedbalance?accountId=" . $walletName
             . "&confirmations=" . $Confirmations;
         if ($this->token) {
             $url .= "&token=" . $this->token;
@@ -444,10 +444,14 @@ class MatbeaHandler extends AbstractHandler
 
         foreach ($content["unspents"] as $txref) {
             $txr = new TransactionReference();
-            $txr->setBlockHeight($txref["block_height"]);
+            if (isset($txref["block_height"])) {
+                $txr->setBlockHeight($txref["block_height"]);
+            }
             $txr->setConfirmations($txref["confirmations"]);
-            $txr->setDoubleSpend($txref["double_spend"]);
-            $txr->setSpent($txref["spent"]);
+            if (isset($txref["double_spend"])) {
+                $txr->setDoubleSpend($txref["double_spend"]);
+            }
+            $txr->setSpent(false);
             $txr->setTxHash($txref["tx_hash"]);
             $txr->setTxInputN($txref["tx_input_n"]);
             $txr->setTxOutputN($txref["tx_output_n"]);
