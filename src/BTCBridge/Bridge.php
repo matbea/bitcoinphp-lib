@@ -224,7 +224,7 @@ class Bridge
             $it = $first;
             $step = intval(floor($count / 2));
             $it += $step;
-            if ($outputs[$it]->getValue() < $searchedValue) {
+            if ($outputs[$it]->getValue()->getSatoshiValue() < $searchedValue) {
                 ++$it;
                 $first = $it;
                 $count -= $step + 1;
@@ -267,10 +267,10 @@ class Bridge
         //and will try to find the output with the same value as needed
         $sum = 0;
         for ($i = 0, $ic = count($outputs); $i < $ic; ++$i) {
-            if ($outputs[$i]->getValue() == $amount) {
+            if ($outputs[$i]->getValue()->getSatoshiValue() == $amount) {
                 return [$outputs[$i]];
             }
-            $sum += $outputs[$i]->getValue();
+            $sum += $outputs[$i]->getValue()->getSatoshiValue();
         }
         if ($sum < $amount) {
             return []; //Not enough BTC
@@ -283,7 +283,7 @@ class Bridge
                 if (0 != gmp_cmp($a->getValue()->getGMPValue(), $b->getValue()->getGMPValue())) {
                     return 0;
                 }
-                return ($a->getValue()->getBTCValue() < $b->getValue()->getBTCValue()) ? -1 : 1;
+                return ($a->getValue()->getSatoshiValue() < $b->getValue()->getSatoshiValue()) ? -1 : 1;
             }
         );
 
@@ -299,7 +299,7 @@ class Bridge
                 $result [] = $outputs[$outputIndex];
                 return $result;
             }
-            $amountOfBigOutput = $outputs[count($outputs) - 1]->getValue();
+            $amountOfBigOutput = $outputs[count($outputs) - 1]->getValue()->getSatoshiValue();
             $amount -= $amountOfBigOutput;
             $result [] = array_pop($outputs);
         }
@@ -1129,7 +1129,7 @@ class Bridge
             }
             $sumFromOutputs = 0;
             for ($i = 0, $ic = count($outputsForSpent); $i < $ic; ++$i) {
-                $sumFromOutputs += $outputsForSpent[$i]->getValue();
+                $sumFromOutputs += $outputsForSpent[$i]->getValue()->getSatoshiValue();
             }
             //http://bitzuma.com/posts/making-sense-of-bitcoin-transaction-fees/     size = 181 * in + 34 * out + 10
             $requiredFeeWithChange = intval(ceil((count($outputsForSpent) * 181 + 34 * 2 + 10) * $feePerKb / 1024));
@@ -1173,7 +1173,7 @@ class Bridge
             $txSource->outputScript = ScriptFactory::scriptPubKey()->payToPubKeyHash($txSource->pubKeyHash);
             $txSource->sourceTxId = $output->getTxHash();
             $txSource->sourceVout = $output->getTxOutputN();
-            $txSource->amount = $output->getValue();
+            $txSource->amount = $output->getValue()->getSatoshiValue();
             $txSource->outpoint = new OutPoint(Buffer::hex($txSource->sourceTxId), $txSource->sourceVout);
             $txSource->transactionOutput = new TransactionOutput($txSource->amount, $txSource->outputScript);
             $transactionSources [] = clone $txSource;
@@ -1274,7 +1274,7 @@ class Bridge
             }
             $sumFromOutputs = 0;
             for ($i = 0, $ic = count($outputsForSpent); $i < $ic; ++$i) {
-                $sumFromOutputs += $outputsForSpent[$i]->getValue();
+                $sumFromOutputs += $outputsForSpent[$i]->getValue()->getSatoshiValue();
             }
             //http://bitzuma.com/posts/making-sense-of-bitcoin-transaction-fees/     size = 181 * in + 34 * out + 10
             $requiredFeeWithChange = intval(ceil((count($outputsForSpent) * 181 + 34 * 2 + 10) * $feePerKb / 1024));
@@ -1313,7 +1313,7 @@ class Bridge
             $txSource->outputScript = ScriptFactory::scriptPubKey()->payToPubKeyHash($txSource->pubKeyHash);
             $txSource->sourceTxId = $output->getTxHash();
             $txSource->sourceVout = $output->getTxOutputN();
-            $txSource->amount = $output->getValue();
+            $txSource->amount = $output->getValue()->getSatoshiValue();
             $txSource->outpoint = new OutPoint(Buffer::hex($txSource->sourceTxId), $txSource->sourceVout);
             $txSource->transactionOutput = new TransactionOutput($txSource->amount, $txSource->outputScript);
             $transactionSources [] = clone $txSource;
@@ -1428,7 +1428,7 @@ class Bridge
             }
             $sumFromOutputs = 0;
             for ($i = 0, $ic = count($outputsForSpent); $i < $ic; ++$i) {
-                $sumFromOutputs += $outputsForSpent[$i]->getValue();
+                $sumFromOutputs += $outputsForSpent[$i]->getValue()->getSatoshiValue();
             }
             //http://bitzuma.com/posts/making-sense-of-bitcoin-transaction-fees/     size = 181 * in + 34 * out + 10
             $requiredFeeWithChange = intval(
@@ -1469,7 +1469,7 @@ class Bridge
             $txSource->outputScript = ScriptFactory::scriptPubKey()->payToPubKeyHash($txSource->pubKeyHash);
             $txSource->sourceTxId = $output->getTxHash();
             $txSource->sourceVout = $output->getTxOutputN();
-            $txSource->amount = $output->getValue();
+            $txSource->amount = $output->getValue()->getSatoshiValue();
             $txSource->outpoint = new OutPoint(Buffer::hex($txSource->sourceTxId), $txSource->sourceVout);
             $txSource->transactionOutput = new TransactionOutput($txSource->amount, $txSource->outputScript);
             $transactionSources [] = clone $txSource;
@@ -1577,7 +1577,7 @@ class Bridge
             }
             $sumFromOutputs = 0;
             for ($i = 0, $ic = count($outputsForSpent); $i < $ic; ++$i) {
-                $sumFromOutputs += $outputsForSpent[$i]->getValue();
+                $sumFromOutputs += $outputsForSpent[$i]->getValue()->getSatoshiValue();
             }
             //http://bitzuma.com/posts/making-sense-of-bitcoin-transaction-fees/     size = 181 * in + 34 * out + 10
             $requiredFeeWithChange = intval(
@@ -1618,7 +1618,7 @@ class Bridge
             $txSource->outputScript = ScriptFactory::scriptPubKey()->payToPubKeyHash($txSource->pubKeyHash);
             $txSource->sourceTxId = $output->getTxHash();
             $txSource->sourceVout = $output->getTxOutputN();
-            $txSource->amount = $output->getValue();
+            $txSource->amount = $output->getValue()->getSatoshiValue();
             $txSource->outpoint = new OutPoint(Buffer::hex($txSource->sourceTxId), $txSource->sourceVout);
             $txSource->transactionOutput = new TransactionOutput($txSource->amount, $txSource->outputScript);
             $transactionSources [] = clone $txSource;

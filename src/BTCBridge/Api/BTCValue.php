@@ -71,7 +71,7 @@ class BTCValue
     /**
      * Get value in Satoshi
      *
-     * @return string
+     * @return int
      *
      * @throws \RuntimeException if case of any error of this type
      */

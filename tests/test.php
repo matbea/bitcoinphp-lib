@@ -164,11 +164,11 @@ try {
     //$res = $bridge->gettransactions(["2d05f0c9c3e1c226e63b5fac240137687544cf631cd616fd34fd188fc9020866"]);
     //die;
 
-    $chunks = array_chunk($txs, 20);
-    foreach ($chunks as $chunk) {
-        $res = $bridge->gettransactions($chunk);
-    }
-    die;
+    //$chunks = array_chunk($txs, 20);
+    //foreach ($chunks as $chunk) {
+        //$res = $bridge->gettransactions($chunk);
+    //}
+    //die;
     //$res = $bridge->listtransactions("deadushka1");
 
     //$txs = $bridge->gettransactions(["0000005f67276a9d277507f1439ff6c322d7e969b855e449aec6b34b0b6d1655","00000005aca88ceece655e19070dbfe9416b0c2850da0463f1e4c823bb41f295"],[]);
