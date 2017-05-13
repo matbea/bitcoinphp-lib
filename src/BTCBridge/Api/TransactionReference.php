@@ -35,16 +35,11 @@ class TransactionReference
     protected $txHash = null;
 
     /**
-     * Index of the input in the transaction. It's a negative number for an output.
+     * For an output, the output index (vout) for this output in this transaction.
+     * For an input, the output index for the output being spent in its transaction.
      * @var int
      */
-    protected $txInputN = null;
-
-    /**
-     * Index of the output in the transaction. It's a negative number for an input.
-     * @var int
-     */
-    protected $txOutputN = null;
+    protected $vout = null;
 
     /**
      * The value transferred by the particular input or output.
@@ -159,46 +154,24 @@ class TransactionReference
     }
 
     /**
-     * Index of the input in the transaction. It's a negative number for an output.
+     * Index of the output in the transaction.
      *
      * @return int
      */
-    public function getTxInputN()
+    public function getVout()
     {
-        return $this->txInputN;
+        return $this->vout;
     }
 
     /**
-     * Index of the input in the transaction. It's a negative number for an output.
+     * Index of the output in the transaction.
      *
-     * @param int $txInputN
+     * @param int $vout
      * @return $this
      */
-    public function setTxInputN($txInputN)
+    public function setVout($vout)
     {
-        $this->txInputN = $txInputN;
-        return $this;
-    }
-
-    /**
-     * Index of the output in the transaction. It's a negative number for an input.
-     *
-     * @return int
-     */
-    public function getTxOutputN()
-    {
-        return $this->txOutputN;
-    }
-
-    /**
-     * Index of the output in the transaction. It's a negative number for an input.
-     *
-     * @param int $txOutputN
-     * @return $this
-     */
-    public function setTxOutputN($txOutputN)
-    {
-        $this->txOutputN = $txOutputN;
+        $this->vout = $vout;
         return $this;
     }
 
@@ -305,9 +278,7 @@ class TransactionReference
                 &&
             ($this->getBlockHeight() == $o->getBlockHeight())
                 &&
-            ($this->getTxInputN() == $o->getTxInputN())
-                &&
-            ($this->getTxOutputN() == $o->getTxOutputN())
+            ($this->getVout() == $o->getVout())
                 &&
             ($this->getValue()->getSatoshiValue() == $o->getValue()->getSatoshiValue())
                 &&

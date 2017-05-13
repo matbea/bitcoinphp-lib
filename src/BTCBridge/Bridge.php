@@ -1172,7 +1172,7 @@ class Bridge
             $txSource->pubKeyHash = $txSource->privateKey->getPubKeyHash(); //Very slow method
             $txSource->outputScript = ScriptFactory::scriptPubKey()->payToPubKeyHash($txSource->pubKeyHash);
             $txSource->sourceTxId = $output->getTxHash();
-            $txSource->sourceVout = $output->getTxOutputN();
+            $txSource->sourceVout = $output->getVout();
             $txSource->amount = $output->getValue()->getSatoshiValue();
             $txSource->outpoint = new OutPoint(Buffer::hex($txSource->sourceTxId), $txSource->sourceVout);
             $txSource->transactionOutput = new TransactionOutput($txSource->amount, $txSource->outputScript);
@@ -1312,7 +1312,7 @@ class Bridge
             $txSource->pubKeyHash = $txSource->privateKey->getPubKeyHash(); //Very slow method
             $txSource->outputScript = ScriptFactory::scriptPubKey()->payToPubKeyHash($txSource->pubKeyHash);
             $txSource->sourceTxId = $output->getTxHash();
-            $txSource->sourceVout = $output->getTxOutputN();
+            $txSource->sourceVout = $output->getVout();
             $txSource->amount = $output->getValue()->getSatoshiValue();
             $txSource->outpoint = new OutPoint(Buffer::hex($txSource->sourceTxId), $txSource->sourceVout);
             $txSource->transactionOutput = new TransactionOutput($txSource->amount, $txSource->outputScript);
@@ -1468,7 +1468,7 @@ class Bridge
             $txSource->pubKeyHash = $txSource->privateKey->getPubKeyHash(); //Very slow method
             $txSource->outputScript = ScriptFactory::scriptPubKey()->payToPubKeyHash($txSource->pubKeyHash);
             $txSource->sourceTxId = $output->getTxHash();
-            $txSource->sourceVout = $output->getTxOutputN();
+            $txSource->sourceVout = $output->getVout();
             $txSource->amount = $output->getValue()->getSatoshiValue();
             $txSource->outpoint = new OutPoint(Buffer::hex($txSource->sourceTxId), $txSource->sourceVout);
             $txSource->transactionOutput = new TransactionOutput($txSource->amount, $txSource->outputScript);
@@ -1617,7 +1617,7 @@ class Bridge
             $txSource->pubKeyHash = $txSource->privateKey->getPubKeyHash(); //Very slow method
             $txSource->outputScript = ScriptFactory::scriptPubKey()->payToPubKeyHash($txSource->pubKeyHash);
             $txSource->sourceTxId = $output->getTxHash();
-            $txSource->sourceVout = $output->getTxOutputN();
+            $txSource->sourceVout = $output->getVout();
             $txSource->amount = $output->getValue()->getSatoshiValue();
             $txSource->outpoint = new OutPoint(Buffer::hex($txSource->sourceTxId), $txSource->sourceVout);
             $txSource->transactionOutput = new TransactionOutput($txSource->amount, $txSource->outputScript);

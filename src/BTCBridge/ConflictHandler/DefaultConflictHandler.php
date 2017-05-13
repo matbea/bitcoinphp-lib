@@ -121,8 +121,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                     ($tx->getDoubleSpend() != $txc->getDoubleSpend()) ||
                     //($tx->getSpent() != $txc->getSpent()) ||
                     ($tx->getTxHash() != $txc->getTxHash()) ||
-                    ($tx->getTxInputN() != $txc->getTxInputN()) ||
-                    ($tx->getTxOutputN() != $txc->getTxOutputN()) ||
+                    ($tx->getVout() != $txc->getVout()) ||
                     ($gmpCmp != 0)
                 ) {
                     continue;
@@ -148,8 +147,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                     ($tx->getDoubleSpend() != $txc->getDoubleSpend()) ||
                     //($tx->getSpent() != $txc->getSpent()) ||
                     ($tx->getTxHash() != $txc->getTxHash()) ||
-                    ($tx->getTxInputN() != $txc->getTxInputN()) ||
-                    ($tx->getTxOutputN() != $txc->getTxOutputN()) ||
+                    ($tx->getVout() != $txc->getVout()) ||
                     ($gmpCmp != 0)
                 ) {
                     continue;
@@ -430,8 +428,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                     ($tx->getDoubleSpend() != $txc->getDoubleSpend()) ||
                     //($tx->getSpent() != $txc->getSpent()) ||
                     ($tx->getTxHash() != $txc->getTxHash()) ||
-                    ($tx->getTxInputN() != $txc->getTxInputN()) ||
-                    ($tx->getTxOutputN() != $txc->getTxOutputN()) ||
+                    ($tx->getVout() != $txc->getVout()) ||
                     ($gmpCmp != 0) ||
                     ($tx->getAddress() != $txc->getAddress())
                 ) {

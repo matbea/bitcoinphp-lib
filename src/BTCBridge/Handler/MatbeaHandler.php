@@ -40,7 +40,8 @@ class MatbeaHandler extends AbstractHandler
     {
         parent::__construct();
         //$this->setOption(self::OPT_BASE_URL, "https://api.matbea.net");
-        $this->setOption(self::OPT_BASE_URL, "http://136.243.32.19:8080/btcbridge");
+        //$this->setOption(self::OPT_BASE_URL, "http://136.243.32.19:8080/btcbridge");
+        $this->setOption(self::OPT_BASE_URL, "http://api.matbea.net:8080/btcbridge");
     }
 
     /**
@@ -153,8 +154,7 @@ class MatbeaHandler extends AbstractHandler
             $txr->setDoubleSpend($txref["double_spend"]);
             //$txr->setSpent($txref["spent"]);
             $txr->setTxHash($txref["txid"]);
-            //$txr->setTxInputN($txref["tx_input_n"]);
-            $txr->setTxOutputN($txref["vout"]);
+            $txr->setVout($txref["vout"]);
             $txr->setConfirmed(strtotime($txref["time"]));
             if (false !== strpos($txref["amount"], "E")) {
                 $txref["amount"] = sprintf('%f', $txref["amount"]); //Exponential form
@@ -455,8 +455,7 @@ class MatbeaHandler extends AbstractHandler
             }
             $txr->setSpent(false);
             $txr->setTxHash($txref["tx_hash"]);
-            $txr->setTxInputN($txref["tx_input_n"]);
-            $txr->setTxOutputN($txref["tx_output_n"]);
+            $txr->setVout($txref["tx_output_n"]);
             $v = gmp_init(strval($txref["value"] * 100 * 1000 * 1000));
             $txr->setValue(new BTCValue($v));
             if (isset($txref["address"])) {
