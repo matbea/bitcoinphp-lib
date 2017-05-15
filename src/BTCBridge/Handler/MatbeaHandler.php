@@ -156,6 +156,7 @@ class MatbeaHandler extends AbstractHandler
             $txr->setTxHash($txref["txid"]);
             $txr->setVout($txref["vout"]);
             $txr->setConfirmed(strtotime($txref["time"]));
+            $txr->setCategory($txref["category"]);
             if (false !== strpos($txref["amount"], "E")) {
                 $txref["amount"] = sprintf('%f', $txref["amount"]); //Exponential form
             }
@@ -456,6 +457,7 @@ class MatbeaHandler extends AbstractHandler
             $txr->setSpent(false);
             $txr->setTxHash($txref["tx_hash"]);
             $txr->setVout($txref["tx_output_n"]);
+            $txr->setCategory("receive");
             $v = gmp_init(strval($txref["value"] * 100 * 1000 * 1000));
             $txr->setValue(new BTCValue($v));
             if (isset($txref["address"])) {

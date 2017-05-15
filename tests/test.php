@@ -131,7 +131,10 @@ try {
 
     $bridge->setOption(\BTCBridge\Bridge::OPT_LOCAL_PATH_OF_WALLET_DATA, __DIR__ . "/data/wallet.dat");
 
-    //$res = $bridge->listunspent("19kBcrYnS1VAgEsvVpHf4Ki4LREUxJC4t2",0);
+    //$res = $bridge->listtransactions("12S42ZEw2741DHrivgZHLfX8M58mxb7bFy");
+    $res = $bridge->listunspent("12S42ZEw2741DHrivgZHLfX8M58mxb7bFy");
+    die;
+
 
     //$res = $bridge->gettransactions(["0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098"]);
     //$v = $res[0]->getInputs()[0]->getOutputValue();

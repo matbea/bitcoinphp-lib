@@ -73,6 +73,14 @@ class TransactionReference
     protected $doubleSpend = null;
 
     /**
+     * Category Set to one of the following values: send if sending payment
+     * receive if this wallet received payment in a regular transaction
+     * @var string
+     */
+    protected $category = null;
+
+
+    /**
      * @return string
      */
     public function getAddress()
@@ -216,6 +224,28 @@ class TransactionReference
     public function setSpent($spent)
     {
         $this->spent = $spent;
+        return $this;
+    }
+
+    /**
+     * Returns category
+     *
+     * @return string
+     */
+    public function getCategory()
+    {
+        return $this->category;
+    }
+
+    /**
+     * Sets category
+     *
+     * @param string $category
+     * @return $this
+     */
+    public function setCategory($category)
+    {
+        $this->category = $category;
         return $this;
     }
 
