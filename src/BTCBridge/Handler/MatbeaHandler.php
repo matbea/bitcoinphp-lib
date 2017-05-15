@@ -457,7 +457,7 @@ class MatbeaHandler extends AbstractHandler
             $txr->setSpent(false);
             $txr->setTxHash($txref["tx_hash"]);
             $txr->setVout($txref["tx_output_n"]);
-            $txr->setCategory("receive");
+            $txr->setCategory(TransactionReference::CATEGORY_RECEIVE);
             $v = gmp_init(strval($txref["value"] * 100 * 1000 * 1000));
             $txr->setValue(new BTCValue($v));
             if (isset($txref["address"])) {

@@ -15,6 +15,11 @@ namespace BTCBridge\Api;
  */
 class TransactionReference
 {
+
+    /** This group constants describe the categories of Transaction references */
+    const CATEGORY_RECEIVE  = 'receive';
+    const CATEGORY_SEND     = 'send';
+
     /**
      * Address which received the BTC from this output
      * @var int
