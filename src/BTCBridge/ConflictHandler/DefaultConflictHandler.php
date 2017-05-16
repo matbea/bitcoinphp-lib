@@ -202,10 +202,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                 //0000297bd516c501aa9b143a5eac8adaf457fa78431e844092a7112815411d03
                 // (different confirmed)
                 //($tx1->getConfirmed() !== $tx2->getConfirmed()) ||
-                //($tx1->getBlockTime() !== $tx2->getLockTime()) ||
                 //($tx1->getDoubleSpend() !== $tx2->getDoubleSpend()) || HUERAGA - have to develop it
-                //($tx1->getVinSz() !== $tx2->getVinSz()) ||
-                //($tx1->getVoutSz() !== $tx2->getVoutSz()) ||
                 (abs($tx1->getConfirmations() - $tx2->getConfirmations()) > 10 ) ||
                 ($tx1->getBlockHeight() !== $tx2->getBlockHeight()) ||
                 ($tx1->getHash() !== $tx2->getHash())
@@ -214,27 +211,6 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                     "Different values of transactions ( " . serialize($tx1) . " and " . serialize($tx2) . " )."
                 );
             }
-            /*$addressesArr1 = $tx1->getAddresses();
-            $addressesArr2 = $tx2->getAddresses();
-            //If at least one of outputs is multisig/nonstandard - we'll not make strong check
-            $multisigOrnonstandardOutputs = array_filter($tx1->getOutputs(),
-                function (TransactionOutput $output) {
-                    return in_array($output->getScriptType(), ["multisig","nonstandard"]);
-                });
-            $multisigOrnonstandardInputs = array_filter($tx1->getInputs(),
-                function (TransactionInput $input) {
-                    return in_array($input->getScriptType(), ["multisig","nonstandard"]);
-                });
-
-            if (empty($multisigOrnonstandardOutputs) && empty($multisigOrnonstandardInputs)) {
-                if ($addressesArr1 != $addressesArr2) {
-                    throw new ConflictHandlerException(
-                        "Different addresses ( " . implode(",", $addressesArr1)
-                        . " and " . implode(",", $addressesArr2) . " )."
-                    );
-                }
-            }
-            */
 
             $outputs1 = $tx1->getOutputs();
             $outputs2 = $tx2->getOutputs();
@@ -265,27 +241,6 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                     "Outputs are not equal ( " . serialize($outputs1) . " ), ( " . serialize($outputs2) . " )."
                 );
             }
-            /*(for ($i = 0, $ic = count($outputs1); $i < $ic; ++$i) {
-                $output = & $outputs1[$i];
-                $found = false;
-                for ($j = 0, $jc = count($outputs2); $j < $jc; ++$j) {
-                    $outputc = & $outputs2[$j];
-                    if ( (gmp_cmp($output->getValue(), $outputc->getValue()) != 0) ||
-                        ($output->getScriptType() != $outputc->getScripttype()) ||
-                        //($output->getSpentBy() != $outputc->getSpentBy()) ||
-                        ($output->getAddresses() != $outputc->getAddresses())
-                    ) {
-                        continue;
-                    }
-                    $found = true;
-                    break;
-                }
-                if (!$found) {
-                    throw new ConflictHandlerException(
-                        "No found output in second array ( " . serialize($output) . " )."
-                    );
-                }
-            }*/
             $inputs1 = $tx1->getInputs() ? $tx1->getInputs() : [];
             $inputs2 = $tx2->getInputs() ? $tx2->getInputs() : [];
             if (count($inputs1) != count($inputs2)) {
@@ -302,8 +257,6 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                     $input2->getOutputValue()->getGMPValue()
                 );
                 if (($input1->getOutputIndex() != $input2->getOutputIndex()) ||
-                    //($input1->getPrevHash() != $input2->getPrevHash()) ||
-                    //($input1->getAddresses() != $input2->getAddresses()) ||
                     ( $gmpCmp != 0 ) ||
                     ($input1->getScriptType() != $input2->getScriptType())
                 ) {
@@ -324,29 +277,6 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                     "Inputs are not equal ( " . serialize($inputs1) . " ), ( " . serialize($inputs2) . " )."
                 );
             }
-            /*for ($i = 0, $ic = count($inputs1); $i < $ic; ++$i) {
-                $input = & $inputs1[$i];
-                $found = false;
-                for ($j = 0, $jc = count($inputs2); $j < $jc; ++$j) {
-                    $inputc = & $inputs2[$j];
-                    if (($input->getPrevHash() != $inputc->getPrevHash()) ||
-                        ($input->getOutputIndex() != $inputc->getOutputIndex()) ||
-                        ($input->getAddresses() != $inputc->getAddresses()) ||
-                        //($input->getOutputValue() != $inputc->getOutputValue()
-                        ( gmp_cmp($input->getOutputValue(), $inputc->getOutputValue()) != 0 ) ||
-                        ($input->getScriptType() != $inputc->getScriptType())
-                    ) {
-                        continue;
-                    }
-                    $found = true;
-                    break;
-                }
-                if (!$found) {
-                    throw new ConflictHandlerException(
-                        "No found output in second array ( " . serialize($input) . " )."
-                    );
-                }
-            }*/
         }
     }
 

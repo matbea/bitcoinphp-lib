@@ -63,7 +63,7 @@ class BlockCypherHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function gettransactions(array $txHashes, array $options = [])
+    public function gettransactions(array $txHashes)
     {
         if (empty($txHashes)) {
             throw new \InvalidArgumentException("txHashes variable must be non empty array of non empty strings.");
@@ -85,34 +85,6 @@ class BlockCypherHandler extends AbstractHandler
 
         $url = $this->getOption(self::OPT_BASE_URL) . "txs/" . implode(";", $txHashes);
 
-        $sep = "?";
-        if (array_key_exists('limit', $options) && (20 !== $options['limit'])) {
-            $url .= $sep . "limit=" . $options['limit'];
-            $sep = "&";
-        }
-        if (array_key_exists('instart', $options) && (null !== $options['instart'])) {
-            $url .= $sep . "instart=" . $options['instart'];
-            $sep = "&";
-        }
-        if (array_key_exists('outstart', $options) && (null !== $options['outstart'])) {
-            $url .= $sep . "outstart=" . $options['outstart'];
-            $sep = "&";
-        }
-        if (array_key_exists('includeHex', $options) && (true === $options['includeHex'])) {
-            $url .= $sep . "includeHex=true";
-            $sep = "&";
-        }
-        if (array_key_exists('includeConfidence', $options) && (true === $options['includeConfidence'])) {
-            $url .= $sep . "includeConfidence=true";
-        }
-
-        $awaiting_params = ['limit', 'instart', 'outstart', 'includeHex', 'includeConfidence'];
-
-        foreach ($options as $opt_name => $opt_val) {
-            if (!in_array($opt_name, $awaiting_params)) {
-                $this->logger->warning("Method \"" . __METHOD__ . "\" does not accept option \"" . $opt_name . "\".");
-            }
-        }
 
         $ch = curl_init();
         $this->prepareCurl($ch, $url);

@@ -183,22 +183,13 @@ abstract class AbstractHandler
     /**
      * The gettransactions RPC gets detailed information about an in-wallet transaction.
      * @param string[] $txHashes transaction identifiers
-     * @param array $options  Array containing the optional params
-     * $options = [
-     *   ['limit']               integer    Filters TXInputs/TXOutputs, if unset, default is 20.
-     *   ['instart']           integer    Filters TX to only include TXInputs from this input index and above.
-     *   ['outstart']           integer    Filters TX to only include TXOutputs from this output index and above.
-     *   ['includeHex']        bool    If true, includes hex-encoded raw transaction; false by default.
-     *   ['includeConfidence'] bool    If true, includes the confidence attribute (useful for unconfirmed transactions).
-     *   For more info about this figure, check the Confidence Factor documentation.
-     * ]
      *
      * @throws \RuntimeException in case of any error
      * @throws \InvalidArgumentException if error of this type
      *
      * @return Transaction[]
      */
-    abstract public function gettransactions(array $txHashes, array $options = []);
+    abstract public function gettransactions(array $txHashes);
 
 
     /**

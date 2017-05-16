@@ -70,7 +70,7 @@ class BlockTrailHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function gettransactions(array $txHashes, array $options = [])
+    public function gettransactions(array $txHashes)
     {
         if (empty($txHashes)) {
             throw new \InvalidArgumentException("txHashes variable must be non empty array of non empty strings.");
@@ -94,35 +94,6 @@ class BlockTrailHandler extends AbstractHandler
         if ($this->token) {
             $url .= "?api_key=" . $this->token;
         }
-
-        /*$sep = "?";
-        if (array_key_exists('limit', $options) && (20 !== $options['limit'])) {
-            $url .= $sep . "limit=" . $options['limit'];
-            $sep = "&";
-        }
-        if (array_key_exists('instart', $options) && (null !== $options['instart'])) {
-            $url .= $sep . "instart=" . $options['instart'];
-            $sep = "&";
-        }
-        if (array_key_exists('outstart', $options) && (null !== $options['outstart'])) {
-            $url .= $sep . "outstart=" . $options['outstart'];
-            $sep = "&";
-        }
-        if (array_key_exists('includeHex', $options) && (true === $options['includeHex'])) {
-            $url .= $sep . "includeHex=true";
-            $sep = "&";
-        }
-        if (array_key_exists('includeConfidence', $options) && (true === $options['includeConfidence'])) {
-            $url .= $sep . "includeConfidence=true";
-        }
-
-        $awaiting_params = ['limit', 'instart', 'outstart', 'includeHex', 'includeConfidence'];
-
-        foreach ($options as $opt_name => $opt_val) {
-            if (!in_array($opt_name, $awaiting_params)) {
-                $this->logger->warning("Method \"" . __METHOD__ . "\" does not accept option \"" . $opt_name . "\".");
-            }
-        }*/
 
         $ch = curl_init();
         $this->prepareCurl($ch, $url);
@@ -165,16 +136,12 @@ class BlockTrailHandler extends AbstractHandler
                 $tx->setBlockHash($content["block_hash"]);
             }
             $tx->setHash($content["hash"]);
-            //$tx->setAddresses($content["addresses"]);
             if (null !== $content["block_time"]) {
                 $tx->setConfirmed(strtotime($content["block_time"]));
             }
-            //$tx->setLockTime($content["lock_time"]);
             $tx->setDoubleSpend($content["is_double_spend"]);
-            //$tx->setVoutSz($content["vout_sz"]);
-            //$tx->setVinSz($content["vin_sz"]);
             $tx->setConfirmations($content["confirmations"]);
-            foreach ($content["inputs"] as $inp) { //20 штук по дефолту выдаётся, надо, чтобы все
+            foreach ($content["inputs"] as $inp) {
                 $input = new TransactionInput();
                 switch ($inp["type"]) {
                     case "coinbase":
@@ -194,20 +161,11 @@ class BlockTrailHandler extends AbstractHandler
                         break;
                 };
 
-                /*$input->setAddresses((isset($inp["addresses"]) && (null!==$inp["addresses"]))?$inp["addresses"]:[]);
-                if (isset($inp["prev_hash"])) {
-                    $input->setPrevHash($inp["prev_hash"]);
-                }*/
                 if (isset($inp["output_index"])) {
                     $input->setOutputIndex($inp["output_index"]);
                 }
                 $val = gmp_init(strval($inp["value"]));
                 $input->setOutputValue(new BTCValue($val));
-                //$options = [];
-                /*if ($input->getOutputIndex() == -1) {
-                    $options["newlyminted"] = true;
-                }
-                $input->setScriptType($this->getTransformedTypeOfSignature($inp["script_type"], $options));*/
                 $input->setScriptType($inp["type"]);
                 $tx->addInput($input);
             }
@@ -222,8 +180,6 @@ class BlockTrailHandler extends AbstractHandler
                 }
                 $v = gmp_init(strval($outp["value"]));
                 $output->setValue(new BTCValue($v));
-                //$options = [];
-                //$script_type = $this->getTransformedTypeOfSignature($outp["script_type"], $options);
                 $output->setScriptType($outp["type"]);
                 if ("op_return" == $outp["type"]) {
                     $output->setScriptType("nulldata");

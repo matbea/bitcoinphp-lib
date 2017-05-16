@@ -379,15 +379,6 @@ class Bridge
      * The gettransactions RPC gets detailed information about an in-wallet transaction.
      *
      * @param string[] $txHashes transaction identifiers
-     * @param array $options   Array containing the optional params
-     * $options = [
-     *   ['limit']             integer    Filters TXInputs/TXOutputs, if unset, default is 20.
-     *   ['instart']           integer    Filters TX to only include TXInputs from this input index and above.
-     *   ['outstart']          integer    Filters TX to only include TXOutputs from this output index and above.
-     *   ['includeHex']        bool    If true, includes hex-encoded raw transaction; false by default.
-     *   ['includeConfidence'] bool    If true, includes the confidence attribute (useful for unconfirmed transactions).
-     *   For more info about this figure, check the Confidence Factor documentation.
-     * ]
      *
      * @throws \RuntimeException in case of any runtime error
      * @throws \InvalidArgumentException if error of this type
@@ -395,7 +386,7 @@ class Bridge
      *
      * @return Transaction[]
      */
-    public function gettransactions(array $txHashes, array $options = [])
+    public function gettransactions(array $txHashes)
     {
         if (empty($txHashes)) {
             throw new \InvalidArgumentException("txHashes variable must be non empty array of non empty strings.");
@@ -405,7 +396,7 @@ class Bridge
         $this->timeMeasurementStatistics[Bridge::PRIV_TIME_MEASUREMENT_BEFORE_HANDLERS] = microtime(true);
         $results = [];
         foreach ($this->handlers as $handle_num => $handle) {
-            $result = $handle->gettransactions($txHashes, $options);
+            $result = $handle->gettransactions($txHashes);
             if (AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $result) {
                 $this->timeMeasurementStatistics[Bridge::PRIV_TIME_MEASUREMENT_AFTER_HANDLERS]
                 [$handle_num] = microtime(true);
