@@ -15,7 +15,7 @@ namespace BTCBridge\Api;
  */
 class SendMoneyOptions
 {
-    /** @var $address integer */
+    /** @var $confirmations integer */
     protected $confirmations;
 
     /** @var $comment string */

@@ -16,6 +16,7 @@ use BTCBridge\Api\TransactionInput;
 use BTCBridge\Api\TransactionOutput;
 use BTCBridge\Api\Wallet;
 use BTCBridge\Api\BTCValue;
+use BTCBridge\Api\ListTransactionsOptions;
 
 //use BitWasp\Bitcoin\Script\ScriptFactory;
 //use BitWasp\Bitcoin\Script\Classifier\OutputClassifier;
@@ -62,7 +63,7 @@ class BlockTrailHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function listtransactions($walletName, array $options = [])
+    public function listtransactions($walletName, ListTransactionsOptions $options)
     {
         return AbstractHandler::HANDLER_UNSUPPORTED_METHOD;
     }

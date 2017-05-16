@@ -27,6 +27,72 @@ use BTCBridge\Exception\ConflictHandlerException;
  */
 class DefaultConflictHandler implements ConflictHandlerInterface
 {
+    /** This group of constants are DefaultConflictHandler options */
+    const OPT_CONFIRMATIONS_MAXIMUM_DIFERENCE_ALLOWED = 1;
+
+    /** @var array options */
+    protected $options = [];
+
+    /**
+     * Constructor of class
+     */
+    public function __construct()
+    {
+        $this->setOption(self::OPT_CONFIRMATIONS_MAXIMUM_DIFERENCE_ALLOWED, "10");
+    }
+
+    /**
+     * Sets the option
+     *
+     * @param int $optionName a constant describying name of the option
+     * @param string $optionValue a value of the option
+     *
+     * @throws \InvalidArgumentException if error of this type
+     *
+     */
+    public function setOption($optionName, $optionValue)
+    {
+        if ((gettype($optionName) != "integer") ||
+            (!in_array(
+                $optionName,
+                [
+                    self::OPT_CONFIRMATIONS_MAXIMUM_DIFERENCE_ALLOWED
+                ]
+            ))) {
+            throw new \InvalidArgumentException("Bad type of option (".$optionName.")");
+        }
+        if (gettype($optionValue) != "string" || "" == $optionValue) {
+            throw new \InvalidArgumentException("Bad type of option value (must be non empty string)");
+        }
+        $this->options[$optionName] = $optionValue;
+    }
+
+    /**
+     * Gets the option
+     *
+     * @param int $optionName a constant, which describes the name of the option
+     *
+     * @throws \InvalidArgumentException if error of this type
+     * @throws \RuntimeException in case if this option is not exists
+     *
+     * @return string Option
+     */
+    protected function getOption($optionName)
+    {
+        if ((gettype($optionName) != "integer") ||
+            (!in_array(
+                $optionName,
+                [
+                    self::OPT_CONFIRMATIONS_MAXIMUM_DIFERENCE_ALLOWED
+                ]
+            ))) {
+            throw new \InvalidArgumentException("Bad type of option (".$optionName.")");
+        }
+        if (!isset($this->options[$optionName])) {
+            throw new \RuntimeException("No option with name \"" . $optionName . "\" exists in the class)");
+        }
+        return $this->options[$optionName];
+    }
 
     /**
      * {@inheritdoc}
@@ -203,12 +269,29 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                 // (different confirmed)
                 //($tx1->getConfirmed() !== $tx2->getConfirmed()) ||
                 //($tx1->getDoubleSpend() !== $tx2->getDoubleSpend()) || HUERAGA - have to develop it
-                (abs($tx1->getConfirmations() - $tx2->getConfirmations()) > 10 ) ||
                 ($tx1->getBlockHeight() !== $tx2->getBlockHeight()) ||
                 ($tx1->getHash() !== $tx2->getHash())
             ) {
                 throw new ConflictHandlerException(
                     "Different values of transactions ( " . serialize($tx1) . " and " . serialize($tx2) . " )."
+                );
+            }
+
+            $cnf1 = $tx1->getConfirmations();
+            $cnf2 = $tx2->getConfirmations();
+            if (((0 == $cnf1) && ($cnf2 > 0)) || ((0 == $cnf1) && ($cnf2 > 0))) {
+                throw new ConflictHandlerException(
+                    "Different values of confirmations of transactions, one is confirmed, 
+                    another is unconfirmed ( " . serialize($tx1) . " and " . serialize($tx2) . " )."
+                );
+            }
+
+            $maxAllowed = intval($this->getOption(self::OPT_CONFIRMATIONS_MAXIMUM_DIFERENCE_ALLOWED));
+            if (abs($cnf1 - $cnf2) > $maxAllowed) {
+                throw new ConflictHandlerException(
+                    " Too big Difference (" . abs($cnf1 - $cnf2) . ") between the 
+                    confirmations of transactions, maxim difference allowed is " . $maxAllowed . "
+                    ( " . serialize($tx1) . " and " . serialize($tx2) . " )."
                 );
             }
 
@@ -277,6 +360,29 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                     "Inputs are not equal ( " . serialize($inputs1) . " ), ( " . serialize($inputs2) . " )."
                 );
             }
+            /*for ($i = 0, $ic = count($inputs1); $i < $ic; ++$i) {
+                $input = & $inputs1[$i];
+                $found = false;
+                for ($j = 0, $jc = count($inputs2); $j < $jc; ++$j) {
+                    $inputc = & $inputs2[$j];
+                    if (($input->getPrevHash() != $inputc->getPrevHash()) ||
+                        ($input->getOutputIndex() != $inputc->getOutputIndex()) ||
+                        ($input->getAddresses() != $inputc->getAddresses()) ||
+                        //($input->getOutputValue() != $inputc->getOutputValue()
+                        ( gmp_cmp($input->getOutputValue(), $inputc->getOutputValue()) != 0 ) ||
+                        ($input->getScriptType() != $inputc->getScriptType())
+                    ) {
+                        continue;
+                    }
+                    $found = true;
+                    break;
+                }
+                if (!$found) {
+                    throw new ConflictHandlerException(
+                        "No found output in second array ( " . serialize($input) . " )."
+                    );
+                }
+            }*/
         }
     }
 

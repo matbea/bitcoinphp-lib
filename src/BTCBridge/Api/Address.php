@@ -27,22 +27,20 @@ class Address
     protected $wallet = null;
 
     /**
-     * Balance on the specified address, in satoshi. This is the difference between outputs and inputs on this address,
-     * for transactions that have been included into a block (confirmations > 0)
-     * @var int
+     * Confirmed balance on the specified address/wallet
+     * @var BTCValue
      */
     protected $balance = null;
 
     /**
-     * Balance of unconfirmed transactions for this address, in satoshi. Can be negative
-     * (if unconfirmed transactions are just spending.). Only unconfirmed transactions (haven't made it into a block)
-     * @var int
+     * Unconfirmed balance on the specified address/wallet
+     * @var BTCValue
      */
     protected $unconfirmedBalance = null;
 
     /**
-     * Balance including confirmed and unconfirmed transactions for this address, in satoshi.
-     * @var int
+     * Balance including confirmed and unconfirmed transactions for this address/wallet
+     * @var BTCValue
      */
     protected $finalBalance = null;
 
@@ -99,10 +97,9 @@ class Address
 
 
     /**
-     * Balance on the specified address, in satoshi. This is the difference between outputs and inputs on this address,
-     * for transactions that have been included into a block (confirmations > 0)
+     * Get balance on the specified address/wallet
      *
-     * @return int
+     * @return BTCValue
      */
     public function getBalance()
     {
@@ -110,24 +107,21 @@ class Address
     }
 
     /**
-     * Balance on the specified address, in satoshi. This is the difference between outputs and inputs on this address,
-     * for transactions that have been included into a block (confirmations > 0)
+     * Set balance on the specified address/wallet
      *
-     * @param int $balance
+     * @param BTCValue $balance
      * @return $this
      */
-    public function setBalance($balance)
+    public function setBalance(BTCValue $balance)
     {
         $this->balance = $balance;
         return $this;
     }
 
     /**
-     * Balance of unconfirmed transactions for this address, in satoshi. Can be negative
-     * (if unconfirmed transactions are just spending.). Only unconfirmed transactions (haven't made it into a block)
-     * are included.
+     * Get balance of unconfirmed transactions for this address/wallet.
      *
-     * @return int
+     * @return BTCValue
      */
     public function getUnconfirmedBalance()
     {
@@ -135,23 +129,21 @@ class Address
     }
 
     /**
-     * Balance of unconfirmed transactions for this address, in satoshi. Can be negative
-     * (if unconfirmed transactions are just spending.). Only unconfirmed transactions (haven't made it into a block)
-     * are included.
+     * Set Balance of unconfirmed transactions for this address/wallet
      *
-     * @param int $unconfirmedBalance
+     * @param BTCValue $unconfirmedBalance
      * @return $this
      */
-    public function setUnconfirmedBalance($unconfirmedBalance)
+    public function setUnconfirmedBalance(BTCValue $unconfirmedBalance)
     {
         $this->unconfirmedBalance = $unconfirmedBalance;
         return $this;
     }
 
     /**
-     * Balance including confirmed and unconfirmed transactions for this address, in satoshi.
+     * Balance including confirmed and unconfirmed transactions for this address/wallet
      *
-     * @return int
+     * @return BTCValue
      */
     public function getFinalBalance()
     {
@@ -159,12 +151,12 @@ class Address
     }
 
     /**
-     * Balance including confirmed and unconfirmed transactions for this address, in satoshi.
+     * Balance including confirmed and unconfirmed transactions for this address/wallet
      *
-     * @param int $finalBalance
+     * @param BTCValue $finalBalance
      * @return $this
      */
-    public function setFinalBalance($finalBalance)
+    public function setFinalBalance(BTCValue $finalBalance)
     {
         $this->finalBalance = $finalBalance;
         return $this;

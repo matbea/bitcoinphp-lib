@@ -11,6 +11,7 @@
 
 namespace BTCBridge\Handler;
 
+use BTCBridge\Api\ListTransactionsOptions;
 use BTCBridge\Api\Transaction;
 use BTCBridge\Api\TransactionReference;
 use BTCBridge\Api\Wallet;
@@ -65,7 +66,7 @@ class MatbeaHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function listtransactions($walletName, array $options = [])
+    public function listtransactions($walletName, ListTransactionsOptions $options)
     {
         if ("string" != gettype($walletName)) {
             throw new \InvalidArgumentException("Account variable must be non empty string.");
@@ -82,36 +83,27 @@ class MatbeaHandler extends AbstractHandler
             $url .= "&token=" . $this->token;
             $sep = "&";
         }
-        if (array_key_exists('before', $options) && (null !== $options['before'])) {
-            $url .= $sep . "before=" . $options['before'];
+        if (null !== $options->getBefore()) {
+            $url .= $sep . "before=" . $options->getBefore();
             $sep = "&";
         }
-        if (array_key_exists('after', $options) && (null !== $options['after'])) {
-            $url .= $sep . "after=" . $options['after'];
+        if (null !== $options->getAfter()) {
+            $url .= $sep . "after=" . $options->getAfter();
             $sep = "&";
         }
-        if (array_key_exists('limit', $options) && (200 !== $options['limit'])) {
-            $url .= $sep . "limit=" . $options['limit'];
+        if (null !== $options->getLimit()) {
+            $url .= $sep . "limit=" . $options->getLimit();
             $sep = "&";
         }
-        if (array_key_exists('confirmations', $options) && (null !== $options['confirmations'])) {
-            $url .= $sep . "confirmations=" . $options['confirmations'];
-            //$sep = "&";
+        if (null !== $options->getConfirmations()) {
+            $url .= $sep . "confirmations=" . $options->getConfirmations();
         } else {
             $url .= $sep . "confirmations=1";
         }
-
-        /*$awaiting_params = [
-            'before',
-            'after',
-            'limit',
-            'confirmations'
-        ];
-        foreach ($options as $opt_name => $opt_val) {
-            if (!in_array($opt_name, $awaiting_params)) {
-                $this->logger->warning("Method \"" . __METHOD__ . "\" does not accept option \"" . $opt_name . "\".");
-            }
-        }*/
+        $sep = "&";
+        if (null !== $options->getNobalance()) {
+            $url .= $sep . "nobalance=" . ($options->getNobalance() ? "true" : "false");
+        }
 
         $ch = curl_init();
         $this->prepareCurl($ch, $url);
@@ -174,6 +166,13 @@ class MatbeaHandler extends AbstractHandler
             }
         }
         $addrObject->setTxrefs($txrefs);
+        if (true !== $options->getNobalance()) {
+            $v1 = gmp_init(strval($content["balance"] * 100 * 1000 * 1000));
+            $addrObject->setBalance(new BTCValue($v1));
+            $v2 = gmp_init(strval($content["unconfirmed_balance"] * 100 * 1000 * 1000));
+            $addrObject->setUnconfirmedBalance(new BTCValue($v2));
+            $addrObject->setFinalBalance(new BTCValue(gmp_add($v1, $v2)));
+        }
         return $addrObject;
     }
 

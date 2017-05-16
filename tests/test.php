@@ -113,26 +113,33 @@ try {
         ->setToken("11ea0d1712216a4b8ef5da969111178459e5d02f");
     $matbeaHandler = (new \BTCBridge\Handler\MatbeaHandler())
         ->setToken("bvdb0uqv3ukr93ks9iis07so5639sit5");
-    //$blockCypherHandler = (new \BTCBridge\Handler\BlockCypherHandler())->setToken("dc20a175f3594965a8f4707cdcf58a32");
+    $conflictHandler = new \BTCBridge\ConflictHandler\DefaultConflictHandler();
+    $conflictHandler->setOption(
+        \BTCBridge\ConflictHandler\DefaultConflictHandler::OPT_CONFIRMATIONS_MAXIMUM_DIFERENCE_ALLOWED,
+        "10"
+    );
+
 
     $bridge = new \BTCBridge\Bridge(
         [
             $matbeaHandler
             ,
             $blockTrailHandler
-            //,
-            //$blockCypherHandler
-            //,
         ],
-        new \BTCBridge\ConflictHandler\DefaultConflictHandler(),
+        $conflictHandler,
         new \BTCBridge\ResultHandler\DefaultResultHandler(),
         $logger
     );
 
-    $bridge->setOption(\BTCBridge\Bridge::OPT_LOCAL_PATH_OF_WALLET_DATA, __DIR__ . "/data/wallet.dat");
+    $bridge->setOption(
+        \BTCBridge\Bridge::OPT_LOCAL_PATH_OF_WALLET_DATA,
+            __DIR__ . "/data/wallet.dat"
+    );
 
-    //$res = $bridge->listtransactions("12S42ZEw2741DHrivgZHLfX8M58mxb7bFy");
-    $res = $bridge->listunspent("12S42ZEw2741DHrivgZHLfX8M58mxb7bFy");
+    $options = new \BTCBridge\Api\ListTransactionsOptions;
+    //$options->setNobalance(true);
+    $res = $bridge->listtransactions("12S42ZEw2741DHrivgZHLfX8M58mxb7bFy", $options);
+    //$res = $bridge->listunspent("12S42ZEw2741DHrivgZHLfX8M58mxb7bFy");
     die;
 
 
@@ -167,6 +174,7 @@ try {
     //$res = $bridge->gettransactions(["2d05f0c9c3e1c226e63b5fac240137687544cf631cd616fd34fd188fc9020866"]);
     //die;
 
+    //$res = $bridge->gettransactions(["eafa410767d613a9c57ede0afda04e050bb36f8eb24ce4eabefeeeaad85de762"]);
     //$chunks = array_chunk($txs, 20);
     //foreach ($chunks as $chunk) {
         //$res = $bridge->gettransactions($chunk);
@@ -215,40 +223,60 @@ try {
     //$wallet = $bridge->createWallet("matbea-com-test",['12S42ZEw2741DHrivgZHLfX8M58mxb7bFy','1MN3cT9Ro927h4kgpSZ5V7SfYjrwTysXv7']);
     /*$wallet = $bridge->createWallet("deadushka1",['1MN3cT9Ro927h4kgpSZ5V7SfYjrwTysXv7']);
     $addresses = $bridge->getAddresses($wallet);
-    $wallet = $bridge->addAddresses($wallet,['1BdxBor4JG76RKLAwJZfHC58fWbgidYukz','1MN3cT9Ro927h4kgpSZ5V7SfYjrwTysXv7']);
+    $wallet = $bridge->addAddresses(
+        $wallet,
+        ['1BdxBor4JG76RKLAwJZfHC58fWbgidYukz','1MN3cT9Ro927h4kgpSZ5V7SfYjrwTysXv7']
+    );
     $addresses = $bridge->getAddresses($wallet);
-    $wallet = $bridge->removeAddresses($wallet,['1BdxBor4JG76RKLAwJZfHC58fWbgidYukz','1MN3cT9Ro927h4kgpSZ5V7SfYjrwTysXv7']);
+    $wallet = $bridge->removeAddresses(
+        $wallet,
+        ['1BdxBor4JG76RKLAwJZfHC58fWbgidYukz','1MN3cT9Ro927h4kgpSZ5V7SfYjrwTysXv7']
+    );
     $bridge->deleteWallet($wallet);
     die;*/
 
 
 
 
-    /*$res = $bridge->gettransactions(["21df512a116abb22384bfe47f15833e43ac4f8999b434a7a5c74ad1f487043a9"]); //unconfirmed
-    $res = $bridge->gettransactions(["000010ab9378a649fe2d57387afeb4b066a6fa396cefcc6b91328badd49f319f"]); //different time
-    $res = $bridge->gettransactions(["a1405d6b266b63a2d1a5af6b3dee1af9ae60124be16f81b4774059c7dd43aa27"]); //newly minted OK
-    $res = $bridge->gettransactions(["000010ab9378a649fe2d57387afeb4b066a6fa396cefcc6b91328badd49f319f"]); //newly minted OK
-    $res = $bridge->gettransactions(["00000005aca88ceece655e19070dbfe9416b0c2850da0463f1e4c823bb41f295"]); //pubkeyhash
-    $res = $bridge->gettransactions(["0000297bd516c501aa9b143a5eac8adaf457fa78431e844092a7112815411d03"]); //multisig !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    $res = $bridge->gettransactions(["0000561d7d43a41a75a9ff78bba64f0d6dc3b1709aae58522f5f7eb11fec27a2"]); //nonstandard
-    $res = $bridge->gettransactions(["000005691f815e9de6977f8e596e383bc904528d6aa173d9a23656f6befbfacb"]); //nulldata
-    $res = $bridge->gettransactions(["0000005f67276a9d277507f1439ff6c322d7e969b855e449aec6b34b0b6d1655"]); //scripthash
-    $res = $bridge->gettransactions(["dd9f6bbf80ab36b722ca95d93268667a3ea6938288e0d4cf0e7d2e28a7a91ab3"]); //13106 outputs (tx_id=101172926)
-    $res = $bridge->gettransactions(["dd9f6bbf80ab36b722ca95d93268667a3ea6938288e0d4cf0e7d2e28a7a91ab3"],["limit"=>1]); //13106 outputs (tx_id=101172926)
-    $res = $bridge->gettransactions(["dd9f6bbf80ab36b722ca95d93268667a3ea6938288e0d4cf0e7d2e28a7a91ab3"],["limit"=>2]); //13106 outputs (tx_id=101172926)
-    $res = $bridge->gettransactions(["dd9f6bbf80ab36b722ca95d93268667a3ea6938288e0d4cf0e7d2e28a7a91ab3"],["limit"=>1,"outstart=1000"]); //13106 outputs (tx_id=101172926)
-    $res = $bridge->gettransactions(["dd9f6bbf80ab36b722ca95d93268667a3ea6938288e0d4cf0e7d2e28a7a91ab3"],["limit"=>2,"outstart=2000"]); //13106 outputs (tx_id=101172926)*/
+    /*
+    //different time
+    $res = $bridge->gettransactions(["000010ab9378a649fe2d57387afeb4b066a6fa396cefcc6b91328badd49f319f"]);
+    //newly minted OK
+    $res = $bridge->gettransactions(["a1405d6b266b63a2d1a5af6b3dee1af9ae60124be16f81b4774059c7dd43aa27"]);
+    //newly minted OK
+    $res = $bridge->gettransactions(["000010ab9378a649fe2d57387afeb4b066a6fa396cefcc6b91328badd49f319f"]);
+    //pubkeyhash
+    $res = $bridge->gettransactions(["00000005aca88ceece655e19070dbfe9416b0c2850da0463f1e4c823bb41f295"]);
+    //multisig
+    $res = $bridge->gettransactions(["0000297bd516c501aa9b143a5eac8adaf457fa78431e844092a7112815411d03"]);
+    //nonstandard
+    $res = $bridge->gettransactions(["0000561d7d43a41a75a9ff78bba64f0d6dc3b1709aae58522f5f7eb11fec27a2"]);
+    //nulldata
+    $res = $bridge->gettransactions(["000005691f815e9de6977f8e596e383bc904528d6aa173d9a23656f6befbfacb"]);
+    //scripthash
+    $res = $bridge->gettransactions(["0000005f67276a9d277507f1439ff6c322d7e969b855e449aec6b34b0b6d1655"]);
+    //13106 outputs (tx_id=101172926)
+    $res = $bridge->gettransactions(["dd9f6bbf80ab36b722ca95d93268667a3ea6938288e0d4cf0e7d2e28a7a91ab3"]);
+    //13106 outputs (tx_id=101172926)
+    $res = $bridge->gettransactions(["dd9f6bbf80ab36b722ca95d93268667a3ea6938288e0d4cf0e7d2e28a7a91ab3"],["limit"=>1]);
+    */
 
 
     /*$wallet = new \BTCBridge\Api\Wallet();
     $wallet->setSystemDataByHandler($blockCypherHandler->getHandlerName(), ["name"=>"todo5"]);
     //$addresses = $bridge->getAddresses($wallet);
     $wallet->setSystemDataByHandler($matbeaHandler->getHandlerName(), ["id"=>"123","name"=>"todo5"]);
-    $wallet = $bridge->createWallet("todo5", ["1BdxBor4JG76RKLAwJZfHC58fWbgidYukz","12S42ZEw2741DHrivgZHLfX8M58mxb7bFy"]);
+    $wallet = $bridge->createWallet(
+        "todo5",
+        ["1BdxBor4JG76RKLAwJZfHC58fWbgidYukz","12S42ZEw2741DHrivgZHLfX8M58mxb7bFy"]
+    );
     $bridge->deleteWallet($wallet);
 
     //$wallet = $bridge->addaddresses($wallet, ["12S42ZEw2741DHrivgZHLfX8M58mxb7bFy"]);
-    //$wallet = $bridge->removeAddress($wallet, "1BdxBor4JG76RKLAwJZfHC58fWbgidYukz;12S42ZEw2741DHrivgZHLfX8M58mxb7bFy");
+    //$wallet = $bridge->removeAddress(
+        //$wallet,
+        //"1BdxBor4JG76RKLAwJZfHC58fWbgidYukz;12S42ZEw2741DHrivgZHLfX8M58mxb7bFy"
+    //);
     $wallet = $bridge->removeAddress($wallet, "1BdxBor4JG76RKLAwJZfHC58fWbgidYukz");
     $wallet = $bridge->removeAddress($wallet, "1BdxBor4JG76RKLAwJZfHC58fWbgidYukz");
 
@@ -313,7 +341,12 @@ try {
         $res = $bridge->gettransactions([$txhash]);
     }
 
-    //$res = $bridge->gettransactions(["dd9f6bbf80ab36b722ca95d93268667a3ea6938288e0d4cf0e7d2e28a7a91ab3"],["limit"=>PHP_INT_MAX,"outstart=2000"]); //13106 outputs (tx_id=101172926)
+    //$res = $bridge->gettransactions(
+    //[
+        //"dd9f6bbf80ab36b722ca95d93268667a3ea6938288e0d4cf0e7d2e28a7a91ab3"]
+    //,
+    //["limit"=>PHP_INT_MAX,"outstart=2000"]
+    //); //13106 outputs (tx_id=101172926)
 
 
     die;

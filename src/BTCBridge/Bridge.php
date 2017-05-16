@@ -19,6 +19,7 @@ use BTCBridge\Api\Address;
 use BTCBridge\Api\Wallet;
 use BTCBridge\Api\SMOutput;
 use BTCBridge\Api\SendMoneyOptions;
+use BTCBridge\Api\ListTransactionsOptions;
 use BitWasp\Buffertools\Buffer;
 use BitWasp\Bitcoin\Transaction\TransactionOutput;
 use BitWasp\Bitcoin\Transaction\OutPoint;
@@ -316,32 +317,7 @@ class Bridge
      * @link https://www.blockcypher.com/dev/bitcoin/?shell#address-endpoint Official blockcypher documentation
      *
      * @param string $address  An account name (or address) to get transactions from
-     * @param array $options  Array containing the optional params
-     * $options = [
-     *   ['unspentOnly']           bool      If unspentOnly is true, filters response to only include unspent
-     *   transaction outputs (UTXOs).
-     *   ['includeScript']         bool      If includeScript is true, includes raw script of input or output
-     *   within returned TXRefs.
-     *   ['includeConfidence']     bool      If true, includes the confidence attribute (useful for unconfirmed
-     *   transactions) within returned TXRefs. For more info about this figure,
-     *   check the Confidence Factor documentation.
-     *   ['before']                integer   Filters response to only include transactions below before height
-     *   in the blockchain.
-     *   ['after']                 integer   Filters response to only include transactions above after height
-     *   in the blockchain.
-     *   ['limit']                 integer   Limit sets the minimum number of returned TXRefs; there can be less
-     *   if there are less than limit TXRefs associated with this address, but there can be more in the rare case
-     *   of more TXRefs in the block at the bottom of your call.
-     *   This ensures paging by block height never misses TXRefs.
-     *   Defaults to 200, maximum is 2000.
-     *   ['confirmations']         integer   If set, only returns the balance and TXRefs that have at least this number
-     *   of confirmations.
-     *   ['confidence']            integer   Filters response to only include TXRefs above confidence in percent; e.g.,
-     *   if this is set to 99, will only return TXRefs with 99% confidence or above (including all confirmed TXRefs).
-     *   For more detail on confidence, check the Confidence Factor documentation.
-     *   ['omitWalletAddresses']   bool      If omitWalletAddresses is true and you’re querying a Wallet or HDWallet,
-     *   the response will omit address information (useful to speed up the API call for larger wallets).
-     * ]
+     * @param ListTransactionsOptions $options contains the optional params
      *
      * @throws \RuntimeException in case of any runtime error
      * @throws \InvalidArgumentException in case of error of this type
@@ -350,7 +326,7 @@ class Bridge
      *
      * @return Address
      */
-    public function listtransactions($address, array $options = [])
+    public function listtransactions($address, ListTransactionsOptions $options)
     {
         //HUERAGA - не все заполняется, а надо ли (баланс etc)?
         if ("string" != gettype($address) || ("" == $address)) {

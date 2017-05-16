@@ -11,6 +11,7 @@
 
 namespace BTCBridge\Handler;
 
+use BTCBridge\Api\ListTransactionsOptions;
 use BTCBridge\Api\Transaction;
 use BTCBridge\Api\TransactionInput;
 use BTCBridge\Api\TransactionOutput;
@@ -54,7 +55,7 @@ class BlockCypherHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function listtransactions($walletName, array $options = [])
+    public function listtransactions($walletName, ListTransactionsOptions $options)
     {
         return AbstractHandler::HANDLER_UNSUPPORTED_METHOD;
     }
