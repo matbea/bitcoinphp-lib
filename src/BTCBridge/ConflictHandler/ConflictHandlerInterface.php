@@ -14,6 +14,7 @@ namespace BTCBridge\ConflictHandler;
 use BTCBridge\Exception\ConflictHandlerException;
 use BTCBridge\Api\Transaction;
 use BTCBridge\Api\Address;
+use BTCBridge\Api\Wallet;
 use BTCBridge\Api\TransactionReference;
 
 /**
@@ -149,4 +150,16 @@ interface ConflictHandlerInterface
      * @return \string[] addresses
      */
     public function getAddresses($data);
+
+    /**
+     * This method returns wallets  and addresses optionally by token
+     *
+     * @param array $data  Result from method getAddresses (from all handlers)
+     *
+     * @throws \RuntimeException in case of any error of this type
+     * @throws \InvalidArgumentException in case of any error of this type
+     *
+     * @return Wallet[] wallets
+     */
+    public function getWallets($data);
 }

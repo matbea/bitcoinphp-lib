@@ -605,4 +605,30 @@ class DefaultConflictHandler implements ConflictHandlerInterface
             );
         }
     }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getWallets($data)
+    {
+        if (1 == count($data)) {
+            return;
+        }
+        if (2 != count($data)) {
+            throw new \InvalidArgumentException("Data array for verification must have size 1 or 2.");
+        }
+        /** @var $result1 string[] */
+        $result1 = & $data[0];
+        /** @var $result2 string[] */
+        $result2 = & $data[1];
+
+        if ((gettype($result1) != 'array') || (gettype($result2) != 'array')) {
+            throw new \InvalidArgumentException("Elements of Data array must be arrays of string.");
+        }
+        if ($result1 != $result2) {
+            throw new ConflictHandlerException(
+                "Different results from method \"getAddresses\"."
+            );
+        }
+    }
 }

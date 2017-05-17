@@ -6,12 +6,6 @@ namespace BTCBridge\Api;
  * Class ListTransactionsOptions
  * This class contains options for method Handler::listtransactions
  *
- * @property int before
- * @property int after
- * @property int limit
- * @property int confirmations
- * @property boolean nobalance
- *
  * @package BTCBridge\Api
  */
 class ListTransactionsOptions
@@ -24,6 +18,9 @@ class ListTransactionsOptions
 
     /** @var $limit integer */
     protected $limit;
+
+    /** @var $offset integer */
+    protected $offset;
 
     /** @var $confirmations integer */
     protected $confirmations;
@@ -59,7 +56,11 @@ class ListTransactionsOptions
     public function setBefore($before)
     {
         if ("integer" != gettype($before) || ($before <= 0)) {
-            throw new \InvalidArgumentException("before variable must be positive integer.");
+            if (!is_null($before)) {
+                throw new \InvalidArgumentException(
+                    "before variable must be positive integer or null."
+                );
+            }
         }
         $this->before = $before;
         return $this;
@@ -81,7 +82,11 @@ class ListTransactionsOptions
     public function setAfter($after)
     {
         if ("integer" != gettype($after) || ($after <= 0)) {
-            throw new \InvalidArgumentException("after variable must be positive integer.");
+            if (!is_null($after)) {
+                throw new \InvalidArgumentException(
+                    "after variable must be positive integer or null."
+                );
+            }
         }
         $this->after = $after;
         return $this;
@@ -103,9 +108,39 @@ class ListTransactionsOptions
     public function setLimit($limit)
     {
         if ("integer" != gettype($limit) || ($limit <= 0) || ($limit > 1000)) {
-            throw new \InvalidArgumentException("limit variable must be positive integer (less than 1000).");
+            if (!is_null($limit)) {
+                throw new \InvalidArgumentException(
+                    "limit variable must be positive integer (less than 1000) or null."
+                );
+            }
         }
         $this->limit = $limit;
+        return $this;
+    }
+
+    /**
+     * @return integer
+     */
+    public function getOffset()
+    {
+        return $this->offset;
+    }
+
+    /**
+     * @param integer $offset
+     * @return $this
+     * @throws \InvalidArgumentException in case of error of this type
+     */
+    public function setOffset($offset)
+    {
+        if ("integer" != gettype($offset) || ($offset <= 0)) {
+            if (!is_null($offset)) {
+                throw new \InvalidArgumentException(
+                    "offset variable must be non negative integer or null."
+                );
+            }
+        }
+        $this->offset = $offset;
         return $this;
     }
 
@@ -125,7 +160,11 @@ class ListTransactionsOptions
     public function setConfirmations($confirmations)
     {
         if ("integer" != gettype($confirmations) || ($confirmations <= 0)) {
-            throw new \InvalidArgumentException("confirmation variable must be positive integer.");
+            if (!is_null($confirmations)) {
+                throw new \InvalidArgumentException(
+                    "confirmation variable must be positive integer."
+                );
+            }
         }
         $this->confirmations = $confirmations;
         return $this;

@@ -119,7 +119,6 @@ try {
         "10"
     );
 
-
     $bridge = new \BTCBridge\Bridge(
         [
             $matbeaHandler
@@ -130,25 +129,31 @@ try {
         new \BTCBridge\ResultHandler\DefaultResultHandler(),
         $logger
     );
-
     $bridge->setOption(
         \BTCBridge\Bridge::OPT_LOCAL_PATH_OF_WALLET_DATA,
             __DIR__ . "/data/wallet.dat"
     );
 
     $options = new \BTCBridge\Api\ListTransactionsOptions;
+    $options->setNobalance(true);
+    //$wallets = $bridge->getWallets();
     //$options->setNobalance(true);
-    $res = $bridge->listtransactions("12S42ZEw2741DHrivgZHLfX8M58mxb7bFy", $options);
+    //$res = $bridge->listtransactions("12S42ZEw2741DHrivgZHLfX8M58mxb7bFy", $options);
     //$res = $bridge->listunspent("12S42ZEw2741DHrivgZHLfX8M58mxb7bFy");
+    //$wallet = $bridge->createWallet("matbea-com-test1", []);
+    $wallet  = new \BTCBridge\Api\Wallet();
+    $wallet->setName("matbea-com-test1");
+    $wallet->setSystemDataByHandler($matbeaHandler->getHandlerName(), ["name" => "matbea-com-test","id" => 813]);
+    $bridge->deleteWallet($wallet);
+
+    //$addresses = $bridge->getAddresses($wallet);
+
+    $res = $bridge->listtransactions($wallet->getName()/*, $options*/);
+    $res = $bridge->listunspent($wallet->getName());
+    $res = $bridge->listunspent($wallet->getName(), 0);
+    $res = $bridge->getbalance($wallet->getName());
+    $res = $bridge->getunconfirmedbalance($wallet->getName());
     die;
-
-
-    //$res = $bridge->gettransactions(["0e3e2357e806b6cdb1f70b54c3a3a17b6714ee1f0e68bebb44a74b1efd512098"]);
-    //$v = $res[0]->getInputs()[0]->getOutputValue();
-    //$val1 = $v->getGMPValue();
-    //$val3 = $v->getBTCValue();
-    //$val2 = $v->getSatoshiValue();
-    //die;
 
     //$res = $bridge->gettransactions(["7890a6b1d38741a5b019e34c8576165195af9e7b9af7935024b150e870f530d2"]);
     //array_splice($txs, 20, 20);

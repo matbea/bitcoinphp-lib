@@ -6,11 +6,6 @@ namespace BTCBridge\Api;
  * Class SendMoneyOptions
  * Special Output exclusively for SendManyMethod
  *
- * @property int confirmations
- * @property string comment
- * @property string commentTo
- * @property string addressForChange
- *
  * @package BTCBridge\Api
  */
 class SendMoneyOptions
@@ -55,7 +50,11 @@ class SendMoneyOptions
     public function setConfirmations($confirmations)
     {
         if ("integer" != gettype($confirmations) || ($confirmations < 0)) {
-            throw new \InvalidArgumentException("confirmation variable must be non negative integer.");
+            if (!is_null($confirmations)) {
+                throw new \InvalidArgumentException(
+                    "confirmation variable must be non negative integer or null."
+                );
+            }
         }
         $this->confirmations = $confirmations;
         return $this;
@@ -121,7 +120,11 @@ class SendMoneyOptions
     public function setAddressForChange($addressForChange)
     {
         if ("string" != gettype($addressForChange)) {
-            throw new \InvalidArgumentException("commentTo variable must be a string variable.");
+            if (!is_null($addressForChange)) {
+                throw new \InvalidArgumentException(
+                    "commentTo variable must be a string variable or null."
+                );
+            }
         }
         $this->addressForChange = $addressForChange;
         return $this;

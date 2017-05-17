@@ -190,4 +190,16 @@ abstract class AbstractResultHandler
      * @return \string[] addresses
      */
     abstract public function getAddresses($data);
+
+    /**
+     * This method returns wallets  and addresses optionally by token
+     *
+     * @param array $data  Result from method getWallets (from all handlers)
+     *
+     * @throws \RuntimeException in case of any error of this type
+     * @throws \InvalidArgumentException in case of any error of this type
+     *
+     * @return Wallet[] wallets
+     */
+    abstract public function getWallets($data);
 }

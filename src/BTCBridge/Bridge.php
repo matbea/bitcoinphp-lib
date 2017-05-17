@@ -20,6 +20,7 @@ use BTCBridge\Api\Wallet;
 use BTCBridge\Api\SMOutput;
 use BTCBridge\Api\SendMoneyOptions;
 use BTCBridge\Api\ListTransactionsOptions;
+use BTCBridge\Api\GetWalletsOptions;
 use BitWasp\Buffertools\Buffer;
 use BitWasp\Bitcoin\Transaction\TransactionOutput;
 use BitWasp\Bitcoin\Transaction\OutPoint;
@@ -326,7 +327,7 @@ class Bridge
      *
      * @return Address
      */
-    public function listtransactions($address, ListTransactionsOptions $options)
+    public function listtransactions($address, ListTransactionsOptions $options = null)
     {
         //HUERAGA - не все заполняется, а надо ли (баланс etc)?
         if ("string" != gettype($address) || ("" == $address)) {
@@ -397,7 +398,6 @@ class Bridge
      * @param string $walletName            An account name to get balance from
      * @param int $Confirmations         The minimum number of confirmations an externally-generated transaction
      * must have before it is counted towards the balance.
-     * @param boolean $IncludeWatchOnly  Whether to include watch-only addresses in details and calculations
      *
      * @throws \RuntimeException in case of any runtime error
      * @throws \InvalidArgumentException if error of this type
@@ -405,7 +405,7 @@ class Bridge
      *
      * @return BTCValue The balance
      */
-    public function getbalance($walletName, $Confirmations = 1, $IncludeWatchOnly = false)
+    public function getbalance($walletName, $Confirmations = 1)
     {
         if ("string" != gettype($walletName) || ("" == $walletName)) {
             throw new \InvalidArgumentException("Account variable must be non empty string.");
@@ -421,7 +421,7 @@ class Bridge
         $this->timeMeasurementStatistics[Bridge::PRIV_TIME_MEASUREMENT_BEFORE_HANDLERS] = microtime(true);
         $results = [];
         foreach ($this->handlers as $handle_num => $handle) {
-            $result = $handle->getbalance($walletName, $Confirmations, $IncludeWatchOnly);
+            $result = $handle->getbalance($walletName, $Confirmations);
             if (AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $result) {
                 $this->timeMeasurementStatistics[Bridge::PRIV_TIME_MEASUREMENT_AFTER_HANDLERS]
                 [$handle_num] = microtime(true);
@@ -911,6 +911,39 @@ class Bridge
         $this->conflictHandler->getAddresses($results);
         $this->timeMeasurementStatistics[Bridge::PRIV_TIME_MEASUREMENT_AFTER_CONFLICT_HANDLER] = microtime(true);
         $ret = $this->resultHandler->getAddresses($results);
+        $this->timeMeasurementStatistics[Bridge::PRIV_TIME_MEASUREMENT_AFTER_RESULT_HANDLER] = microtime(true);
+        return $ret;
+    }
+
+    /**
+     * This method returns wallets  and addresses optionally by token
+     *
+     * @param GetWalletsOptions $options
+     *
+     * @throws \RuntimeException in case of any error of this type
+     * @throws \InvalidArgumentException in case of any error of this type
+     *
+     * @return Wallet[] wallets
+     */
+    public function getWallets(GetWalletsOptions $options = null)
+    {
+        $results = [];
+
+        $this->timeMeasurementStatistics = [];
+        $this->timeMeasurementStatistics[Bridge::PRIV_TIME_MEASUREMENT_METHOD_NAME] = __METHOD__;
+        $this->timeMeasurementStatistics[Bridge::PRIV_TIME_MEASUREMENT_BEFORE_HANDLERS] = microtime(true);
+
+        foreach ($this->handlers as $handle_num => $handle) {
+            $result = $handle->getWallets($options);
+            if (AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $result) {
+                $this->timeMeasurementStatistics[Bridge::PRIV_TIME_MEASUREMENT_AFTER_HANDLERS]
+                [$handle_num] = microtime(true);
+                $results [] = $result;
+            }
+        }
+        $this->conflictHandler->getWallets($results);
+        $this->timeMeasurementStatistics[Bridge::PRIV_TIME_MEASUREMENT_AFTER_CONFLICT_HANDLER] = microtime(true);
+        $ret = $this->resultHandler->getWallets($results);
         $this->timeMeasurementStatistics[Bridge::PRIV_TIME_MEASUREMENT_AFTER_RESULT_HANDLER] = microtime(true);
         return $ret;
     }

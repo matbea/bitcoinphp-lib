@@ -12,6 +12,7 @@
 namespace BTCBridge\Handler;
 
 use BTCBridge\Api\ListTransactionsOptions;
+use BTCBridge\Api\GetWalletsOptions;
 use BTCBridge\Api\Transaction;
 use BTCBridge\Api\TransactionReference;
 use BTCBridge\Api\Wallet;
@@ -66,7 +67,7 @@ class MatbeaHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function listtransactions($walletName, ListTransactionsOptions $options)
+    public function listtransactions($walletName, ListTransactionsOptions $options = null)
     {
         if ("string" != gettype($walletName)) {
             throw new \InvalidArgumentException("Account variable must be non empty string.");
@@ -83,26 +84,32 @@ class MatbeaHandler extends AbstractHandler
             $url .= "&token=" . $this->token;
             $sep = "&";
         }
-        if (null !== $options->getBefore()) {
-            $url .= $sep . "before=" . $options->getBefore();
+        if ($options) {
+            if (null !== $options->getBefore()) {
+                $url .= $sep . "before=" . $options->getBefore();
+                $sep = "&";
+            }
+            if (null !== $options->getAfter()) {
+                $url .= $sep . "after=" . $options->getAfter();
+                $sep = "&";
+            }
+            if (null !== $options->getLimit()) {
+                $url .= $sep . "limit=" . $options->getLimit();
+                $sep = "&";
+            }
+            if (null !== $options->getOffset()) {
+                $url .= $sep . "offset=" . $options->getOffset();
+                $sep = "&";
+            }
+            if (null !== $options->getConfirmations()) {
+                $url .= $sep . "confirmations=" . $options->getConfirmations();
+            } else {
+                $url .= $sep . "confirmations=1";
+            }
             $sep = "&";
-        }
-        if (null !== $options->getAfter()) {
-            $url .= $sep . "after=" . $options->getAfter();
-            $sep = "&";
-        }
-        if (null !== $options->getLimit()) {
-            $url .= $sep . "limit=" . $options->getLimit();
-            $sep = "&";
-        }
-        if (null !== $options->getConfirmations()) {
-            $url .= $sep . "confirmations=" . $options->getConfirmations();
-        } else {
-            $url .= $sep . "confirmations=1";
-        }
-        $sep = "&";
-        if (null !== $options->getNobalance()) {
-            $url .= $sep . "nobalance=" . ($options->getNobalance() ? "true" : "false");
+            if (null !== $options->getNobalance()) {
+                $url .= $sep . "nobalance=" . ($options->getNobalance() ? "true" : "false");
+            }
         }
 
         $ch = curl_init();
@@ -130,8 +137,31 @@ class MatbeaHandler extends AbstractHandler
         } else {
             if (isset($content['wallet'])) {
                 $wallet = new Wallet();
-                $wallet->setAddresses($content['wallet']['addresses']);
+/////////////////////////////////////////////////////////////////////////////////
+                if (!isset($content['wallet']['name'])) {
+                    throw new \RuntimeException(
+                        "Answer does not contain \"wallet.name\" field (url:\"" . $url . "\")."
+                    );
+                }
+                if (!isset($content['wallet']['id'])) {
+                    throw new \RuntimeException(
+                        "Answer does not contain \"wallet.id\" field (url:\"" . $url . "\").");
+                }
+                if (!isset($content['wallet']['addresses'])) {
+                    throw new \RuntimeException(
+                        "Answer does not contain \"wallet.addresses\" field (url:\"" . $url . "\").");
+                }
                 $wallet->setName($content['wallet']['name']);
+                $wallet->setAddresses($content['wallet']['addresses']);
+                $wallet->setSystemDataByHandler(
+                    $this->getHandlerName(),
+                    [
+                        "name" => $content['wallet']['name']
+                        ,
+                        "id" => intval($content['wallet']['id'])
+                    ]
+                );
+/////////////////////////////////////////////////////////////////////////////////
                 $addrObject->setWallet($wallet);
             }
         }
@@ -144,7 +174,6 @@ class MatbeaHandler extends AbstractHandler
             $txr->setBlockHeight($txref["block_height"]);
             $txr->setConfirmations($txref["confirmations"]);
             $txr->setDoubleSpend($txref["double_spend"]);
-            //$txr->setSpent($txref["spent"]);
             $txr->setTxHash($txref["txid"]);
             $txr->setVout($txref["vout"]);
             $txr->setConfirmed(strtotime($txref["time"]));
@@ -277,7 +306,7 @@ class MatbeaHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function getbalance($walletName, $Confirmations = 1, $IncludeWatchOnly = false)
+    public function getbalance($walletName, $Confirmations = 1)
     {
         if ("string" != gettype($walletName) || ("" == $walletName)) {
             throw new \InvalidArgumentException("Account variable must be non empty string.");
@@ -803,6 +832,52 @@ class MatbeaHandler extends AbstractHandler
         }
         $wallet->setAddresses($content['addresses']);
         return $wallet->getAddresses();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getWallets(GetWalletsOptions $options = null)
+    {
+        $url = $this->getOption(self::OPT_BASE_URL) . "/wallet/getwallets";
+        $url = str_replace("/btcbridge", "", $url); //HUERAGA
+        if ($this->token) {
+            $url .= "?token=" . $this->token;
+        }
+        if ($options) {
+            if ($options->getNoaddresses()) {
+                $url .= "nobalace=true";
+            }
+        }
+        $ch = curl_init();
+        $this->prepareCurl($ch, $url);
+        $content = curl_exec($ch);
+        if ((false === $content) || (null === $content)) {
+            throw new \RuntimeException("curl does not return a json object (url:\"" . $url . "\").");
+        }
+        $content = json_decode($content, true);
+        if (isset($content['error'])) {
+            throw new \RuntimeException(
+                "Error (code " . $content["error"]["code"] . ") \"" .
+                $content['error']["message"] . "\" returned (url: \"" . $url . "\")."
+            );
+        }
+        $ret = [];
+        foreach ($content['wallets'] as $wallet) {
+            $w = new Wallet();
+            $w->setName($wallet["name"]);
+            $w->setAddresses($wallet["addresses"]);
+            $w->setSystemDataByHandler(
+                $this->getHandlerName(),
+                [
+                    "name" => $wallet['name']
+                    ,
+                    "id" => intval($wallet['id'])
+                ]
+            );
+            $ret [] = $w;
+        }
+        return $ret;
     }
 
     /**

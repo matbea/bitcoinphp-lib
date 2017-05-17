@@ -12,6 +12,7 @@
 namespace BTCBridge\Handler;
 
 use BTCBridge\Api\ListTransactionsOptions;
+use BTCBridge\Api\GetWalletsOptions;
 use BTCBridge\Api\Transaction;
 use BTCBridge\Api\TransactionInput;
 use BTCBridge\Api\TransactionOutput;
@@ -55,7 +56,7 @@ class BlockCypherHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function listtransactions($walletName, ListTransactionsOptions $options)
+    public function listtransactions($walletName, ListTransactionsOptions $options = null)
     {
         return AbstractHandler::HANDLER_UNSUPPORTED_METHOD;
     }
@@ -205,7 +206,7 @@ class BlockCypherHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function getbalance($walletName, $Confirmations = 1, $IncludeWatchOnly = false)
+    public function getbalance($walletName, $Confirmations = 1)
     {
         return AbstractHandler::HANDLER_UNSUPPORTED_METHOD;
     }
@@ -272,6 +273,15 @@ class BlockCypherHandler extends AbstractHandler
     {
         return AbstractHandler::HANDLER_UNSUPPORTED_METHOD;
     }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getWallets(GetWalletsOptions $options = null)
+    {
+        return AbstractHandler::HANDLER_UNSUPPORTED_METHOD;
+    }
+
 
     /**
      * {@inheritdoc}

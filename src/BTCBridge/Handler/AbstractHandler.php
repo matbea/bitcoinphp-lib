@@ -18,6 +18,7 @@ use \BTCBridge\Api\Address;
 use \BTCBridge\Api\TransactionReference;
 use \BTCBridge\Api\BTCValue;
 use \BTCBridge\Api\ListTransactionsOptions;
+use \BTCBridge\Api\GetWalletsOptions;
 
 /**
  * Base Handler class providing the Handler structure, must be extended
@@ -154,7 +155,7 @@ abstract class AbstractHandler
      *
      * @return Address object
      */
-    abstract public function listtransactions($walletName, ListTransactionsOptions $options);
+    abstract public function listtransactions($walletName, ListTransactionsOptions $options = null);
 
     /**
      * The gettransactions RPC gets detailed information about an in-wallet transaction.
@@ -178,14 +179,13 @@ abstract class AbstractHandler
      * @param string $walletName            An account name to get balance from
      * @param int $Confirmations         The minimum number of confirmations an externally-generated transaction
      * must have before it is counted towards the balance.
-     * @param boolean $IncludeWatchOnly  Whether to include watch-only addresses in details and calculations
      *
      * @throws \RuntimeException in case of any error
      * @throws \InvalidArgumentException if error of this type
      *
      * @return BTCValue The total number of bitcoins paid to the passed wallet in unconfirmed transactions
      */
-    abstract public function getbalance($walletName, $Confirmations = 1, $IncludeWatchOnly = false);
+    abstract public function getbalance($walletName, $Confirmations = 1);
 
     /**
      * Returns the wallet’s total unconfirmed balance.
@@ -306,6 +306,18 @@ abstract class AbstractHandler
      * @return \string[] addresses
      */
     abstract public function getAddresses(Wallet $wallet);
+
+    /**
+     * This method returns wallets  and addresses optionally by token
+     *
+     * @param GetWalletsOptions $options
+     *
+     * @throws \RuntimeException in case of any error of this type
+     * @throws \InvalidArgumentException in case of any error of this type
+     *
+     * @return Wallet[] wallets
+     */
+    abstract public function getWallets(GetWalletsOptions $options = null);
 
     /**
      * This method transforms name of signature type to common
