@@ -321,6 +321,8 @@ class TransactionReference
                 &&
             ($this->getConfirmations() == $o->getConfirmations())
                 &&
+            ($this->getCategory() == $o->getCategory())
+                &&
             ($this->getAddress() == $o->getAddress())
             &&
             ($this->getConfirmed() == $o->getConfirmed())

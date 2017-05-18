@@ -193,6 +193,7 @@ class MatbeaHandler extends AbstractHandler
             if (empty($filteredTxs)) {
                 $txrefs [] = $txr;
             }
+            //$txrefs [] = $txr;
         }
         $addrObject->setTxrefs($txrefs);
         if (true !== $options->getNobalance()) {
