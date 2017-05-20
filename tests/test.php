@@ -134,6 +134,39 @@ try {
             __DIR__ . "/data/wallet.dat"
     );
 
+    ////////////////////////////////////////////////////////////////////////////////
+    $w  = new \BTCBridge\Api\Wallet();
+    //$wallet = $bridge->createWallet("tst18",
+    //['1QE6eCHEbVYqgbaBX3pYmjp6aWHQgFDW6V','1NgWtSrgmixp73ZKucKXyNZg3m9PSyEMkF']);
+
+
+    $w->setName("system_kR");
+    $w->setSystemDataByHandler(
+        $matbeaHandler->getHandlerName(),
+            [
+                "name" => "system_kR",
+                "id" => 812
+            ]
+    );
+    $w->setName("system_kR");
+    //$w->setName("tst18");
+    //$w->setSystemDataByHandler($matbeaHandler->getHandlerName(), ["name" => "tst18","id" => 813]);
+    $o = new \BTCBridge\Api\ListTransactionsOptions();
+    $o->setLimit(1000);
+
+    $addresses = $bridge->getAddresses($w);
+
+    $address = $bridge->listtransactions($w->getName(), $o);
+    $txcount = 0;
+    foreach ($address->getWallet()->getAddresses() as $addressName) {
+        $a = $bridge->listtransactions($addressName, $o);
+        var_dump(count($a->getTxrefs()));
+        $txcount += count($a->getTxrefs());
+    }
+    var_dump(count($address->getTxrefs()));
+    var_dump($txcount);
+    ////////////////////////////////////////////////////////////////////////////////
+
     $options = new \BTCBridge\Api\ListTransactionsOptions;
     $options->setNobalance(true);
     //$wallets = $bridge->getWallets();

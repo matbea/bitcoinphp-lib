@@ -329,7 +329,6 @@ class Bridge
      */
     public function listtransactions($address, ListTransactionsOptions $options = null)
     {
-        //HUERAGA - не все заполняется, а надо ли (баланс etc)?
         if ("string" != gettype($address) || ("" == $address)) {
             throw new \InvalidArgumentException("address variable must be non empty string.");
         }

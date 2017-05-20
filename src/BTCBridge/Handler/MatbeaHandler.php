@@ -168,6 +168,7 @@ class MatbeaHandler extends AbstractHandler
 
         /** @var $txrefs TransactionReference[] */
         $txrefs = [];
+        $txRefHashes = [];
 
         foreach ($content["transactions"] as $txref) {
             $txr = new TransactionReference();
@@ -184,7 +185,23 @@ class MatbeaHandler extends AbstractHandler
             $v = gmp_init(strval($txref["amount"] * 100 * 1000 * 1000));
             $txr->setValue(new BTCValue($v));
             $txr->setAddress($txref['address']);
-            $filteredTxs = array_filter(
+
+            $txRefHash = (string)($txr->getVout()) . "_" . $txr->getTxHash() . "_"
+                . $txr->getConfirmed() . "_" . $txr->getCategory() . "_"
+                . (string)($txr->getBlockHeight()) . "_" . ((string) $txr->getConfirmations())
+                . "_" . $txr->getAddress();
+            if (!isset($txRefHashes[$txRefHash])) {
+                $txRefHashes[$txRefHash] = 1;
+                $txrefs [] = $txr;
+            } else {
+                throw new \RuntimeException(
+                    "Logic error in ListTransactions method, response contains same txref 
+                    (server side, url:\"" . $url . "\", txrefhash: \"" . $txRefHash . "\", 
+                    txref: ( " . serialize($txr) . " ) )."
+                );
+            }
+
+            /*$filteredTxs = array_filter(
                 $txrefs,
                 function (TransactionReference $tx) use ($txr) {
                     return $tx->isEqual($txr);
@@ -192,7 +209,7 @@ class MatbeaHandler extends AbstractHandler
             );
             if (empty($filteredTxs)) {
                 $txrefs [] = $txr;
-            }
+            }*/
             //$txrefs [] = $txr;
         }
         $addrObject->setTxrefs($txrefs);

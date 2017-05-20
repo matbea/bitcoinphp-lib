@@ -22,7 +22,7 @@ class TransactionReference
 
     /**
      * Address which received the BTC from this output
-     * @var int
+     * @var string
      */
     protected $address = null;
 
