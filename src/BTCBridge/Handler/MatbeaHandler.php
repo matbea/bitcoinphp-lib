@@ -213,7 +213,7 @@ class MatbeaHandler extends AbstractHandler
             //$txrefs [] = $txr;
         }
         $addrObject->setTxrefs($txrefs);
-        if (true !== $options->getNobalance()) {
+        if ($options && true !== $options->getNobalance()) {
             $v1 = gmp_init(strval($content["balance"] * 100 * 1000 * 1000));
             $addrObject->setBalance(new BTCValue($v1));
             $v2 = gmp_init(strval($content["unconfirmed_balance"] * 100 * 1000 * 1000));
