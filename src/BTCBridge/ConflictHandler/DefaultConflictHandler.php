@@ -268,7 +268,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                 //0000297bd516c501aa9b143a5eac8adaf457fa78431e844092a7112815411d03
                 // (different confirmed)
                 //($tx1->getConfirmed() !== $tx2->getConfirmed()) ||
-                //($tx1->getDoubleSpend() !== $tx2->getDoubleSpend()) || HUERAGA - have to develop it
+                ($tx1->getDoubleSpend() !== $tx2->getDoubleSpend()) ||
                 ($tx1->getBlockHeight() !== $tx2->getBlockHeight()) ||
                 ($tx1->getHash() !== $tx2->getHash())
             ) {
@@ -276,23 +276,23 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                     "Different values of transactions ( " . serialize($tx1) . " and " . serialize($tx2) . " )."
                 );
             }
-
-            $cnf1 = $tx1->getConfirmations();
-            $cnf2 = $tx2->getConfirmations();
-            if (((0 == $cnf1) && ($cnf2 > 0)) || ((0 == $cnf1) && ($cnf2 > 0))) {
-                throw new ConflictHandlerException(
-                    "Different values of confirmations of transactions, one is confirmed, 
+            if (!$tx1->getDoubleSpend()) {
+                $cnf1 = $tx1->getConfirmations();
+                $cnf2 = $tx2->getConfirmations();
+                if (((0 == $cnf1) && ($cnf2 > 0)) || ((0 == $cnf1) && ($cnf2 > 0))) {
+                    throw new ConflictHandlerException(
+                        "Different values of confirmations of transactions, one is confirmed, 
                     another is unconfirmed ( " . serialize($tx1) . " and " . serialize($tx2) . " )."
-                );
-            }
-
-            $maxAllowed = intval($this->getOption(self::OPT_CONFIRMATIONS_MAXIMUM_DIFERENCE_ALLOWED));
-            if (abs($cnf1 - $cnf2) > $maxAllowed) {
-                throw new ConflictHandlerException(
-                    " Too big Difference (" . abs($cnf1 - $cnf2) . ") between the 
-                    confirmations of transactions, maxim difference allowed is " . $maxAllowed . "
-                    ( " . serialize($tx1) . " and " . serialize($tx2) . " )."
-                );
+                    );
+                }
+                $maxAllowed = intval($this->getOption(self::OPT_CONFIRMATIONS_MAXIMUM_DIFERENCE_ALLOWED));
+                if (abs($cnf1 - $cnf2) > $maxAllowed) {
+                    throw new ConflictHandlerException(
+                        " Too big Difference (" . abs($cnf1 - $cnf2) . ") between the 
+                        confirmations of transactions, maxim difference allowed is " . $maxAllowed . "
+                        ( " . serialize($tx1) . " and " . serialize($tx2) . " )."
+                    );
+                }
             }
 
             $outputs1 = $tx1->getOutputs();

@@ -134,6 +134,8 @@ try {
             __DIR__ . "/data/wallet.dat"
     );
 
+    $bridge->gettransactions(["5123a3e1159d1a65397d9f48c30746aa184cb87df2cc4f6e257ddd38ea7ea37a"]);
+
     ////////////////////////////////////////////////////////////////////////////////
     $w  = new \BTCBridge\Api\Wallet();
     //$wallet = $bridge->createWallet("tst18",
