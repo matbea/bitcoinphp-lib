@@ -42,8 +42,8 @@ class MatbeaHandler extends AbstractHandler
     {
         parent::__construct();
         //$this->setOption(self::OPT_BASE_URL, "https://api.matbea.net");
-        //$this->setOption(self::OPT_BASE_URL, "http://136.243.32.19:8080/btcbridge");
-        $this->setOption(self::OPT_BASE_URL, "http://api.matbea.net:8080/btcbridge");
+        //$this->setOption(self::OPT_BASE_URL, "https://136.243.32.19/btcbridge");
+        $this->setOption(self::OPT_BASE_URL, "https://api.matbea.net/btcbridge");
     }
 
     /**
