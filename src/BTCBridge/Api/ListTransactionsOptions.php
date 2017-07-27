@@ -133,7 +133,7 @@ class ListTransactionsOptions
      */
     public function setOffset($offset)
     {
-        if ("integer" != gettype($offset) || ($offset <= 0)) {
+        if ("integer" != gettype($offset) || ($offset < 0)) {
             if (!is_null($offset)) {
                 throw new \InvalidArgumentException(
                     "offset variable must be non negative integer or null."

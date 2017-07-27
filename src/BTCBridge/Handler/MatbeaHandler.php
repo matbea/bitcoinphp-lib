@@ -11,6 +11,7 @@
 
 namespace BTCBridge\Handler;
 
+use BTCBridge\Bridge;
 use BTCBridge\Api\ListTransactionsOptions;
 use BTCBridge\Api\GetWalletsOptions;
 use BTCBridge\Api\Transaction;
@@ -20,6 +21,7 @@ use BTCBridge\Api\TransactionInput;
 use BTCBridge\Api\TransactionOutput;
 use BTCBridge\Api\Address;
 use BTCBridge\Api\BTCValue;
+use BitWasp\Bitcoin\Address\AddressFactory;
 
 //use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -231,6 +233,20 @@ class MatbeaHandler extends AbstractHandler
         if (empty($txHashes)) {
             throw new \InvalidArgumentException("txHashes variable must be non empty array of non empty strings.");
         }
+        if (count($txHashes) > Bridge::MAX_COUNT_OF_TRANSACTIONS_FOR__GETTRANSACTIONS__METHOD) {
+            throw new \InvalidArgumentException(
+                "txHashes variable size must be non bigger than " .
+                Bridge::MAX_COUNT_OF_TRANSACTIONS_FOR__GETTRANSACTIONS__METHOD . "."
+            );
+        }
+        foreach ($txHashes as $txHash) {
+            if ((!is_string($txHash)) || !preg_match('/^[a-z0-9]+$/i', $txHash) || (strlen($txHash) != 64)) {
+                throw new \InvalidArgumentException(
+                    "Hashes in \$txHashes must be valid bitcoin transaction hashes (\"" . $txHash . "\" not valid)."
+                );
+            }
+        }
+
         $url = $this->getOption(self::OPT_BASE_URL) . "/gettransactions";
         $sep = "?";
         if ($this->token) {
@@ -568,8 +584,10 @@ class MatbeaHandler extends AbstractHandler
         if (count($addresses) > 0) {
             $post_data["addresses"] = [];
             foreach ($addresses as $address) {
+                if (!AddressFactory::isValidAddress($address)) {
+                    throw new \InvalidArgumentException("No valid address (\"" . $address . "\" passed)."             );
+                }
                 $post_data["addresses"] [] = $address;
-                //$post_data["addresses"] [] = $address;
             }
         }
         $curl = curl_init();
@@ -648,6 +666,11 @@ class MatbeaHandler extends AbstractHandler
         $walletId = $walletSystemData["id"]; //HUERAGA - надо бы проверять все же, есть ли проперти id
         if (empty($addresses)) {
             throw new \InvalidArgumentException("addresses variable must be non empty array.");
+        }
+        foreach ($addresses as $address) {
+            if (!AddressFactory::isValidAddress($address)) {
+                throw new \InvalidArgumentException("No valid address (\"" . $address . "\" passed).");
+            }
         }
 
         $url = $this->getOption(self::OPT_BASE_URL) . "/wallet/addaddresses?id=" . $walletId;

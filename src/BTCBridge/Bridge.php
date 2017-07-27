@@ -52,6 +52,9 @@ class Bridge
     const OPT_MINIMAL_AMOUNT_FOR_SENT   = 2;
     const OPT_MINIMAL_FEE_PER_KB        = 3;
 
+    /** This group of constants are bridge options for restrictions for methods */
+    const MAX_COUNT_OF_TRANSACTIONS_FOR__GETTRANSACTIONS__METHOD = 20;
+
     /** @var array options */
     protected $options = [];
 
@@ -365,8 +368,22 @@ class Bridge
     public function gettransactions(array $txHashes)
     {
         if (empty($txHashes)) {
-            throw new \InvalidArgumentException("txHashes variable must be non empty array of non empty strings.");
+            throw new \InvalidArgumentException("\$txHashes variable must be non empty array of valid btc tx-hashes.");
         }
+        if (count($txHashes) > Bridge::MAX_COUNT_OF_TRANSACTIONS_FOR__GETTRANSACTIONS__METHOD) {
+            throw new \InvalidArgumentException(
+                "txHashes variable size must be non bigger than " .
+                Bridge::MAX_COUNT_OF_TRANSACTIONS_FOR__GETTRANSACTIONS__METHOD . "."
+            );
+        }
+        foreach ($txHashes as $txHash) {
+            if ((!is_string($txHash)) || !preg_match('/^[a-z0-9]+$/i', $txHash) || (strlen($txHash) != 64)) {
+                throw new \InvalidArgumentException(
+                    "Hashes in \$txHashes must be valid bitcoin transaction hashes (\"" . $txHash . "\" not valid)."
+                );
+            }
+        }
+
         $this->timeMeasurementStatistics = [];
         $this->timeMeasurementStatistics[Bridge::PRIV_TIME_MEASUREMENT_METHOD_NAME] = __METHOD__;
         $this->timeMeasurementStatistics[Bridge::PRIV_TIME_MEASUREMENT_BEFORE_HANDLERS] = microtime(true);
@@ -601,6 +618,13 @@ class Bridge
                 $walletName . "\" passed)."
             );
         }
+        if (count($addresses) > 0) {
+            foreach ($addresses as $address) {
+                if (!AddressFactory::isValidAddress($address)) {
+                    throw new \InvalidArgumentException("No valid address (\"" . $address . "\" passed)."             );
+                }
+            }
+        }
 
         /** @var $resultWallets Wallet[] */
         $resultWallets = [];
@@ -683,6 +707,11 @@ class Bridge
     {
         if (empty($addresses)) {
             throw new \InvalidArgumentException("addresses variable must be non empty array.");
+        }
+        foreach ($addresses as $address) {
+            if (!AddressFactory::isValidAddress($address)) {
+                throw new \InvalidArgumentException("No valid address (\"" . $address . "\" passed).");
+            }
         }
 
         /** @var $resultWallets Wallet[] */

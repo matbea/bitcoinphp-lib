@@ -11,6 +11,7 @@
 
 namespace BTCBridge\Handler;
 
+use BTCBridge\Bridge;
 use BTCBridge\Api\Transaction;
 use BTCBridge\Api\TransactionInput;
 use BTCBridge\Api\TransactionOutput;
@@ -77,17 +78,16 @@ class BlockTrailHandler extends AbstractHandler
         if (empty($txHashes)) {
             throw new \InvalidArgumentException("txHashes variable must be non empty array of non empty strings.");
         }
-        $maxCountOfTransactions = 20;
-        if (count($txHashes) > $maxCountOfTransactions) {
+        if (count($txHashes) > Bridge::MAX_COUNT_OF_TRANSACTIONS_FOR__GETTRANSACTIONS__METHOD) {
             throw new \InvalidArgumentException(
-                "txHashes variable size must be non bigger than " . $maxCountOfTransactions . "."
+                "txHashes variable size must be non bigger than " .
+                Bridge::MAX_COUNT_OF_TRANSACTIONS_FOR__GETTRANSACTIONS__METHOD . "."
             );
         }
-
         foreach ($txHashes as $txHash) {
-            if ((!is_string($txHash)) && ("" == $txHash)) {
+            if ((!is_string($txHash)) || !preg_match('/^[a-z0-9]+$/i', $txHash) || (strlen($txHash) != 64)) {
                 throw new \InvalidArgumentException(
-                    "All hashes is \$txHashes array must be non empty strings."
+                    "Hashes in \$txHashes must be valid bitcoin transaction hashes (\"" . $txHash . "\" not valid)."
                 );
             }
         }
