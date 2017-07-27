@@ -621,7 +621,7 @@ class Bridge
         if (count($addresses) > 0) {
             foreach ($addresses as $address) {
                 if (!AddressFactory::isValidAddress($address)) {
-                    throw new \InvalidArgumentException("No valid address (\"" . $address . "\" passed)."             );
+                    throw new \InvalidArgumentException("No valid address (\"" . $address . "\" passed).");
                 }
             }
         }

@@ -147,11 +147,13 @@ class MatbeaHandler extends AbstractHandler
                 }
                 if (!isset($content['wallet']['id'])) {
                     throw new \RuntimeException(
-                        "Answer does not contain \"wallet.id\" field (url:\"" . $url . "\").");
+                        "Answer does not contain \"wallet.id\" field (url:\"" . $url . "\")."
+                    );
                 }
                 if (!isset($content['wallet']['addresses'])) {
                     throw new \RuntimeException(
-                        "Answer does not contain \"wallet.addresses\" field (url:\"" . $url . "\").");
+                        "Answer does not contain \"wallet.addresses\" field (url:\"" . $url . "\")."
+                    );
                 }
                 $wallet->setName($content['wallet']['name']);
                 $wallet->setAddresses($content['wallet']['addresses']);
@@ -585,7 +587,7 @@ class MatbeaHandler extends AbstractHandler
             $post_data["addresses"] = [];
             foreach ($addresses as $address) {
                 if (!AddressFactory::isValidAddress($address)) {
-                    throw new \InvalidArgumentException("No valid address (\"" . $address . "\" passed)."             );
+                    throw new \InvalidArgumentException("No valid address (\"" . $address . "\" passed).");
                 }
                 $post_data["addresses"] [] = $address;
             }
