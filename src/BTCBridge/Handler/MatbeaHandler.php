@@ -43,9 +43,8 @@ class MatbeaHandler extends AbstractHandler
     public function __construct()
     {
         parent::__construct();
-        //$this->setOption(self::OPT_BASE_URL, "https://api.matbea.net");
-        //$this->setOption(self::OPT_BASE_URL, "https://136.243.32.19/btcbridge");
-        $this->setOption(self::OPT_BASE_URL, "https://api.matbea.net/btcbridge");
+        //$this->setOption(self::OPT_BASE_URL, "https://136.243.32.19/btcbridge"); //api2
+        $this->setOption(self::OPT_BASE_URL, "https://api.matbea.net/btcbridge"); //api3
     }
 
     /**
@@ -233,7 +232,7 @@ class MatbeaHandler extends AbstractHandler
     public function gettransactions(array $txHashes)
     {
         if (empty($txHashes)) {
-            throw new \InvalidArgumentException("txHashes variable must be non empty array of non empty strings.");
+            throw new \InvalidArgumentException("\$txHashes must be non empty array of valid btc-transction hashes.");
         }
         if (count($txHashes) > Bridge::MAX_COUNT_OF_TRANSACTIONS_FOR__GETTRANSACTIONS__METHOD) {
             throw new \InvalidArgumentException(
@@ -256,9 +255,6 @@ class MatbeaHandler extends AbstractHandler
             $sep = "&";
         }
         foreach ($txHashes as $txHash) {
-            if ((!is_string($txHash)) && ("" == $txHash)) {
-                throw new \InvalidArgumentException("All hashes is \$txHashes array must be non empty strings.");
-            }
             $url .= $sep . "txid[]=" . $txHash;
             $sep = "&";
         }

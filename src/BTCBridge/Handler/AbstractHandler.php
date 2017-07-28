@@ -76,7 +76,7 @@ abstract class AbstractHandler
      * @throws \InvalidArgumentException if error of this type
      *
      */
-    protected function setOption($optionname, $optionvalue)
+    public function setOption($optionname, $optionvalue)
     {
         if (gettype($optionname) != "integer") {
             throw new \InvalidArgumentException("Bad type of option name (must be non empty string)");
@@ -97,7 +97,7 @@ abstract class AbstractHandler
      *
      * @return string Option
      */
-    protected function getOption($optionname)
+    public function getOption($optionname)
     {
         if (gettype($optionname) != "integer") {
             throw new \InvalidArgumentException("Bad type of option name (must be non empty string)");
