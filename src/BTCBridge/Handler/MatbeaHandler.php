@@ -732,6 +732,11 @@ class MatbeaHandler extends AbstractHandler
         if (empty($addresses)) {
             throw new \InvalidArgumentException("addresses variable must be non empty array.");
         }
+        foreach ($addresses as $address) {
+            if (!AddressFactory::isValidAddress($address)) {
+                throw new \InvalidArgumentException("No valid address (\"" . $address . "\" passed).");
+            }
+        }
 
         $url = $this->getOption(self::OPT_BASE_URL) . "/wallet/removeaddresses?id=" . $walletId;
         $url = str_replace("/btcbridge", "", $url); //HUERAGA
@@ -740,9 +745,6 @@ class MatbeaHandler extends AbstractHandler
         }
         $post_data["addresses"] = [];
         foreach ($addresses as $address) {
-            if (!is_string($address) || empty($address)) {
-                throw new \InvalidArgumentException("address variable must be non empty string.");
-            }
             $post_data["addresses"] [] = $address;
         }
 

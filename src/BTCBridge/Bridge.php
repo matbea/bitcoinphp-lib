@@ -794,6 +794,11 @@ class Bridge
         if (empty($addresses)) {
             throw new \InvalidArgumentException("addresses variable must be non empty array of strings.");
         }
+        foreach ($addresses as $address) {
+            if (!AddressFactory::isValidAddress($address)) {
+                throw new \InvalidArgumentException("No valid address (\"" . $address . "\" passed).");
+            }
+        }
 
         /** @var $resultWallets Wallet[] */
         $resultWallets = [];
