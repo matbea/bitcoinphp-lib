@@ -2,6 +2,8 @@
 
 namespace BTCBridge\Api;
 
+use BTCBridge\Exception\BEInvalidArgumentException;
+
 /**
  * Class SendMoneyOptions
  * Special Output exclusively for SendManyMethod
@@ -45,13 +47,13 @@ class SendMoneyOptions
     /**
      * @param integer $confirmations
      * @return $this
-     * @throws \InvalidArgumentException in case of error of this type
+     * @throws BEInvalidArgumentException in case of error of this type
      */
     public function setConfirmations($confirmations)
     {
-        if ("integer" != gettype($confirmations) || ($confirmations < 0)) {
+        if ((!is_int($confirmations)) || ($confirmations < 0)) {
             if (!is_null($confirmations)) {
-                throw new \InvalidArgumentException(
+                throw new BEInvalidArgumentException(
                     "confirmation variable must be non negative integer or null."
                 );
             }
@@ -71,12 +73,12 @@ class SendMoneyOptions
     /**
      * @param string $comment
      * @return $this
-     * @throws \InvalidArgumentException in case of error of this type
+     * @throws BEInvalidArgumentException in case of error of this type
      */
     public function setComment($comment)
     {
-        if ("string" != gettype($comment)) {
-            throw new \InvalidArgumentException("comment variable must be a string variable.");
+        if (!is_string($comment)) {
+            throw new BEInvalidArgumentException("comment variable must be a string variable.");
         }
         $this->comment = $comment;
         return $this;
@@ -93,12 +95,12 @@ class SendMoneyOptions
     /**
      * @param string $commentTo
      * @return $this
-     * @throws \InvalidArgumentException in case of error of this type
+     * @throws BEInvalidArgumentException in case of error of this type
      */
     public function setCommentTo($commentTo)
     {
-        if ("string" != gettype($commentTo)) {
-            throw new \InvalidArgumentException("commentTo variable must be a string variable.");
+        if (!is_string($commentTo)) {
+            throw new BEInvalidArgumentException("commentTo variable must be a string variable.");
         }
         $this->commentTo = $commentTo;
         return $this;
@@ -115,13 +117,13 @@ class SendMoneyOptions
     /**
      * @param string $addressForChange
      * @return $this
-     * @throws \InvalidArgumentException in case of error of this type
+     * @throws BEInvalidArgumentException in case of error of this type
      */
     public function setAddressForChange($addressForChange)
     {
-        if ("string" != gettype($addressForChange)) {
+        if (!is_string($addressForChange)) {
             if (!is_null($addressForChange)) {
-                throw new \InvalidArgumentException(
+                throw new BEInvalidArgumentException(
                     "commentTo variable must be a string variable or null."
                 );
             }

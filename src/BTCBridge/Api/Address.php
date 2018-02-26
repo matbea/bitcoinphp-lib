@@ -26,23 +26,6 @@ class Address
      */
     protected $wallet = null;
 
-    /**
-     * Confirmed balance on the specified address/wallet
-     * @var BTCValue
-     */
-    protected $balance = null;
-
-    /**
-     * Unconfirmed balance on the specified address/wallet
-     * @var BTCValue
-     */
-    protected $unconfirmedBalance = null;
-
-    /**
-     * Balance including confirmed and unconfirmed transactions for this address/wallet
-     * @var BTCValue
-     */
-    protected $finalBalance = null;
 
     /**
      * All transaction inputs and outputs for the specified address.
@@ -93,73 +76,6 @@ class Address
     public function setWallet($wallet)
     {
         $this->wallet = $wallet;
-    }
-
-
-    /**
-     * Get balance on the specified address/wallet
-     *
-     * @return BTCValue
-     */
-    public function getBalance()
-    {
-        return $this->balance;
-    }
-
-    /**
-     * Set balance on the specified address/wallet
-     *
-     * @param BTCValue $balance
-     * @return $this
-     */
-    public function setBalance(BTCValue $balance)
-    {
-        $this->balance = $balance;
-        return $this;
-    }
-
-    /**
-     * Get balance of unconfirmed transactions for this address/wallet.
-     *
-     * @return BTCValue
-     */
-    public function getUnconfirmedBalance()
-    {
-        return $this->unconfirmedBalance;
-    }
-
-    /**
-     * Set Balance of unconfirmed transactions for this address/wallet
-     *
-     * @param BTCValue $unconfirmedBalance
-     * @return $this
-     */
-    public function setUnconfirmedBalance(BTCValue $unconfirmedBalance)
-    {
-        $this->unconfirmedBalance = $unconfirmedBalance;
-        return $this;
-    }
-
-    /**
-     * Balance including confirmed and unconfirmed transactions for this address/wallet
-     *
-     * @return BTCValue
-     */
-    public function getFinalBalance()
-    {
-        return $this->finalBalance;
-    }
-
-    /**
-     * Balance including confirmed and unconfirmed transactions for this address/wallet
-     *
-     * @param BTCValue $finalBalance
-     * @return $this
-     */
-    public function setFinalBalance(BTCValue $finalBalance)
-    {
-        $this->finalBalance = $finalBalance;
-        return $this;
     }
 
 

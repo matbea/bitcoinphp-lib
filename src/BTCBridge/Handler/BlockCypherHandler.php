@@ -12,11 +12,14 @@
 namespace BTCBridge\Handler;
 
 use BTCBridge\Api\ListTransactionsOptions;
-use BTCBridge\Api\GetWalletsOptions;
 use BTCBridge\Api\Transaction;
 use BTCBridge\Api\TransactionInput;
 use BTCBridge\Api\TransactionOutput;
 use BTCBridge\Api\Wallet;
+use BTCBridge\Api\WalletActionOptions;
+use BTCBridge\Api\CurrencyTypeEnum;
+use BTCBridge\Exception\BEInvalidArgumentException;
+use BTCBridge\Exception\BERuntimeException;
 
 /**
  * Returns data to user's btc-requests using BlockCypher-API
@@ -29,9 +32,9 @@ class BlockCypherHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function __construct()
+    public function __construct(CurrencyTypeEnum $currency)
     {
-        parent::__construct();
+        parent::__construct($currency);
         $this->setOption(self::OPT_BASE_URL, "https://api.blockcypher.com/v1/btc/main/");
     }
 
@@ -40,14 +43,14 @@ class BlockCypherHandler extends AbstractHandler
      *
      * @param string $token An token for accessing to the blockcypher data
      *
-     * @throws \InvalidArgumentException in case of error of this type
+     * @throws BEInvalidArgumentException in case of error of this type
      *
      * @return $this
      */
     public function setToken($token)
     {
-        if ((gettype($token) != "string") || ("" == $token)) {
-            throw new \InvalidArgumentException("Bad type of token (must be non empty string)");
+        if ((!is_string($token)) || empty($token)) {
+            throw new BEInvalidArgumentException("Bad type of token (must be non empty string)");
         }
         $this->token = $token;
         return $this;
@@ -68,18 +71,18 @@ class BlockCypherHandler extends AbstractHandler
     public function gettransactions(array $txHashes)
     {
         if (empty($txHashes)) {
-            throw new \InvalidArgumentException("txHashes variable must be non empty array of non empty strings.");
+            throw new BEInvalidArgumentException("txHashes variable must be non empty array of non empty strings.");
         }
         $maxCountOfTransactions = 100;
         if (count($txHashes) > $maxCountOfTransactions) {
-            throw new \InvalidArgumentException(
+            throw new BEInvalidArgumentException(
                 "txHashes variable size could not be bigger than " . $maxCountOfTransactions . "."
             );
         }
 
         foreach ($txHashes as $txHash) {
             if ((!is_string($txHash)) && ("" == $txHash)) {
-                throw new \InvalidArgumentException(
+                throw new BEInvalidArgumentException(
                     "All hashes is \$txHashes array must be non empty strings."
                 );
             }
@@ -92,14 +95,14 @@ class BlockCypherHandler extends AbstractHandler
         $this->prepareCurl($ch, $url);
         $fullContent = curl_exec($ch);
         if (false === $fullContent) {
-            throw new \RuntimeException("curl error occured (url:\"" . $url . "\")");
+            throw new BERuntimeException("curl error occured (url:\"" . $url . "\")");
         }
         $fullContent = json_decode($fullContent, true);
         if ((false === $fullContent) || (null === $fullContent)) {
-            throw new \RuntimeException("curl does not return a json object (url:\"" . $url . "\").");
+            throw new BERuntimeException("curl does not return a json object (url:\"" . $url . "\").");
         }
         if (isset($fullContent['error'])) {
-            throw new \RuntimeException("Error \"" . $fullContent['error'] . "\" returned (url:\"" . $url . "\").");
+            throw new BERuntimeException("Error \"" . $fullContent['error'] . "\" returned (url:\"" . $url . "\").");
         }
 
         $txs = array_fill(0, count($txHashes), null);
@@ -110,7 +113,7 @@ class BlockCypherHandler extends AbstractHandler
 
         foreach ($fullContent as $content) {
             if (isset($content['error'])) {
-                throw new \RuntimeException("Error \"" . $content['error'] . "\" returned (url:\"" . $url . "\").");
+                throw new BERuntimeException("Error \"" . $content['error'] . "\" returned (url:\"" . $url . "\").");
             }
             $tx = new Transaction;
             if (isset($content["block_hash"])) {
@@ -230,7 +233,7 @@ class BlockCypherHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function sendrawtransaction($Transaction)
+    public function sendrawtransaction($transaction)
     {
         return AbstractHandler::HANDLER_UNSUPPORTED_METHOD;
     }
@@ -238,7 +241,7 @@ class BlockCypherHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function createWallet($walletName, array $addresses)
+    public function createWallet($walletName, array $addresses, WalletActionOptions $options = null)
     {
         return AbstractHandler::HANDLER_UNSUPPORTED_METHOD;
     }
@@ -246,7 +249,7 @@ class BlockCypherHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function addAddresses(Wallet $wallet, array $addresses)
+    public function addAddresses(Wallet $wallet, array $addresses, WalletActionOptions $options = null)
     {
         return AbstractHandler::HANDLER_UNSUPPORTED_METHOD;
     }
@@ -254,7 +257,7 @@ class BlockCypherHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function removeAddresses(Wallet $wallet, array $addresses)
+    public function removeAddresses(Wallet $wallet, array $addresses, WalletActionOptions $options = null)
     {
         return AbstractHandler::HANDLER_UNSUPPORTED_METHOD;
     }
@@ -277,7 +280,7 @@ class BlockCypherHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function getWallets(GetWalletsOptions $options = null)
+    public function getWallets(WalletActionOptions $options = null)
     {
         return AbstractHandler::HANDLER_UNSUPPORTED_METHOD;
     }

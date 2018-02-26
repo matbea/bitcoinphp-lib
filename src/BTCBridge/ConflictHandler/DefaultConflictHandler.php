@@ -13,12 +13,12 @@ namespace BTCBridge\ConflictHandler;
 
 use BTCBridge\Api\BTCValue;
 use BTCBridge\Api\Transaction;
-//use BTCBridge\Api\TransactionInput;
-//use BTCBridge\Api\TransactionOutput;
 use BTCBridge\Api\Address;
 use \BTCBridge\Api\TransactionReference;
 use BTCBridge\Api\Wallet;
 use BTCBridge\Exception\ConflictHandlerException;
+use BTCBridge\Exception\BEInvalidArgumentException;
+use BTCBridge\Exception\BERuntimeException;
 
 /**
  * Default Conflict Handler class providing the default behaviour
@@ -47,22 +47,22 @@ class DefaultConflictHandler implements ConflictHandlerInterface
      * @param int $optionName a constant describying name of the option
      * @param string $optionValue a value of the option
      *
-     * @throws \InvalidArgumentException if error of this type
+     * @throws BEInvalidArgumentException if error of this type
      *
      */
     public function setOption($optionName, $optionValue)
     {
-        if ((gettype($optionName) != "integer") ||
+        if ((!is_int($optionName)) ||
             (!in_array(
                 $optionName,
                 [
                     self::OPT_CONFIRMATIONS_MAXIMUM_DIFERENCE_ALLOWED
                 ]
             ))) {
-            throw new \InvalidArgumentException("Bad type of option (".$optionName.")");
+            throw new BEInvalidArgumentException("Bad type of option (".$optionName.")");
         }
-        if (gettype($optionValue) != "string" || "" == $optionValue) {
-            throw new \InvalidArgumentException("Bad type of option value (must be non empty string)");
+        if ((!is_string($optionValue)) || empty($optionValue)) {
+            throw new BEInvalidArgumentException("Bad type of option value (must be non empty string)");
         }
         $this->options[$optionName] = $optionValue;
     }
@@ -72,24 +72,24 @@ class DefaultConflictHandler implements ConflictHandlerInterface
      *
      * @param int $optionName a constant, which describes the name of the option
      *
-     * @throws \InvalidArgumentException if error of this type
-     * @throws \RuntimeException in case if this option is not exists
+     * @throws BEInvalidArgumentException if error of this type
+     * @throws BERuntimeException in case if this option is not exists
      *
      * @return string Option
      */
     protected function getOption($optionName)
     {
-        if ((gettype($optionName) != "integer") ||
+        if ((!is_int($optionName)) ||
             (!in_array(
                 $optionName,
                 [
                     self::OPT_CONFIRMATIONS_MAXIMUM_DIFERENCE_ALLOWED
                 ]
             ))) {
-            throw new \InvalidArgumentException("Bad type of option (".$optionName.")");
+            throw new BEInvalidArgumentException("Bad type of option (".$optionName.")");
         }
         if (!isset($this->options[$optionName])) {
-            throw new \RuntimeException("No option with name \"" . $optionName . "\" exists in the class)");
+            throw new BERuntimeException("No option with name \"" . $optionName . "\" exists in the class)");
         }
         return $this->options[$optionName];
     }
@@ -105,12 +105,12 @@ class DefaultConflictHandler implements ConflictHandlerInterface
             return;
         }
         if (2 != count($data)) {
-            throw new \InvalidArgumentException("Data array for verification must have size 1 or 2.");
+            throw new BEInvalidArgumentException("Data array for verification must have size 1 or 2.");
         }
         $address1 = & $data[0];
         $address2 = & $data[1];
         if ((!$address1 instanceof Address) || (!$address2 instanceof Address)) {
-            throw new \InvalidArgumentException("Elements of Data array must be instances of Wallet class.");
+            throw new BEInvalidArgumentException("Elements of Data array must be instances of Wallet class.");
         }
         $addr1 = $address1->getAddress();
         $addr2 = $address2->getAddress();
@@ -138,41 +138,21 @@ class DefaultConflictHandler implements ConflictHandlerInterface
             }
         }
 
-        $balance1 = $address2->getBalance();
-        $balance2 = $address2->getBalance();
-        if ($balance1 !== $balance2) {
-            throw new ConflictHandlerException(
-                "Different values of balances ( " . $balance1 . " and " . $balance2 . " )."
-            );
-        }
-        $unconfirmedBalance1 = $address1->getUnconfirmedBalance();
-        $unconfirmedBalance2 = $address2->getUnconfirmedBalance();
-        if ($unconfirmedBalance1 !== $unconfirmedBalance2) {
-            throw new ConflictHandlerException(
-                "Different values of unconfirmed balances ( " .
-                $unconfirmedBalance1 . " and " . $unconfirmedBalance2 . " )."
-            );
-        }
-        $finalBalance1 = $address1->getFinalBalance();
-        $finalBalance2 = $address2->getFinalBalance();
-        if ($finalBalance1 !== $finalBalance2) {
-            throw new ConflictHandlerException(
-                "Different values of final balances ( " . $finalBalance1 . " and " . $finalBalance2 . " )."
-            );
-        }
-
         $txrefs1 = $address1->getTxrefs();
         $txrefs2 = $address2->getTxrefs();
         if (count($txrefs1) != count($txrefs2)) {
             throw new ConflictHandlerException(
-                "Different count of  ( " . $finalBalance1 . " and " . $finalBalance2 . " )."
+                "Different count of \$txrefs1 ( " . count($txrefs1)
+                . " and \$txrefs2 " . count($txrefs2) . " )."
             );
         }
         $unconfirmedtxrefs1 = $address1->getUnconfirmedTxrefs();
         $unconfirmedtxrefs2 = $address2->getUnconfirmedTxrefs();
         if (count($unconfirmedtxrefs1) != count($unconfirmedtxrefs2)) {
             throw new ConflictHandlerException(
-                "Different values of final balances ( " . $finalBalance1 . " and " . $finalBalance2 . " )."
+                "Different count of \$unconfirmedtxrefs1 ( "
+                . count($unconfirmedtxrefs1) . " and \$unconfirmedtxrefs2 "
+                . count($unconfirmedtxrefs2) . " )."
             );
         }
 
@@ -238,12 +218,12 @@ class DefaultConflictHandler implements ConflictHandlerInterface
             return;
         }
         if (2 != count($data)) {
-            throw new \InvalidArgumentException("Data array for verification must have size 1 or 2.");
+            throw new BEInvalidArgumentException("Data array for verification must have size 1 or 2.");
         }
         $txs1 = & $data[0];
         $txs2 = & $data[1];
         if ((!is_array($txs1)) || (!is_array($txs2))) {
-            throw new \InvalidArgumentException(
+            throw new BEInvalidArgumentException(
                 "Elements of Data array must be array of instances of Transaction class."
             );
         }
@@ -251,7 +231,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
         $i_outc1 = count($txs1);
         $i_outc2 = count($txs2);
         if ($i_outc1 != $i_outc2) {
-            throw new \InvalidArgumentException("Elements of Data array must have same dimensions.");
+            throw new BEInvalidArgumentException("Elements of Data array must have same dimensions.");
         }
         for ($i_out = 0; $i_out < $i_outc1; ++$i_out) {
             /** @var $tx1 Transaction */
@@ -395,14 +375,14 @@ class DefaultConflictHandler implements ConflictHandlerInterface
             return;
         }
         if (2 != count($data)) {
-            throw new \InvalidArgumentException("Data array for verification must have size 1 or 2.");
+            throw new BEInvalidArgumentException("Data array for verification must have size 1 or 2.");
         }
         /** @var $balance1 BTCValue */
         $balance1 = & $data[0];
         /** @var $balance2 BTCValue */
         $balance2 = & $data[1];
         if ((!$balance1 instanceof BTCValue) || (!$balance2 instanceof BTCValue)) {
-            throw new \InvalidArgumentException("Elements of Data array must be BTCValue.");
+            throw new BEInvalidArgumentException("Elements of Data array must be BTCValue.");
         }
         if (gmp_cmp($balance1->getGMPValue(), $balance2->getGMPValue()) != 0) {
             throw new ConflictHandlerException("No equal results from different services.");
@@ -418,14 +398,14 @@ class DefaultConflictHandler implements ConflictHandlerInterface
             return;
         }
         if (2 != count($data)) {
-            throw new \InvalidArgumentException("Data array for verification must have size 1 or 2.");
+            throw new BEInvalidArgumentException("Data array for verification must have size 1 or 2.");
         }
         /** @var $uncbal1 BTCValue */
         $uncbal1 = & $data[0];
         /** @var $uncbal2 BTCValue */
         $uncbal2 = & $data[1];
         if ((!$uncbal1 instanceof BTCValue) || (!$uncbal2 instanceof BTCValue)) {
-            throw new \InvalidArgumentException("Elements of Data array must be BTCValue.");
+            throw new BEInvalidArgumentException("Elements of Data array must be BTCValue.");
         }
         if (gmp_cmp($uncbal1->getGMPValue(), $uncbal2->getGMPValue()) != 0) {
             throw new ConflictHandlerException("No equal results from different services.");
@@ -441,7 +421,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
             return;
         }
         if (2 != count($data)) {
-            throw new \InvalidArgumentException("Data array for verification must have size 1 or 2.");
+            throw new BEInvalidArgumentException("Data array for verification must have size 1 or 2.");
         }
         $txrefs1 = & $data[0];
         $txrefs2 = & $data[1];
@@ -487,17 +467,17 @@ class DefaultConflictHandler implements ConflictHandlerInterface
     public function createWallet($data)
     {
         if (!is_array($data)) {
-            throw new \InvalidArgumentException("\$data variable must be the array of instances of Wallet class.");
+            throw new BEInvalidArgumentException("\$data variable must be the array of instances of Wallet class.");
         }
 
         if (1 == count($data)) {
             if (!$data[0] instanceof Wallet) {
-                throw new \InvalidArgumentException("Elements of Data array must be instances of Wallet class.");
+                throw new BEInvalidArgumentException("Elements of Data array must be instances of Wallet class.");
             }
             return;
         }
         if (2 != count($data)) {
-            throw new \InvalidArgumentException("Data array for verification must have size 1 or 2.");
+            throw new BEInvalidArgumentException("Data array for verification must have size 1 or 2.");
         }
         /** @var $wallet1 Wallet */
         $wallet1 = & $data[0];
@@ -505,7 +485,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
         $wallet2 = & $data[1];
 
         if ((!$wallet1 instanceof Wallet) || (!$wallet2 instanceof Wallet)) {
-            throw new \InvalidArgumentException("Elements of Data array must be instances of Wallet class.");
+            throw new BEInvalidArgumentException("Elements of Data array must be instances of Wallet class.");
         }
         if ($wallet1->getName() != $wallet2->getName()) {
             throw new ConflictHandlerException(
@@ -531,7 +511,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
             return;
         }
         if (2 != count($data)) {
-            throw new \InvalidArgumentException("Data array for verification must have size 1 or 2.");
+            throw new BEInvalidArgumentException("Data array for verification must have size 1 or 2.");
         }
         /** @var $wallet1 Wallet */
         $wallet1 = & $data[0];
@@ -539,7 +519,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
         $wallet2 = & $data[1];
 
         if ((!$wallet1 instanceof Wallet) || (!$wallet2 instanceof Wallet)) {
-            throw new \InvalidArgumentException("Elements of Data array must be instances of Wallet class.");
+            throw new BEInvalidArgumentException("Elements of Data array must be instances of Wallet class.");
         }
         $addressesArr1 = $wallet1->getAddresses();
         $addressesArr2 = $wallet2->getAddresses();
@@ -560,7 +540,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
             return;
         }
         if (2 != count($data)) {
-            throw new \InvalidArgumentException("Data array for verification must have size 1 or 2.");
+            throw new BEInvalidArgumentException("Data array for verification must have size 1 or 2.");
         }
         /** @var $wallet1 Wallet */
         $wallet1 = & $data[0];
@@ -568,7 +548,7 @@ class DefaultConflictHandler implements ConflictHandlerInterface
         $wallet2 = & $data[1];
 
         if ((!$wallet1 instanceof Wallet) || (!$wallet2 instanceof Wallet)) {
-            throw new \InvalidArgumentException("Elements of Data array must be instances of Wallet class.");
+            throw new BEInvalidArgumentException("Elements of Data array must be instances of Wallet class.");
         }
         $addressesArr1 = $wallet1->getAddresses();
         $addressesArr2 = $wallet2->getAddresses();
@@ -589,15 +569,15 @@ class DefaultConflictHandler implements ConflictHandlerInterface
             return;
         }
         if (2 != count($data)) {
-            throw new \InvalidArgumentException("Data array for verification must have size 1 or 2.");
+            throw new BEInvalidArgumentException("Data array for verification must have size 1 or 2.");
         }
         /** @var $result1 string[] */
         $result1 = & $data[0];
         /** @var $result2 string[] */
         $result2 = & $data[1];
 
-        if ((gettype($result1) != 'array') || (gettype($result2) != 'array')) {
-            throw new \InvalidArgumentException("Elements of Data array must be arrays of string.");
+        if ((!is_array($result1)) || (!is_array($result2))) {
+            throw new BEInvalidArgumentException("Elements of Data array must be arrays of string.");
         }
         if ($result1 != $result2) {
             throw new ConflictHandlerException(
@@ -615,15 +595,15 @@ class DefaultConflictHandler implements ConflictHandlerInterface
             return;
         }
         if (2 != count($data)) {
-            throw new \InvalidArgumentException("Data array for verification must have size 1 or 2.");
+            throw new BEInvalidArgumentException("Data array for verification must have size 1 or 2.");
         }
         /** @var $result1 string[] */
         $result1 = & $data[0];
         /** @var $result2 string[] */
         $result2 = & $data[1];
 
-        if ((gettype($result1) != 'array') || (gettype($result2) != 'array')) {
-            throw new \InvalidArgumentException("Elements of Data array must be arrays of string.");
+        if ((!is_array($result1)) || (!is_array($result2))) {
+            throw new BEInvalidArgumentException("Elements of Data array must be arrays of string.");
         }
         if ($result1 != $result2) {
             throw new ConflictHandlerException(

@@ -13,7 +13,7 @@ namespace BTCBridge\Handler;
 
 use BTCBridge\Bridge;
 use BTCBridge\Api\ListTransactionsOptions;
-use BTCBridge\Api\GetWalletsOptions;
+use BTCBridge\Api\WalletActionOptions;
 use BTCBridge\Api\Transaction;
 use BTCBridge\Api\TransactionReference;
 use BTCBridge\Api\Wallet;
@@ -22,11 +22,10 @@ use BTCBridge\Api\TransactionOutput;
 use BTCBridge\Api\Address;
 use BTCBridge\Api\BTCValue;
 use BitWasp\Bitcoin\Address\AddressFactory;
-
-//use Symfony\Component\HttpFoundation\BinaryFileResponse;
-
-//use BTCBridge\Api\Wallet;
-//use \BTCBridge\Api\TransactionReference;
+use BTCBridge\Api\CurrencyTypeEnum;
+use BTCBridge\Exception\BEInvalidArgumentException;
+use BTCBridge\Exception\BERuntimeException;
+use BTCBridge\Exception\BELogicException;
 
 /**
  * Returns data to user's btc-requests using Matbea-API
@@ -40,66 +39,87 @@ class MatbeaHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function __construct()
+    public function __construct(CurrencyTypeEnum $currency)
     {
-        parent::__construct();
-        //$this->setOption(self::OPT_BASE_URL, "https://136.243.32.19/btcbridge"); //api2
-        $this->setOption(self::OPT_BASE_URL, "https://api.matbea.net/btcbridge"); //api3
+        parent::__construct($currency);
+        $this->setOption(self::OPT_BASE_URL, "https://api.matbea.net/btcbridge");
     }
 
     /**
      * Setting token to the handler
      *
-     * @param string $token An token for accessing to the blockcypher data
+     * @param string $token An token for accessing to the data
      *
-     * @throws \InvalidArgumentException in case of error of this type
+     * @throws BEInvalidArgumentException in case of error of this type
      *
      * @return $this
      */
     public function setToken($token)
     {
-        if ((gettype($token) != "string") || ("" == $token)) {
-            throw new \InvalidArgumentException("Bad type of token (must be non empty string)");
+        if ((!is_string($token)) || empty($token)) {
+            $msg = "Bad type (" . gettype($token) . ") of token or empty token";
+            throw new BEInvalidArgumentException($msg);
         }
         $this->token = $token;
         return $this;
     }
 
     /**
+     * Make standart checks for the result from the matbea API
+     *
+     * @param string $url An url address for connecting
+     * @param array $content Data from matbea API
+     *
+     * @throws BERuntimeException in case of this type of error
+     * @throws BELogicException in case of this type of error
+     * @throws BEInvalidArgumentException in case of this type of error
+     */
+    protected function checkMatbeaResult($url, $content)
+    {
+        if (!is_string($url) || ("" == $url)) {
+            throw new BEInvalidArgumentException("Bad type of \$url (must be valid url-string)");
+        }
+        if ((false === $content) || (null === $content)) {
+            throw new BERuntimeException("curl does not return a json object (url:\"" . $url . "\").");
+        }
+        if (!isset($content['error']) || (!isset($content['result']))) {
+            throw new BERuntimeException(
+                "Incorrect format of returning data (\"" . json_decode($content) . "\"), url=\"" . $url . "\"."
+            );
+        }
+        if (!empty($content['error'])) {
+            throw new BERuntimeException(
+                "Error \"" . $content['error']['message'] . "\" (code: "
+                . $content['error']['code'] . ") returned (url:\"" . $url . "\")."
+            );
+        }
+    }
+
+
+    /**
      * {@inheritdoc}
      */
     public function listtransactions($walletName, ListTransactionsOptions $options = null)
     {
-        if ("string" != gettype($walletName)) {
-            throw new \InvalidArgumentException("Account variable must be non empty string.");
+        if (!is_string($walletName)) {
+            throw new BEInvalidArgumentException("Walletname must be non empty string.");
         }
         if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
-            throw new \InvalidArgumentException(
-                "Wallet name have to contain only alphanumeric, underline and dash symbols (\"" .
+            throw new BEInvalidArgumentException(
+                "Wallet name must contain only alphanumeric, underline and dash symbols (\"" .
                 $walletName . "\" passed)."
             );
         }
-        $url = $this->getOption(self::OPT_BASE_URL) . "/" . "listtransactions" . "?accountId=" . $walletName;
+        $curr = $this->currency;
+        $url = $this->getOption(self::OPT_BASE_URL) . "/" . $curr . "/" . $walletName . "/" . "listtransactions";
         $sep = "?";
         if ($this->token) {
-            $url .= "&token=" . $this->token;
+            $url .= $sep . "token=" . $this->token;
             $sep = "&";
         }
         if ($options) {
-            if (null !== $options->getBefore()) {
-                $url .= $sep . "before=" . $options->getBefore();
-                $sep = "&";
-            }
-            if (null !== $options->getAfter()) {
-                $url .= $sep . "after=" . $options->getAfter();
-                $sep = "&";
-            }
             if (null !== $options->getLimit()) {
                 $url .= $sep . "limit=" . $options->getLimit();
-                $sep = "&";
-            }
-            if (null !== $options->getOffset()) {
-                $url .= $sep . "offset=" . $options->getOffset();
                 $sep = "&";
             }
             if (null !== $options->getConfirmations()) {
@@ -108,84 +128,86 @@ class MatbeaHandler extends AbstractHandler
                 $url .= $sep . "confirmations=1";
             }
             $sep = "&";
-            if (null !== $options->getNobalance()) {
-                $url .= $sep . "nobalance=" . ($options->getNobalance() ? "true" : "false");
+            if (null !== $options->getStarttxid()) {
+                $url .= $sep . "starttxid=" . $options->getStarttxid();
+                $sep = "&";
+            }
+            if (null !== $options->getOmitAddresses()) {
+                $url .= $sep . "omit_addresses=" . (int)$options->getOmitAddresses();
             }
         }
 
         $ch = curl_init();
         $this->prepareCurl($ch, $url);
         $content = curl_exec($ch);
-        if (false === $content) {
-            throw new \RuntimeException("curl error occured (url:\"" . $url . "\")");
+        if ((false === $content) || (null === $content)) {
+            throw new BERuntimeException("curl error occured (url:\"" . $url . "\")");
         }
         $content = json_decode($content, true);
-        if ((false === $content) || (null === $content)) {
-            throw new \RuntimeException("curl does not return a json object (url:\"" . $url . "\").");
-        }
-        if (isset($content['error'])) {
-            throw new \RuntimeException(
-                "Error (code: " . $content["error"]["code"] . ") \""
-                . $content['error']["message"] . "\" returned (url:\"" . $url . "\")."
-            );
+        $this->checkMatbeaResult($url, $content);
+        if (!isset($content["result"]["transactions"])) {
+            $msg = "Answer of url: \"" . $url . "\")  does not contain a \"transactions\" property.";
+            $this->logger->error($msg, ["data" => $content]);
+            throw new BERuntimeException($msg);
         }
 
         /** @var $result Address */
         $addrObject = new Address();
 
-        if (isset($content['address'])) {
-            $addrObject->setAddress($content['address']);
+        if (isset($content["result"]["address"])) {
+            $addrObject->setAddress($content["result"]["address"]);
         } else {
-            if (isset($content['wallet'])) {
+            if (isset($content["result"]["wallet"])) {
                 $wallet = new Wallet();
-/////////////////////////////////////////////////////////////////////////////////
-                if (!isset($content['wallet']['name'])) {
-                    throw new \RuntimeException(
+                if (!isset($content['result']['wallet']['name'])) {
+                    throw new BERuntimeException(
                         "Answer does not contain \"wallet.name\" field (url:\"" . $url . "\")."
                     );
                 }
-                if (!isset($content['wallet']['id'])) {
-                    throw new \RuntimeException(
+                if (!isset($content['result']['wallet']['id'])) {
+                    throw new BERuntimeException(
                         "Answer does not contain \"wallet.id\" field (url:\"" . $url . "\")."
                     );
                 }
-                if (!isset($content['wallet']['addresses'])) {
-                    throw new \RuntimeException(
-                        "Answer does not contain \"wallet.addresses\" field (url:\"" . $url . "\")."
-                    );
+                if ($options && (false === $options->getOmitAddresses())) {
+                    if (!isset($content['result']['wallet']['addresses'])) {
+                        throw new BERuntimeException(
+                            "Answer does not contain \"wallet.addresses\" field (url:\"" . $url . "\")."
+                        );
+                    }
                 }
-                $wallet->setName($content['wallet']['name']);
-                $wallet->setAddresses($content['wallet']['addresses']);
+                $wallet->setName($content['result']['wallet']['name']);
+                $wallet->setAddresses($content['result']['wallet']['addresses']);
                 $wallet->setSystemDataByHandler(
                     $this->getHandlerName(),
                     [
-                        "name" => $content['wallet']['name']
+                        "name" => $content['result']['wallet']['name']
                         ,
-                        "id" => intval($content['wallet']['id'])
+                        "id" => intval($content['result']['wallet']['id'])
                     ]
                 );
-/////////////////////////////////////////////////////////////////////////////////
                 $addrObject->setWallet($wallet);
             }
         }
 
         /** @var $txrefs TransactionReference[] */
-        $txrefs = [];
+        $txRefs = [];
+        /** @var $txUnconfirmedRefs TransactionReference[] */
+        $txUnconfirmedRefs = [];
         $txRefHashes = [];
 
-        foreach ($content["transactions"] as $txref) {
+        foreach ($content["result"]["transactions"] as $txref) {
             $txr = new TransactionReference();
-            $txr->setBlockHeight($txref["block_height"]);
+            if (isset($txref["block_height"])) {
+                $txr->setBlockHeight($txref["block_height"]);
+            }
             $txr->setConfirmations($txref["confirmations"]);
             $txr->setDoubleSpend($txref["double_spend"]);
             $txr->setTxHash($txref["txid"]);
             $txr->setVout($txref["vout"]);
-            $txr->setConfirmed(strtotime($txref["time"]));
+            $txr->setConfirmed($txref["time"]);
             $txr->setCategory($txref["category"]);
-            if (false !== strpos($txref["amount"], "E")) {
-                $txref["amount"] = sprintf('%f', $txref["amount"]); //Exponential form
-            }
-            $v = gmp_init(strval($txref["amount"] * 100 * 1000 * 1000));
+            $v = gmp_init(strval($txref["amount"]));
             $txr->setValue(new BTCValue($v));
             $txr->setAddress($txref['address']);
 
@@ -195,34 +217,21 @@ class MatbeaHandler extends AbstractHandler
                 . "_" . $txr->getAddress();
             if (!isset($txRefHashes[$txRefHash])) {
                 $txRefHashes[$txRefHash] = 1;
-                $txrefs [] = $txr;
+                if (isset($txref["block_height"])) {
+                    $txRefs [] = $txr;
+                } else {
+                    $txUnconfirmedRefs [] = $txr;
+                }
             } else {
-                throw new \RuntimeException(
+                throw new BERuntimeException(
                     "Logic error in ListTransactions method, response contains same txref 
                     (server side, url:\"" . $url . "\", txrefhash: \"" . $txRefHash . "\", 
                     txref: ( " . serialize($txr) . " ) )."
                 );
             }
-
-            /*$filteredTxs = array_filter(
-                $txrefs,
-                function (TransactionReference $tx) use ($txr) {
-                    return $tx->isEqual($txr);
-                }
-            );
-            if (empty($filteredTxs)) {
-                $txrefs [] = $txr;
-            }*/
-            //$txrefs [] = $txr;
         }
-        $addrObject->setTxrefs($txrefs);
-        if ($options && true !== $options->getNobalance()) {
-            $v1 = gmp_init(strval($content["balance"] * 100 * 1000 * 1000));
-            $addrObject->setBalance(new BTCValue($v1));
-            $v2 = gmp_init(strval($content["unconfirmed_balance"] * 100 * 1000 * 1000));
-            $addrObject->setUnconfirmedBalance(new BTCValue($v2));
-            $addrObject->setFinalBalance(new BTCValue(gmp_add($v1, $v2)));
-        }
+        $addrObject->setTxrefs($txRefs);
+        $addrObject->setUnconfirmedTxrefs($txUnconfirmedRefs);
         return $addrObject;
     }
 
@@ -232,23 +241,24 @@ class MatbeaHandler extends AbstractHandler
     public function gettransactions(array $txHashes)
     {
         if (empty($txHashes)) {
-            throw new \InvalidArgumentException("\$txHashes must be non empty array of valid btc-transction hashes.");
+            throw new BEInvalidArgumentException("\$txHashes must be non empty array of valid btc-transction hashes.");
         }
         if (count($txHashes) > Bridge::MAX_COUNT_OF_TRANSACTIONS_FOR__GETTRANSACTIONS__METHOD) {
-            throw new \InvalidArgumentException(
+            throw new BEInvalidArgumentException(
                 "txHashes variable size must be non bigger than " .
                 Bridge::MAX_COUNT_OF_TRANSACTIONS_FOR__GETTRANSACTIONS__METHOD . "."
             );
         }
         foreach ($txHashes as $txHash) {
             if ((!is_string($txHash)) || !preg_match('/^[a-z0-9]+$/i', $txHash) || (strlen($txHash) != 64)) {
-                throw new \InvalidArgumentException(
+                throw new BEInvalidArgumentException(
                     "Hashes in \$txHashes must be valid bitcoin transaction hashes (\"" . $txHash . "\" not valid)."
                 );
             }
         }
 
-        $url = $this->getOption(self::OPT_BASE_URL) . "/gettransactions";
+        $curr = $this->currency;
+        $url = $this->getOption(self::OPT_BASE_URL) . "/" . $curr . "/gettransactions";
         $sep = "?";
         if ($this->token) {
             $url .= "?token=" . $this->token;
@@ -262,35 +272,23 @@ class MatbeaHandler extends AbstractHandler
         $ch = curl_init();
         $this->prepareCurl($ch, $url);
         $content = curl_exec($ch);
-        if (false === $content) {
-            throw new \RuntimeException("curl error occured (url:\"" . $url . "\")");
+        if ((false === $content) || (null === $content)) {
+            throw new BERuntimeException("curl error occured (url:\"" . $url . "\")");
         }
         $content = json_decode($content, true);
-        if ((false === $content) || (null === $content)) {
-            throw new \RuntimeException("curl does not return a json object (url:\"" . $url . "\").");
-        }
-        if (isset($content['error'])) {
-            throw new \RuntimeException(
-                "Error \"" . $content['error']['message'] . "\" (code: "
-                . $content['error']['code'] . ") returned (url:\"" . $url . "\")."
-            );
-        }
-        if (!isset($content["transactions"])) {
-            $this->logger->error(
-                "Answer of url: \"" . $url . "\")  does not contain a \"transactions\" property.",
-                ["data" => $content]
-            );
-            throw new \RuntimeException(
-                "Answer of url: \"" . $url . "\")  does not contain a \"transactions\" property."
-            );
+        $this->checkMatbeaResult($url, $content);
+        if (!isset($content["result"]["transactions"])) {
+            $msg = "Answer of url: \"" . $url . "\")  does not contain a \"transactions\" property.";
+            $this->logger->error($msg, ["data" => $content]);
+            throw new BERuntimeException($msg);
         }
 
         $txs = [];
 
-        foreach ($content["transactions"] as $tr) {
+        foreach ($content["result"]["transactions"] as $tr) {
             $tx = new Transaction;
             if (-1 != $tr["block_height"]) {
-                $tx->setConfirmed(strtotime($tr["confirmed"]));
+                $tx->setConfirmed($tr["block_time"]);
                 $tx->setBlockHash($tr["block_hash"]);
                 $tx->setBlockHeight($tr["block_height"]);
             } else {
@@ -304,10 +302,10 @@ class MatbeaHandler extends AbstractHandler
                 if (isset($inp["addresses"])) {
                     $input->setAddresses($inp["addresses"]);
                 }
-                if (isset($inp["output_index"])) {
-                    $input->setOutputIndex($inp["output_index"]);
+                if (isset($inp["vout"])) {
+                    $input->setOutputIndex($inp["vout"]);
                 }
-                $v = gmp_init(strval($inp["value"] * 100 * 1000 * 1000));
+                $v = gmp_init(strval($inp["value"]));
                 $input->setOutputValue(new BTCValue($v));
                 $input->setScriptType($this->getTransformedTypeOfSignature($inp["script_type"]));
                 $tx->addInput($input);
@@ -325,7 +323,7 @@ class MatbeaHandler extends AbstractHandler
             foreach ($tr["outputs"] as $outp) {
                 $output = new TransactionOutput();
                 $output->setAddresses($outp["addresses"]);
-                $v = gmp_init(strval($outp["value"] * 100 * 1000 * 1000));
+                $v = gmp_init(strval($outp["value"]));
                 $output->setValue(new BTCValue($v));
                 $output->setScriptType($this->getTransformedTypeOfSignature($outp["script_type"]));
                 $tx->addOutput($output);
@@ -340,44 +338,50 @@ class MatbeaHandler extends AbstractHandler
      */
     public function getbalance($walletName, $Confirmations = 1)
     {
-        if ("string" != gettype($walletName) || ("" == $walletName)) {
-            throw new \InvalidArgumentException("Account variable must be non empty string.");
+        if (!is_string($walletName)) {
+            throw new BEInvalidArgumentException("Wallet name must be non empty string.");
         }
         if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
-            throw new \InvalidArgumentException(
+            throw new BEInvalidArgumentException(
                 "Wallet name have to contain only alphanumeric, underline and dash symbols (\"" .
                 $walletName . "\" passed)."
             );
         }
-        $url = $this->getOption(self::OPT_BASE_URL) . "/getconfirmedbalance?accountId=" . $walletName
-            . "&confirmations=" . $Confirmations;
+        if ((!is_int($Confirmations)) || ($Confirmations < 0)) {
+            throw new BEInvalidArgumentException(
+                "Confirmations variable must ne non negative integer, (" .
+                $Confirmations . " passed)."
+            );
+        }
+        $curr = $this->currency;
+        $url = $this->getOption(self::OPT_BASE_URL) . "/" . $curr . "/" . $walletName . "/getbalance"
+            . "?confirmations=" . $Confirmations;
         if ($this->token) {
             $url .= "&token=" . $this->token;
         }
         $ch = curl_init();
         $this->prepareCurl($ch, $url);
         $content = curl_exec($ch);
-        if (false === $content) {
-            throw new \RuntimeException("curl error occured (url:\"" . $url . "\")");
+        if ((false === $content) || (null === $content)) {
+            throw new BERuntimeException("curl error occured (url:\"" . $url . "\")");
         }
         $content = json_decode($content, true);
-        if ((false === $content) || (null === $content)) {
-            throw new \RuntimeException("curl does not return a json object (url:\"" . $url . "\").");
-        }
-        if (isset($content['error'])) {
-            throw new \RuntimeException(
-                "Error \"" . $content['error']['message'] . "\" (code: "
-                . $content['error']['code'] . ") returned (url:\"" . $url . "\")."
-            );
-        }
-        if (!isset($content["balance"])) {
+        $this->checkMatbeaResult($url, $content);
+        if (!isset($content["result"]["balance"])) {
             $this->logger->error(
                 "Answer of url: \"" . $url . "\")  does not contain a \"balance\" field.",
                 ["data" => $content]
             );
-            throw new \RuntimeException("Answer of url: \"" . $url . "\")  does not contain a \"balance\" field.");
+            throw new BERuntimeException("Answer of url: \"" . $url . "\")  does not contain a \"balance\" field.");
         }
-        $v = gmp_init(strval($content["balance"] * 100 * 1000 * 1000));
+        $balance = $content["result"]["balance"];
+        if (!is_int($balance) || ($balance < 0)) {
+            $msg = "Answer of url: \"" . $url . "\")  contains bad value (" . $content["result"]["balance"]
+                . ") of field \"balance\" (type=" . gettype($content["result"]["balance"]) . ").";
+            $this->logger->error($msg, ["data" => $content]);
+            throw new BELogicException($msg);
+        }
+        $v = gmp_init(strval($balance));
         return new BTCValue($v);
     }
 
@@ -386,43 +390,43 @@ class MatbeaHandler extends AbstractHandler
      */
     public function getunconfirmedbalance($walletName)
     {
-        if ("string" != gettype($walletName) || ("" == $walletName)) {
-            throw new \InvalidArgumentException("Account variable must be non empty string.");
+        if (!is_string($walletName)) {
+            throw new BEInvalidArgumentException("Wallet name must be non empty string.");
         }
         if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
-            throw new \InvalidArgumentException(
+            throw new BEInvalidArgumentException(
                 "Wallet name have to contain only alphanumeric, underline and dash symbols (\"" .
                 $walletName . "\" passed)."
             );
         }
-        $url = $this->getOption(self::OPT_BASE_URL) . "/getunconfirmedbalance?accountId=" . $walletName;
+        $curr = $this->currency;
+        $url = $this->getOption(self::OPT_BASE_URL) . "/" . $curr . "/" . $walletName . "/getunconfirmedbalance";
         if ($this->token) {
-            $url .= "&token=" . $this->token;
+            $url .= "?token=" . $this->token;
         }
         $ch = curl_init();
         $this->prepareCurl($ch, $url);
         $content = curl_exec($ch);
-        if (false === $content) {
-            throw new \RuntimeException("curl error occured (url:\"" . $url . "\")");
+        if ((false === $content) || (null === $content)) {
+            throw new BERuntimeException("curl error occured (url:\"" . $url . "\")");
         }
         $content = json_decode($content, true);
-        if ((false === $content) || (null === $content)) {
-            throw new \RuntimeException("curl does not return a json object (url:\"" . $url . "\").");
-        }
-        if (isset($content['error'])) {
-            throw new \RuntimeException(
-                "Error \"" . $content['error']['message'] . "\" (code: "
-                . $content['error']['code'] . ") returned (url:\"" . $url . "\")."
-            );
-        }
-        if (!isset($content["balance"])) {
+        $this->checkMatbeaResult($url, $content);
+        if (!isset($content["result"]["balance"])) {
             $this->logger->error(
                 "Answer of url: \"" . $url . "\")  does not contain a \"balance\" field.",
                 ["data" => $content]
             );
-            throw new \RuntimeException("Answer of url: \"" . $url . "\")  does not contain a \"balance\" field.");
+            throw new BERuntimeException("Answer of url: \"" . $url . "\")  does not contain a \"balance\" field.");
         }
-        $v = gmp_init(strval($content["balance"] * 100 * 1000 * 1000));
+        $balance = $content["result"]["balance"];
+        if (!is_int($balance) || ($balance < 0)) {
+            $msg = "Answer of url: \"" . $url . "\")  contains bad value (" . $content["result"]["balance"]
+                . ") of field \"balance\" (type=" . gettype($content["result"]["balance"]) . ").";
+            $this->logger->error($msg, ["data" => $content]);
+            throw new BELogicException($msg);
+        }
+        $v = gmp_init(strval($balance));
         return new BTCValue($v);
     }
 
@@ -431,67 +435,69 @@ class MatbeaHandler extends AbstractHandler
      */
     public function listunspent($walletName, $MinimumConfirmations = 1)
     {
-        if ("string" != gettype($walletName)) {
-            throw new \InvalidArgumentException("Account variable must be non empty string.");
+        if (!is_string($walletName)) {
+            throw new BEInvalidArgumentException("Wallet name must be non empty string.");
         }
         if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
-            throw new \InvalidArgumentException(
+            throw new BEInvalidArgumentException(
                 "Wallet name have to contain only alphanumeric, underline and dash symbols (\"" .
                 $walletName . "\" passed)."
             );
         }
-        $action = ( 0 == $MinimumConfirmations ) ? "listunspentunconfirmed" : "listunspentconfirmed";
-        $url = $this->getOption(self::OPT_BASE_URL) . "/" . $action . "?accountId=" . $walletName;
+        $action = "listunspent";
+        $curr = $this->currency;
+        $url = $this->getOption(self::OPT_BASE_URL) . "/" . $curr . "/" . $walletName . "/" . $action;
+        $sep = "?";
         if ($this->token) {
-            $url .= "&token=" . $this->token;
+            $url .= $sep . "token=" . $this->token;
+            $sep = "&";
         }
-        if ($MinimumConfirmations > 0) {
-            $url .= "&confirmations=" . intval($MinimumConfirmations);
-        }
+        $url .= $sep . "confirmations=" . intval($MinimumConfirmations);
+
         $ch = curl_init();
         $this->prepareCurl($ch, $url);
         $content = curl_exec($ch);
-        if (false === $content) {
-            throw new \RuntimeException("curl error occured (url:\"" . $url . "\")");
+        if ((false === $content) || (null === $content)) {
+            throw new BERuntimeException("curl error occured (url:\"" . $url . "\")");
         }
         $content = json_decode($content, true);
-        if ((false === $content) || (null === $content)) {
-            throw new \RuntimeException("curl does not return a json object (url:\"" . $url . "\").");
+        $this->checkMatbeaResult($url, $content);
+        if (!isset($content["result"]['unspents'])) {
+            $msg = "Answer of url: \"" . $url . "\")  does not contain an \"unspents\" array.";
+            $this->logger->error($msg, ["data" => $content]);
+            throw new BERuntimeException($msg);
         }
-        if (isset($content['error'])) {
-            throw new \RuntimeException(
-                "Error (code: " . $content["error"]["code"] . ") \""
-                . $content['error']["message"] . "\" returned (url:\"" . $url . "\")."
-            );
-        }
-        if (empty($content["unspents"])) {
+        if (empty($content["result"]["unspents"])) {
             return [];
         }
 
         /** @var $result TransactionReference[] */
         $result = [];
 
-        foreach ($content["unspents"] as $txref) {
+        foreach ($content["result"]["unspents"] as $i => $txref) {
             $txr = new TransactionReference();
             if (isset($txref["block_height"])) {
                 $txr->setBlockHeight($txref["block_height"]);
             }
-            $txr->setConfirmations($txref["confirmations"]);
-            if (isset($txref["double_spend"])) {
-                $txr->setDoubleSpend($txref["double_spend"]);
-            }
-            $txr->setSpent(false);
-            $txr->setTxHash($txref["tx_hash"]);
-            $txr->setVout($txref["tx_output_n"]);
-            $txr->setCategory(TransactionReference::CATEGORY_RECEIVE);
-            $v = gmp_init(strval($txref["value"] * 100 * 1000 * 1000));
-            $txr->setValue(new BTCValue($v));
-            if (isset($txref["address"])) {
-                $txr->setAddress($txref['address']);
-            }
             if (isset($txref["confirmed"])) {
-                $txr->setConfirmed(strtotime($txref["confirmed"]));
+                $txr->setConfirmed($txref["confirmed"]);
             }
+            $txr->setConfirmations($txref["confirmations"]);
+            $txr->setDoubleSpend($txref["double_spend"]);
+            $txr->setTxHash($txref["tx_hash"]);
+            $txr->setVout($txref["vout"]);
+            $txr->setAddress($txref['address']);
+            $txr->setCategory(TransactionReference::CATEGORY_RECEIVE);
+            $v = gmp_init(strval($txref["amount"]));
+            if (false === $v) {
+                $msg = "Answer of url: \"" . $url . "\")  contains an incorrect \"amount\" value ("
+                    . $txref["amount"] . ") in \"unspents\" result array (item #" . $i . ").";
+                $this->logger->error($msg, ["txref" => $txref]);
+                throw new BERuntimeException($msg);
+            }
+            $txr->setValue(new BTCValue($v));
+            $txr->setSpent(false);
+
             $filteredTxs = array_filter(
                 $result,
                 function (TransactionReference $tx) use ($txr) {
@@ -508,51 +514,38 @@ class MatbeaHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function sendrawtransaction($Transaction)
+    public function sendrawtransaction($transaction)
     {
-        if ((!is_string($Transaction)) && (empty($Transaction))) {
-            throw new \InvalidArgumentException("\$Transaction variable array must be non empty strings.");
+        if ((!is_string($transaction)) && (empty($transaction))) {
+            throw new BEInvalidArgumentException("\$transaction variable array must be non empty strings.");
         }
 
-        //HUERAGA - может быть стоит проверять средствами bitwasp'а корректность транзы перед отправкой?
-        $url = $this->getOption(self::OPT_BASE_URL) . "/sendrawtransaction?data=" . $Transaction;
-        //$url = str_replace("/btcbridge","",$url); //HUERAGA
+        //TODO make sure that format of transaction is correct
+        $url = $this->getOption(self::OPT_BASE_URL) . "/sendrawtransaction?data=" . $transaction;
         if ($this->token) {
             $url .= "&token=" . $this->token;
         }
 
         $curl = curl_init();
-        $curl_options = [
-            CURLOPT_URL            => $url,
-            CURLOPT_USERAGENT      => $this->getOption(self::OPT_BASE_BROWSER),
-            CURLOPT_RETURNTRANSFER => 1,
-            CURLOPT_SSL_VERIFYHOST => 0,
-            CURLOPT_SSL_VERIFYPEER => 0
-        ];
-        if (false === curl_setopt_array($curl, $curl_options)) {
-            throw new \RuntimeException(
-                "curl_setopt_array failed url:\"" . $url . "\", parameters: " . serialize($curl_options) . ")."
-            );
-        }
-
+        $this->prepareCurl($curl, $url);
         $content = curl_exec($curl);
         if ((false === $content) || (null === $content)) {
-            throw new \RuntimeException("curl does not return a json object (url:\"" . $url . "\").");
+            throw new BERuntimeException("curl does not return a json object (url:\"" . $url . "\").");
         }
         $content = json_decode($content, true);
         if (isset($content['error']) && (null != $content['error'])) {
-            throw new \RuntimeException(
+            throw new BERuntimeException(
                 "Error (code " . $content["error"]["code"] . ") \"" .
                 $content['error']["message"] . "\" returned (url: \"" . $url . "\")."
             );
         }
         if (!isset($content['result'])) {
-            throw new \RuntimeException(
+            throw new BERuntimeException(
                 "Answer does not contain \"result\" field (url: \"" . $url . "\")."
             );
         }
         if (empty($content['result'])) {
-            throw new \RuntimeException(
+            throw new BERuntimeException(
                 "Answer contains empty \"result\" field (url: \"" . $url . "\")."
             );
         }
@@ -562,119 +555,125 @@ class MatbeaHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function createWallet($walletName, array $addresses)
+    public function createWallet($walletName, array $addresses, WalletActionOptions $options = null)
     {
-        if ("string" != gettype($walletName)) {
-            throw new \InvalidArgumentException("name variable must be non empty string.");
+        if (!is_string($walletName)) {
+            throw new BEInvalidArgumentException("name variable must be non empty string.");
         }
         if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
-            throw new \InvalidArgumentException(
+            throw new BEInvalidArgumentException(
                 "Wallet name can't be empty and have to contain only alphanumeric, underline and dash symbols (\"" .
                 $walletName . "\" passed)."
             );
         }
-        $url = $this->getOption(self::OPT_BASE_URL) . "/wallet/create?name=" . $walletName;
-        $url = str_replace("/btcbridge", "", $url); //HUERAGA
+        $curr = $this->currency;
+        $url = $this->getOption(self::OPT_BASE_URL) . "/" . $curr . "/wallet/" . $walletName . "/create";
+        $sep = "?";
         if ($this->token) {
-            $url .= "&token=" . $this->token;
+            $url .= "?token=" . $this->token;
+            $sep = "&";
+        }
+        if ($options) {
+            if (null !== $options->getOmitAddresses()) {
+                $url .= $sep . "omit_addresses=" . (int)$options->getOmitAddresses();
+            }
         }
         $post_data = [];
         if (count($addresses) > 0) {
             $post_data["addresses"] = [];
             foreach ($addresses as $address) {
-                if (!AddressFactory::isValidAddress($address)) {
-                    throw new \InvalidArgumentException("No valid address (\"" . $address . "\" passed).");
+                if (!AddressFactory::isValidAddress($address, $this->network)) {
+                    throw new BEInvalidArgumentException("No valid address (\"" . $address . "\" passed).");
                 }
                 $post_data["addresses"] [] = $address;
             }
         }
         $curl = curl_init();
-        if (!curl_setopt($curl, CURLOPT_URL, $url)) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_USERAGENT, $this->getOption(self::OPT_BASE_BROWSER))) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1)) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0)) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0)) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_POST, 1)) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_HTTPHEADER, ['Content-Type:application/json'])) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($post_data))) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
+        $this->prepareCurl($curl, $url);
+        $curl_options = [
+            CURLOPT_POST            => 1,
+            CURLOPT_HTTPHEADER     => ['Content-Type:application/json'],
+            CURLOPT_POSTFIELDS      => json_encode($post_data)
+        ];
+        if (false === curl_setopt_array($curl, $curl_options)) {
+            throw new BERuntimeException(
+                "curl_setopt_array failed url:\"" . $url . "\", parameters: " . serialize($curl_options) . ")."
+            );
         }
         $content = curl_exec($curl);
-        if (false === $content) {
-            throw new \RuntimeException("curl error occured (url:\"" . $url . "\", post: \"" . $post_data . "\").");
+        if ((false === $content) || (null === $content)) {
+            throw new BERuntimeException("curl error occured (url:\"" . $url . "\")");
         }
         $content = json_decode($content, true);
-        if ((false === $content) || (null === $content)) {
-            throw new \RuntimeException("curl does not return a json object (url:\"" . $url . "\").");
-        }
-        if (isset($content['error'])) {
-            throw new \RuntimeException(
-                "Error (code " . $content["error"]["code"] . ") \""
-                . $content['error']["message"] . "\" returned (url: \"" . $url . "\", post: \""
-                . serialize($post_data) . "\")."
-            );
-        }
-        if (!isset($content['name'])) {
-            throw new \RuntimeException(
-                "Answer does not contain \"name\" field (url:\"" . $url
+        $this->checkMatbeaResult($url, $content);
+        if (!isset($content['result']['wallet_name'])) {
+            throw new BERuntimeException(
+                "Answer does not contain \"wallet_name\" field (url:\"" . $url
                 . "\", post: \"" . serialize($post_data) . "\")."
             );
         }
-        if (!isset($content['id'])) {
-            throw new \RuntimeException(
-                "Answer does not contain \"id\" field (url:\"" . $url
+        if (!isset($content['result']['wallet_id'])) {
+            throw new BERuntimeException(
+                "Answer does not contain \"wallet_id\" field (url:\"" . $url
                 . "\", post: \"" . serialize($post_data) . "\")."
             );
+        }
+        if ($options) {
+            if (false === $options->getOmitAddresses()) {
+                if (!isset($content['result']['addresses'])) {
+                    throw new BERuntimeException(
+                        "Answer does not contain \"addreses\" field (url:\"" . $url
+                        . "\", post: \"" . serialize($post_data) . "\")."
+                    );
+                }
+            }
         }
         $wallet = new Wallet;
-        $wallet->setName($content['name']);
-        if (!isset($content['addresses'])) {
-            $content["addresses"] = [];
+        $wallet->setName($content['result']['wallet_name']);
+        if ($options) {
+            if (false === $options->getOmitAddresses()) {
+                $wallet->setAddresses($content["result"]["addresses"]);
+            }
         }
-        $wallet->setAddresses($content["addresses"]);
-        $wallet->setSystemDataByHandler($this->getHandlerName(), ["name" => $walletName, "id" => $content['id']]);
+        $wallet->setSystemDataByHandler(
+            $this->getHandlerName(),
+            ["name" => $content['result']['wallet_name'], "id" => $content['result']['wallet_id']]
+        );
         return $wallet;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function addAddresses(Wallet $wallet, array $addresses)
+    public function addAddresses(Wallet $wallet, array $addresses, WalletActionOptions $options = null)
     {
         $walletSystemData = $this->getSystemDataForWallet($wallet);
-        if (!$walletSystemData) {
-            throw new \InvalidArgumentException(
-                "System data of passed wallet is empty (for handler \"" . $this->getHandlerName() . "\")."
+        if ((!$walletSystemData) || (!isset($walletSystemData["id"]))) {
+            throw new BEInvalidArgumentException(
+                "System data of passed wallet is empty or invalid (for handler \"" . $this->getHandlerName() . "\")."
             );
         }
-        $walletId = $walletSystemData["id"]; //HUERAGA - надо бы проверять все же, есть ли проперти id
+        $walletId = $walletSystemData["id"];
         if (empty($addresses)) {
-            throw new \InvalidArgumentException("addresses variable must be non empty array.");
+            throw new BEInvalidArgumentException("addresses variable must be non empty array.");
         }
         foreach ($addresses as $address) {
-            if (!AddressFactory::isValidAddress($address)) {
-                throw new \InvalidArgumentException("No valid address (\"" . $address . "\" passed).");
+            if (!AddressFactory::isValidAddress($address, $this->network)) {
+                throw new BEInvalidArgumentException("No valid address (\"" . $address . "\" passed).");
             }
         }
 
-        $url = $this->getOption(self::OPT_BASE_URL) . "/wallet/addaddresses?id=" . $walletId;
-        $url = str_replace("/btcbridge", "", $url); //HUERAGA
+        $curr = $this->currency;
+        $url = $this->getOption(self::OPT_BASE_URL) . "/" . $curr . "/wallet/" . $walletId . "/addaddresses";
+        $sep = "?";
         if ($this->token) {
-            $url .= "&token=" . $this->token;
+            $url .= "?token=" . $this->token;
+            $sep = "&";
+        }
+        if ($options) {
+            if (null !== $options->getOmitAddresses()) {
+                $url .= $sep . "omit_addresses=" . (int)$options->getOmitAddresses();
+            }
         }
         $post_data["addresses"] = [];
         foreach ($addresses as $address) {
@@ -682,18 +681,14 @@ class MatbeaHandler extends AbstractHandler
         }
 
         $curl = curl_init();
+        $this->prepareCurl($curl, $url);
         $curl_options = [
-            CURLOPT_URL            => $url,
-            CURLOPT_USERAGENT      => $this->getOption(self::OPT_BASE_BROWSER),
-            CURLOPT_RETURNTRANSFER => 1,
-            CURLOPT_SSL_VERIFYHOST => 0,
-            CURLOPT_SSL_VERIFYPEER => 0,
-            CURLOPT_POST           => 1,
+            CURLOPT_POST            => 1,
             CURLOPT_HTTPHEADER     => ['Content-Type:application/json'],
-            CURLOPT_POSTFIELDS     => json_encode($post_data)
+            CURLOPT_POSTFIELDS      => json_encode($post_data)
         ];
         if (false === curl_setopt_array($curl, $curl_options)) {
-            throw new \RuntimeException(
+            throw new BERuntimeException(
                 "curl_setopt_array failed url:\"" . $url . "\", parameters: "
                 . serialize($curl_options) . ")."
             );
@@ -701,47 +696,72 @@ class MatbeaHandler extends AbstractHandler
 
         $content = curl_exec($curl);
         if ((false === $content) || (null === $content)) {
-            throw new \RuntimeException("curl does not return a json object (url:\"" . $url . "\").");
+            throw new BERuntimeException("curl error occured (url:\"" . $url . "\")");
         }
         $content = json_decode($content, true);
-        if (isset($content['error'])) {
-            throw new \RuntimeException(
-                "Error (code " . $content["error"]["code"] . ") \"" .
-                $content['error']["message"] . "\" returned (url: \"" . $url . "\")."
+        $this->checkMatbeaResult($url, $content);
+        if (!isset($content['result']['wallet_name'])) {
+            throw new BERuntimeException(
+                "Answer does not contain \"wallet_name\" field (url:\"" . $url
+                . "\", post: \"" . serialize($post_data) . "\")."
             );
         }
-        if (!isset($content['addresses'])) {
-            $content['addresses'] = [];
+        if (!isset($content['result']['wallet_id'])) {
+            throw new BERuntimeException(
+                "Answer does not contain \"wallet_id\" field (url:\"" . $url
+                . "\", post: \"" . serialize($post_data) . "\")."
+            );
         }
-        $wallet->setAddresses($content['addresses']);
+        if ($options) {
+            if (false === $options->getOmitAddresses()) {
+                if (!isset($content['result']['addresses'])) {
+                    throw new BERuntimeException(
+                        "Answer does not contain \"addreses\" field (url:\"" . $url
+                        . "\", post: \"" . serialize($post_data) . "\")."
+                    );
+                }
+            }
+        }
+        if ($options) {
+            if (false === $options->getOmitAddresses()) {
+                $wallet->setAddresses($content['result']['addresses']);
+            }
+        }
         return $wallet;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function removeAddresses(Wallet $wallet, array $addresses)
+    public function removeAddresses(Wallet $wallet, array $addresses, WalletActionOptions $options = null)
     {
         $walletSystemData = $this->getSystemDataForWallet($wallet);
-        if (!$walletSystemData) {
-            throw new \InvalidArgumentException(
-                "System data of passed wallet is empty (for handler \"" . $this->getHandlerName() . "\")."
+        if ((!$walletSystemData) || (!isset($walletSystemData["id"]))) {
+            throw new BEInvalidArgumentException(
+                "System data of passed wallet is empty or invalid (for handler \"" . $this->getHandlerName() . "\")."
             );
         }
-        $walletId = $walletSystemData["id"]; //HUERAGA - надо бы проверять все же, есть ли проперти id
+        $walletId = $walletSystemData["id"];
         if (empty($addresses)) {
-            throw new \InvalidArgumentException("addresses variable must be non empty array.");
+            throw new BEInvalidArgumentException("addresses variable must be non empty array.");
         }
         foreach ($addresses as $address) {
-            if (!AddressFactory::isValidAddress($address)) {
-                throw new \InvalidArgumentException("No valid address (\"" . $address . "\" passed).");
+            if (!AddressFactory::isValidAddress($address, $this->network)) {
+                throw new BEInvalidArgumentException("No valid address (\"" . $address . "\" passed).");
             }
         }
 
-        $url = $this->getOption(self::OPT_BASE_URL) . "/wallet/removeaddresses?id=" . $walletId;
-        $url = str_replace("/btcbridge", "", $url); //HUERAGA
+        $curr = $this->currency;
+        $url = $this->getOption(self::OPT_BASE_URL) . "/" . $curr . "/wallet/" . $walletId . "/removeaddresses";
+        $sep = "?";
         if ($this->token) {
-            $url .= "&token=" . $this->token;
+            $url .= "?token=" . $this->token;
+            $sep = "&";
+        }
+        if ($options) {
+            if (null !== $options->getOmitAddresses()) {
+                $url .= $sep . "omit_addresses=" . (int)$options->getOmitAddresses();
+            }
         }
         $post_data["addresses"] = [];
         foreach ($addresses as $address) {
@@ -749,37 +769,51 @@ class MatbeaHandler extends AbstractHandler
         }
 
         $curl = curl_init();
+        $this->prepareCurl($curl, $url);
         $curl_options = [
-            CURLOPT_URL            => $url,
-            CURLOPT_USERAGENT      => $this->getOption(self::OPT_BASE_BROWSER),
-            CURLOPT_RETURNTRANSFER => 1,
-            CURLOPT_SSL_VERIFYHOST => 0,
-            CURLOPT_SSL_VERIFYPEER => 0,
-            CURLOPT_POST           => 1,
+            CURLOPT_POST            => 1,
             CURLOPT_HTTPHEADER     => ['Content-Type:application/json'],
-            CURLOPT_POSTFIELDS     => json_encode($post_data)
+            CURLOPT_POSTFIELDS      => json_encode($post_data)
         ];
         if (false === curl_setopt_array($curl, $curl_options)) {
-            throw new \RuntimeException(
+            throw new BERuntimeException(
                 "curl_setopt_array failed url:\"" . $url . "\", parameters: " . serialize($curl_options) . ")."
             );
         }
 
         $content = curl_exec($curl);
         if ((false === $content) || (null === $content)) {
-            throw new \RuntimeException("curl does not return a json object (url:\"" . $url . "\").");
+            throw new BERuntimeException("curl error occured (url:\"" . $url . "\")");
         }
         $content = json_decode($content, true);
-        if (isset($content['error'])) {
-            throw new \RuntimeException(
-                "Error (code " . $content["error"]["code"] . ") \"" .
-                $content['error']["message"] . "\" returned (url: \"" . $url . "\")."
+        $this->checkMatbeaResult($url, $content);
+        if (!isset($content['result']['wallet_name'])) {
+            throw new BERuntimeException(
+                "Answer does not contain \"wallet_name\" field (url:\"" . $url
+                . "\", post: \"" . serialize($post_data) . "\")."
             );
         }
-        if (!isset($content['addresses'])) {
-            $content['addresses'] = [];
+        if (!isset($content['result']['wallet_id'])) {
+            throw new BERuntimeException(
+                "Answer does not contain \"wallet_id\" field (url:\"" . $url
+                . "\", post: \"" . serialize($post_data) . "\")."
+            );
         }
-        $wallet->setAddresses($content['addresses']);
+        if ($options) {
+            if (false === $options->getOmitAddresses()) {
+                if (!isset($content['result']['addresses'])) {
+                    throw new BERuntimeException(
+                        "Answer does not contain \"addreses\" field (url:\"" . $url
+                        . "\", post: \"" . serialize($post_data) . "\")."
+                    );
+                }
+            }
+        }
+        if ($options) {
+            if (false === $options->getOmitAddresses()) {
+                $wallet->setAddresses($content['result']['addresses']);
+            }
+        }
         return $wallet;
     }
 
@@ -789,53 +823,35 @@ class MatbeaHandler extends AbstractHandler
     public function deleteWallet(Wallet $wallet)
     {
         $walletSystemData = $this->getSystemDataForWallet($wallet);
-        if (!$walletSystemData) {
-            throw new \InvalidArgumentException(
-                "System data of passed wallet is empty (for handler \"" . $this->getHandlerName() . "\")."
+        if ((!$walletSystemData) || (!isset($walletSystemData["id"]))) {
+            throw new BEInvalidArgumentException(
+                "System data of passed wallet is empty or invalid (for handler \"" . $this->getHandlerName() . "\")."
             );
         }
         $walletId = $walletSystemData["id"];
-        $url = $this->getOption(self::OPT_BASE_URL) . "/wallet/delete?id=" . intval($walletId);
-        $url = str_replace("/btcbridge", "", $url); //HUERAGA
+        $curr = $this->currency;
+        $url = $this->getOption(self::OPT_BASE_URL) . "/" . $curr . "/wallet/" . $walletId . "/delete";
         if ($this->token) {
-            $url .= "&token=" . $this->token;
+            $url .= "?token=" . $this->token;
         }
         $curl = curl_init();
-        if (!curl_setopt($curl, CURLOPT_URL, $url)) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_USERAGENT, $this->getOption(self::OPT_BASE_BROWSER))) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1)) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0)) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0)) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_POST, 1)) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_HTTPHEADER, ['Content-Type:application/json'])) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        $content = curl_exec($curl);
-        if (false === $content) {
-            throw new \RuntimeException("curl error occured (url:\"" . $url . "\".");
-        }
-        $content = json_decode($content, true);
-        if ((false === $content) || (null === $content)) {
-            throw new \RuntimeException("curl does not return a json object (url:\"" . $url . "\").");
-        }
-        if (isset($content['error'])) {
-            throw new \RuntimeException(
-                "Error (code " . $content["error"]["code"] . ") \"" .
-                $content['error']["message"] . "\" returned (url: \"" . $url . "\")."
+        $this->prepareCurl($curl, $url);
+        $curl_options = [
+            CURLOPT_POST            => 1,
+            CURLOPT_HTTPHEADER     => ['Content-Type:application/json']
+        ];
+        if (false === curl_setopt_array($curl, $curl_options)) {
+            throw new BERuntimeException(
+                "curl_setopt_array failed url:\"" . $url . "\", parameters: "
+                . serialize($curl_options) . ")."
             );
         }
+        $content = curl_exec($curl);
+        if ((false === $content) || (null === $content)) {
+            throw new BERuntimeException("curl error occured (url:\"" . $url . "\")");
+        }
+        $content = json_decode($content, true);
+        $this->checkMatbeaResult($url, $content);
     }
 
     /**
@@ -844,77 +860,82 @@ class MatbeaHandler extends AbstractHandler
     public function getAddresses(Wallet $wallet)
     {
         $walletSystemData = $this->getSystemDataForWallet($wallet);
-        if (!$walletSystemData) {
-            throw new \InvalidArgumentException(
-                "System data of passed wallet is empty (for handler \"" . $this->getHandlerName() . "\")."
+        if ((!$walletSystemData) || (!isset($walletSystemData["id"]))) {
+            throw new BEInvalidArgumentException(
+                "System data of passed wallet is empty or invalid (for handler \"" . $this->getHandlerName() . "\")."
             );
         }
         $walletId = $walletSystemData["id"];
-        $url = $this->getOption(self::OPT_BASE_URL) . "/wallet/getaddresses?id=" . intval($walletId);
-        $url = str_replace("/btcbridge", "", $url); //HUERAGA
+
+        $curr = $this->currency;
+        $url = $this->getOption(self::OPT_BASE_URL) . "/" . $curr . "/wallet/" . $walletId . "/addresses";
         if ($this->token) {
-            $url .= "&token=" . $this->token;
+            $url .= "?token=" . $this->token;
         }
         $ch = curl_init();
         $this->prepareCurl($ch, $url);
         $content = curl_exec($ch);
         if ((false === $content) || (null === $content)) {
-            throw new \RuntimeException("curl does not return a json object (url:\"" . $url . "\").");
+            throw new BERuntimeException("curl does not return a json object (url:\"" . $url . "\").");
         }
         $content = json_decode($content, true);
-        if (isset($content['error'])) {
-            throw new \RuntimeException(
-                "Error (code " . $content["error"]["code"] . ") \"" .
-                $content['error']["message"] . "\" returned (url: \"" . $url . "\")."
-            );
+        $this->checkMatbeaResult($url, $content);
+        if (!isset($content["result"]["addresses"])) {
+            $msg = "Answer of url: \"" . $url . "\")  does not contain an \"addresses\" array.";
+            $this->logger->error($msg, ["data" => $content]);
+            throw new BERuntimeException($msg);
         }
-        if (!isset($content['addresses'])) {
-            $content['addresses'] = [];
-        }
-        $wallet->setAddresses($content['addresses']);
+        $wallet->setAddresses($content['result']['addresses']);
         return $wallet->getAddresses();
     }
 
     /**
      * {@inheritdoc}
      */
-    public function getWallets(GetWalletsOptions $options = null)
+    public function getWallets(WalletActionOptions $options = null)
     {
-        $url = $this->getOption(self::OPT_BASE_URL) . "/wallet/getwallets";
-        $url = str_replace("/btcbridge", "", $url); //HUERAGA
+        $curr = $this->currency;
+        $url = $this->getOption(self::OPT_BASE_URL) . "/" . $curr . "/wallet/getwallets";
+        $sep = "?";
         if ($this->token) {
-            $url .= "?token=" . $this->token;
+            $url .= $sep . "token=" . $this->token;
+            $sep = "&";
         }
         if ($options) {
-            if ($options->getNoaddresses()) {
-                $url .= "nobalace=true";
+            if (null !== $options->getOmitAddresses()) {
+                $url .= $sep . "omit_addresses=" . (int)$options->getOmitAddresses();
             }
         }
         $ch = curl_init();
         $this->prepareCurl($ch, $url);
         $content = curl_exec($ch);
         if ((false === $content) || (null === $content)) {
-            throw new \RuntimeException("curl does not return a json object (url:\"" . $url . "\").");
+            throw new BERuntimeException("curl does not return a json object (url:\"" . $url . "\").");
         }
         $content = json_decode($content, true);
-        if (isset($content['error'])) {
-            throw new \RuntimeException(
-                "Error (code " . $content["error"]["code"] . ") \"" .
-                $content['error']["message"] . "\" returned (url: \"" . $url . "\")."
-            );
+        $this->checkMatbeaResult($url, $content);
+        if (!isset($content["result"]["wallets"])) {
+            $msg = "Answer of url: \"" . $url . "\")  does not contain an \"addresses\" array.";
+            $this->logger->error($msg, ["data" => $content]);
+            throw new BERuntimeException($msg);
         }
+
         $ret = [];
-        foreach ($content['wallets'] as $wallet) {
+        foreach ($content["result"]["wallets"] as $wallet) {
             $w = new Wallet();
-            $w->setName($wallet["name"]);
-            $w->setAddresses($wallet["addresses"]);
+            $w->setName($wallet["wallet_name"]);
+
+            if ($options && (false === $options->getOmitAddresses())) {
+                if (!isset($wallet['addresses'])) {
+                    throw new BERuntimeException(
+                        "Answer does not contain \"wallet.addresses\" field (url:\"" . $url . "\")."
+                    );
+                }
+                $w->setAddresses($wallet["addresses"]);
+            }
             $w->setSystemDataByHandler(
                 $this->getHandlerName(),
-                [
-                    "name" => $wallet['name']
-                    ,
-                    "id" => intval($wallet['id'])
-                ]
+                ["name" => $wallet["wallet_name"], "id" => $wallet["wallet_id"]]
             );
             $ret [] = $w;
         }
@@ -926,7 +947,15 @@ class MatbeaHandler extends AbstractHandler
      */
     public function getTransformedTypeOfSignature($type, array $options = [])
     {
-        return $type;
+        switch ($type) {
+            case "nulldata":
+            case "nonstandard":
+                return "op_return";
+                break;
+            default:
+                return $type;
+                break;
+        }
     }
 
     /**

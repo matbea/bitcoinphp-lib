@@ -2,6 +2,9 @@
 
 namespace BTCBridge\Api;
 
+use BTCBridge\Exception\BEInvalidArgumentException;
+use BTCBridge\Exception\BERuntimeException;
+
 /**
  * Class BTCValue
  *
@@ -21,12 +24,12 @@ class BTCValue
      *
      * @param \GMP $value
      *
-     * @throws \InvalidArgumentException in case of any error of this logical type
+     * @throws BEInvalidArgumentException in case of any error of this logical type
      */
     public function __construct($value)
     {
         if (!$value instanceof \GMP) {
-            throw new \InvalidArgumentException("The given value is not a GMP value");
+            throw new BEInvalidArgumentException("The given value is not a GMP value");
         }
         $this->value = $value;
     }
@@ -37,12 +40,12 @@ class BTCValue
      * @param \GMP $value
      * @return $this
      *
-     * @throws \InvalidArgumentException in case of any error of this logical type
+     * @throws BEInvalidArgumentException in case of any error of this logical type
      */
     public function setGMPValue($value)
     {
         if (!$value instanceof \GMP) {
-            throw new \InvalidArgumentException("The given value is not a GMP value");
+            throw new BEInvalidArgumentException("The given value is not a GMP value");
         }
         $this->value = $value;
         return $this;
@@ -73,13 +76,13 @@ class BTCValue
      *
      * @return int
      *
-     * @throws \RuntimeException if case of any error of this type
+     * @throws BERuntimeException if case of any error of this type
      */
     public function getSatoshiValue()
     {
         $intValue = gmp_intval(gmp_strval($this->value));
         if (strval($intValue) !== gmp_strval($this->value)) {
-            throw new \RuntimeException("Integer value is not equal string value (" . gmp_strval($this->value) . ").");
+            throw new BERuntimeException("Integer value is not equal string value (" . gmp_strval($this->value) . ").");
         }
         return $intValue;
     }

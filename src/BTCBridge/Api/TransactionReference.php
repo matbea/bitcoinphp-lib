@@ -2,8 +2,6 @@
 
 namespace BTCBridge\Api;
 
-//use BTCBridge\Api\BTCValue;
-
 /**
  * Class TransactionReference
  *

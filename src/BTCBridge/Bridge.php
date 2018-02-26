@@ -12,6 +12,9 @@ use BTCBridge\ConflictHandler\ConflictHandlerInterface;
 use BTCBridge\Exception\ConflictHandlerException;
 use BTCBridge\Exception\ResultHandlerException;
 use BTCBridge\Exception\HandlerErrorException;
+use BTCBridge\Exception\BEInvalidArgumentException;
+use BTCBridge\Exception\BERuntimeException;
+use BTCBridge\Exception\BELogicException;
 use BTCBridge\ConflictHandler\DefaultConflictHandler;
 use BTCBridge\ResultHandler\DefaultResultHandler;
 use BTCBridge\Api\Transaction;
@@ -20,7 +23,8 @@ use BTCBridge\Api\Wallet;
 use BTCBridge\Api\SMOutput;
 use BTCBridge\Api\SendMoneyOptions;
 use BTCBridge\Api\ListTransactionsOptions;
-use BTCBridge\Api\GetWalletsOptions;
+use BTCBridge\Api\WalletActionOptions;
+use BTCBridge\Api\CurrencyTypeEnum;
 use BitWasp\Buffertools\Buffer;
 use BitWasp\Bitcoin\Transaction\TransactionOutput;
 use BitWasp\Bitcoin\Transaction\OutPoint;
@@ -31,6 +35,8 @@ use BitWasp\Bitcoin\Address\AddressFactory;
 use BitWasp\Bitcoin\Exceptions\Base58ChecksumFailure;
 use BitWasp\Bitcoin\Transaction\TransactionFactory;
 use BitWasp\Bitcoin\Transaction\Factory\Signer;
+use BitWasp\Bitcoin\Network\Network;
+use BitWasp\Bitcoin\Network\NetworkFactory;
 
 /**
  * Describes a Bridge instance
@@ -54,6 +60,12 @@ class Bridge
 
     /** This group of constants are bridge options for restrictions for methods */
     const MAX_COUNT_OF_TRANSACTIONS_FOR__GETTRANSACTIONS__METHOD = 20;
+
+    /** @var CurrencyTypeEnum currency */
+    protected $currency;
+
+    /** @var Network network */
+    protected $network;
 
     /** @var array options */
     protected $options = [];
@@ -91,43 +103,57 @@ class Bridge
     protected $loggerHandler;
 
     /**
+     * @param CurrencyTypeEnum $currency          Name of currency
      * @param AbstractHandler[] $handlers         Stack of handlers for calling BTC-methods, $handlers must not be empty
      * @param ConflictHandlerInterface $conflictHandler  Methods of this objects will be raised for validating results.
      * Parameter is optional, by default DefaultConflictHandler instance will be used
-     * @param AbstractResultHandler $resultHandler
-     * @param LoggerInterface $loggerHandler    Methods of this objects will be raised for validating results.
+     * @param AbstractResultHandler $resultHandler Methods of this objects will be raised for processing results
+     * @param LoggerInterface $loggerHandler    Methods of this objects will be raised for validating results
      * Parameter is optional, by default DefaultConflictHandler instance will be used
      *
-     * @throws \InvalidArgumentException if the provided argument $handlers is empty
-     * @throws \RuntimeException if the provided argument $conflictHandler is not instance of HandlerInterface
+     * @throws BEInvalidArgumentException if the provided argument $handlers is empty
+     * @throws BELogicException if the provided argument $conflictHandler is not instance of HandlerInterface
      */
     public function __construct(
+        CurrencyTypeEnum $currency,
         array $handlers,
         ConflictHandlerInterface $conflictHandler = null,
         AbstractResultHandler $resultHandler = null,
         LoggerInterface $loggerHandler = null
     ) {
         if (empty($handlers)) {
-            throw new \InvalidArgumentException("Handlers array can not be empty.");
+            throw new BEInvalidArgumentException("Handlers array can not be empty.");
         }
         foreach ($handlers as $handler) {
             if (!$handler instanceof AbstractHandler) {
-                throw new \InvalidArgumentException("The given handler is not a AbstractHandler");
+                throw new BEInvalidArgumentException("The given handler is not a AbstractHandler");
             }
+            if ($currency != $handler->getCurrency()) {
+                throw new BELogicException("Handler contains different currency than bridge instance");
+            }
+        }
+
+        $this->currency = $currency;
+        if (CurrencyTypeEnum::BTC == $this->currency) {
+            $this->network = NetworkFactory::bitcoin();
+        } elseif (CurrencyTypeEnum::TBTC == $this->currency) {
+            $this->network = NetworkFactory::bitcoinTestnet();
         }
 
         $this->handlers = $handlers;
         $this->conflictHandler = (null !== $conflictHandler) ? $conflictHandler : new DefaultConflictHandler();
         $this->resultHandler = (null !== $resultHandler) ? $resultHandler : new DefaultResultHandler();
         $this->resultHandler->setHandlers($handlers);
+
         if ($loggerHandler) {
             $this->loggerHandler = $loggerHandler;
-            foreach ($this->handlers as $handler) {
-                $handler->setLogger($loggerHandler);
-            }
         } else {
             $this->loggerHandler = new Logger('BTCBridge');
         }
+        foreach ($this->handlers as $handler) {
+            $handler->setLogger($this->loggerHandler);
+        }
+
         $this->setOption(self::OPT_LOCAL_PATH_OF_WALLET_DATA, __DIR__."/wallet.dat");
         $this->setOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT, "5500");
         $this->setOption(self::OPT_MINIMAL_FEE_PER_KB, "10000");
@@ -145,12 +171,12 @@ class Bridge
      * @param int $optionName a constant describying name of the option
      * @param string $optionValue a value of the option
      *
-     * @throws \InvalidArgumentException if error of this type
+     * @throws BEInvalidArgumentException if error of this type
      *
      */
     public function setOption($optionName, $optionValue)
     {
-        if ((gettype($optionName) != "integer") ||
+        if (!is_int($optionName) ||
             (!in_array(
                 $optionName,
                 [
@@ -159,10 +185,11 @@ class Bridge
                     self::OPT_MINIMAL_FEE_PER_KB
                 ]
             ))) {
-            throw new \InvalidArgumentException("Bad type of option (".$optionName.")");
+            throw new BEInvalidArgumentException("Bad type of option (".$optionName.")");
         }
-        if (gettype($optionValue) != "string" || "" == $optionValue) {
-            throw new \InvalidArgumentException("Bad type of option value (must be non empty string)");
+        if ((!is_string($optionValue)) || (empty($optionValue))) {
+            $msg = "Bad type (" . gettype($optionValue) . ") of option value (must be non empty string)";
+            throw new BEInvalidArgumentException($msg);
         }
         $this->options[$optionName] = $optionValue;
     }
@@ -172,14 +199,14 @@ class Bridge
      *
      * @param int $optionName a constant, which describes the name of the option
      *
-     * @throws \InvalidArgumentException if error of this type
-     * @throws \RuntimeException in case if this option is not exists
+     * @throws BEInvalidArgumentException if error of this type
+     * @throws BERuntimeException in case if this option is not exists
      *
      * @return string Option
      */
     protected function getOption($optionName)
     {
-        if ((gettype($optionName) != "integer") ||
+        if (!is_int($optionName) ||
             (!in_array(
                 $optionName,
                 [
@@ -188,10 +215,11 @@ class Bridge
                     self::OPT_MINIMAL_FEE_PER_KB
                 ]
             ))) {
-            throw new \InvalidArgumentException("Bad type of option (".$optionName.")");
+            throw new BEInvalidArgumentException("Bad type of option (".$optionName.")");
         }
         if (!isset($this->options[$optionName])) {
-            throw new \RuntimeException("No option with name \"" . $optionName . "\" exists in the class)");
+            $msg = "No option with name \"" . $optionName . "\" exists in the class)";
+            throw new BERuntimeException($msg);
         }
         return $this->options[$optionName];
     }
@@ -248,21 +276,20 @@ class Bridge
      * @param TransactionReference[] $outputs
      * @param integer $amount string
      *
-     * @throws \RuntimeException in case of any error of this type
-     * @throws \InvalidArgumentException in case of any error of this type
+     * @throws BEInvalidArgumentException case of any error of this type
      *
      * @return TransactionReference[] If not enouth BTC on passed outputs then ampty array will be returned
      */
     public function selectOutputsForSpent($outputs, $amount)
     {
-        if ("integer" != gettype($amount) || ($amount < intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT)))) {
-            throw new \InvalidArgumentException(
+        if ((!is_int($amount)) || ($amount < intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT)))) {
+            throw new BEInvalidArgumentException(
                 "amount variable must be integer bigger or equal " .
                 $this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT) . "."
             );
         }
         if (!is_array($outputs) || empty($outputs)) {
-            throw new \InvalidArgumentException(
+            throw new BEInvalidArgumentException(
                 "outputs variable must be non empty array of TransactionReference type."
             );
         }
@@ -318,29 +345,28 @@ class Bridge
      * It returns more information about an address’ transactions than the Address Balance Endpoint
      * but doesn’t return full transaction information (like the Address Full Endpoint).
      * @link https://bitcoin.org/en/developer-reference#listtransactions Official bitcoin documentation.
-     * @link https://www.blockcypher.com/dev/bitcoin/?shell#address-endpoint Official blockcypher documentation
      *
-     * @param string $address  An account name (or address) to get transactions from
+     * @param string $walletName  A wallet name (or address) to get transactions from
      * @param ListTransactionsOptions $options contains the optional params
      *
-     * @throws \RuntimeException in case of any runtime error
-     * @throws \InvalidArgumentException in case of error of this type
+     * @throws BERuntimeException in case of any runtime error
+     * @throws BEInvalidArgumentException in case of error of this type
      * @throws ConflictHandlerException in case of any error of this type
      * @throws ResultHandlerException in case of any error of this type
      *
      * @return Address
      */
-    public function listtransactions($address, ListTransactionsOptions $options = null)
+    public function listtransactions($walletName, ListTransactionsOptions $options = null)
     {
-        if ("string" != gettype($address) || ("" == $address)) {
-            throw new \InvalidArgumentException("address variable must be non empty string.");
+        if ((!is_string($walletName)) || empty($walletName)) {
+            throw new BEInvalidArgumentException("address variable must be non empty string.");
         }
         $this->timeMeasurementStatistics = [];
         $this->timeMeasurementStatistics[Bridge::PRIV_TIME_MEASUREMENT_METHOD_NAME] = __METHOD__;
         $this->timeMeasurementStatistics[Bridge::PRIV_TIME_MEASUREMENT_BEFORE_HANDLERS] = microtime(true);
         $results = [];
         foreach ($this->handlers as $handle_num => $handle) {
-            $result = $handle->listtransactions($address, $options);
+            $result = $handle->listtransactions($walletName, $options);
             if (AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $result) {
                 $this->timeMeasurementStatistics[Bridge::PRIV_TIME_MEASUREMENT_AFTER_HANDLERS]
                 [$handle_num] = microtime(true);
@@ -359,8 +385,8 @@ class Bridge
      *
      * @param string[] $txHashes transaction identifiers
      *
-     * @throws \RuntimeException in case of any runtime error
-     * @throws \InvalidArgumentException if error of this type
+     * @throws BERuntimeException in case of any runtime error
+     * @throws BEInvalidArgumentException if error of this type
      * @throws ConflictHandlerException in case of any error of this type
      *
      * @return Transaction[]
@@ -368,17 +394,17 @@ class Bridge
     public function gettransactions(array $txHashes)
     {
         if (empty($txHashes)) {
-            throw new \InvalidArgumentException("\$txHashes variable must be non empty array of valid btc tx-hashes.");
+            throw new BEInvalidArgumentException("\$txHashes variable must be non empty array of valid btc tx-hashes.");
         }
         if (count($txHashes) > Bridge::MAX_COUNT_OF_TRANSACTIONS_FOR__GETTRANSACTIONS__METHOD) {
-            throw new \InvalidArgumentException(
+            throw new BEInvalidArgumentException(
                 "txHashes variable size must be non bigger than " .
                 Bridge::MAX_COUNT_OF_TRANSACTIONS_FOR__GETTRANSACTIONS__METHOD . "."
             );
         }
         foreach ($txHashes as $txHash) {
             if ((!is_string($txHash)) || !preg_match('/^[a-z0-9]+$/i', $txHash) || (strlen($txHash) != 64)) {
-                throw new \InvalidArgumentException(
+                throw new BEInvalidArgumentException(
                     "Hashes in \$txHashes must be valid bitcoin transaction hashes (\"" . $txHash . "\" not valid)."
                 );
             }
@@ -409,27 +435,32 @@ class Bridge
      * The Address Balance Endpoint is the simplest—and fastest—method
      * to get a subset of information on a public address.
      * @link https://bitcoin.org/en/developer-reference#getbalance Official bitcoin documentation.
-     * @link https://www.blockcypher.com/dev/bitcoin/?shell#address-endpoint
      *
-     * @param string $walletName            An account name to get balance from
+     * @param string $walletName            A wallet name to get balance from
      * @param int $Confirmations         The minimum number of confirmations an externally-generated transaction
      * must have before it is counted towards the balance.
      *
-     * @throws \RuntimeException in case of any runtime error
-     * @throws \InvalidArgumentException if error of this type
+     * @throws BERuntimeException in case of any runtime error
+     * @throws BEInvalidArgumentException if error of this type
      * @throws ConflictHandlerException in case of any error of this type
      *
      * @return BTCValue The balance
      */
     public function getbalance($walletName, $Confirmations = 1)
     {
-        if ("string" != gettype($walletName) || ("" == $walletName)) {
-            throw new \InvalidArgumentException("Account variable must be non empty string.");
+        if ((!is_string($walletName)) || empty($walletName)) {
+            throw new BEInvalidArgumentException("Wallet name must be non empty string.");
         }
         if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
-            throw new \InvalidArgumentException(
+            throw new BEInvalidArgumentException(
                 "Wallet name have to contain only alphanumeric, underline and dash symbols (\"" .
                 $walletName . "\" passed)."
+            );
+        }
+        if ((!is_int($Confirmations)) || ($Confirmations < 0)) {
+            throw new BEInvalidArgumentException(
+                "Confirmations variable must ne non negative integer, (" .
+                $Confirmations . " passed)."
             );
         }
         $this->timeMeasurementStatistics = [];
@@ -456,23 +487,22 @@ class Bridge
      * The Address Balance Endpoint is the simplest—and fastest—method
      * to get a subset of information on a public address.
      * @link https://bitcoin.org/en/developer-reference#getunconfirmedbalance Official bitcoin documentation.
-     * @link https://www.blockcypher.com/dev/bitcoin/?shell#address-endpoint
      *
-     * @param string $walletName An account name to get unconfirmed balance from
+     * @param string $walletName A wallet name to get unconfirmed balance from
      *
-     * @throws \RuntimeException in case of any runtime error
-     * @throws \InvalidArgumentException if error of this type
+     * @throws BERuntimeException in case of any runtime error
+     * @throws BEInvalidArgumentException if error of this type
      * @throws ConflictHandlerException in case of any error of this type
      *
      * @return BTCValue The unconfirmed balance
      */
     public function getunconfirmedbalance($walletName)
     {
-        if ("string" != gettype($walletName) || ("" == $walletName)) {
-            throw new \InvalidArgumentException("Account variable must be non empty string.");
+        if ((!is_string($walletName)) || empty($walletName)) {
+            throw new BEInvalidArgumentException("Wallet name must be non empty string.");
         }
         if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
-            throw new \InvalidArgumentException(
+            throw new BEInvalidArgumentException(
                 "Wallet name have to contain only alphanumeric, underline and dash symbols (\"" .
                 $walletName . "\" passed)."
             );
@@ -482,7 +512,7 @@ class Bridge
         $this->timeMeasurementStatistics[Bridge::PRIV_TIME_MEASUREMENT_BEFORE_HANDLERS] = microtime(true);
         $results = [];
         foreach ($this->handlers as $handle_num => $handle) {
-            //$result = call_user_func_array([$handle, "getunconfirmedbalance"], [$Account]);
+            //$result = call_user_func_array([$handle, "getunconfirmedbalance"], [$walletName]);
             $result = $handle->getunconfirmedbalance($walletName);
             if (AbstractHandler::HANDLER_UNSUPPORTED_METHOD !== $result) {
                 $this->timeMeasurementStatistics[Bridge::PRIV_TIME_MEASUREMENT_AFTER_HANDLERS]
@@ -502,32 +532,31 @@ class Bridge
      * The Address Balance Endpoint is the simplest—and fastest—method to
      * get a subset of information on a public address.
      * @link https://bitcoin.org/en/developer-reference#listunspent Official bitcoin documentation.
-     * @link https://www.blockcypher.com/dev/bitcoin/?shell#address-endpoint
      *
-     * @param string $walletName An account name to get unconfirmed balance from
+     * @param string $walletName A wallet name to get unconfirmed balance from
      * @param int $MinimumConfirmations  The minimum number of confirmations the transaction containing an output
      * must have in order to be returned.
      * If $MinimumConfirmations = 0, then only unconfirmed transactions will be returned.
      *
-     * @throws \RuntimeException in case of any runtime error
-     * @throws \InvalidArgumentException if error of this type
+     * @throws BERuntimeException in case of any runtime error
+     * @throws BEInvalidArgumentException if error of this type
      * @throws ConflictHandlerException in case of any error of this type
      *
      * @return array The list of unspent outputs
      */
     public function listunspent($walletName, $MinimumConfirmations = 1)
     {
-        if ("string" != gettype($walletName)) {
-            throw new \InvalidArgumentException("Account variable must be non empty string.");
+        if ((!is_string($walletName)) || empty($walletName)) {
+            throw new BEInvalidArgumentException("Wallet name must be non empty string.");
         }
         if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
-            throw new \InvalidArgumentException(
+            throw new BEInvalidArgumentException(
                 "Wallet name have to contain only alphanumeric, underline and dash symbols (\"" .
                 $walletName . "\" passed)."
             );
         }
         if (!is_int($MinimumConfirmations) || $MinimumConfirmations < 0) {
-            throw new \InvalidArgumentException(
+            throw new BEInvalidArgumentException(
                 "\$MinumumConfirmations variable must be nonnegative integerymbols ( " .
                 $MinimumConfirmations . " passed)."
             );
@@ -555,73 +584,70 @@ class Bridge
      * The sendrawtransaction RPC validates a transaction and broadcasts it to the peer-to-peer network.
      * @link https://bitcoin.org/en/developer-reference#sendrawtransaction Official bitcoin documentation.
      *
-     * @param string $Transaction
+     * @param string $transaction
      *
      * @return string If the transaction was accepted by the node for broadcast, this will be the TXID
      * of the transaction encoded as hex in RPC byte order.
      *
-     * @throws \RuntimeException in case of any runtime error
-     * @throws \InvalidArgumentException if error of this type
+     * @throws BERuntimeException in case of any runtime error
+     * @throws BEInvalidArgumentException if error of this type
      * @throws ConflictHandlerException in case of any error of this type
      *
      */
-    public function sendrawtransaction($Transaction)
+    public function sendrawtransaction($transaction)
     {
-        if ((!is_string($Transaction)) || empty($Transaction)) {
-            throw new \InvalidArgumentException("Transaction variable must be non empty string.");
+        if ((!is_string($transaction)) || empty($transaction)) {
+            throw new BEInvalidArgumentException("Transaction variable must be non empty string.");
         }
-        $result = null; //HUERAGA - timing прикрутить бы
+        $result = null;
         for ($i = 0, $ic = count($this->handlers); $i < $ic; ++$i) {
             try {
-                $result = $this->handlers[$i]->sendrawtransaction($Transaction);
+                $result = $this->handlers[$i]->sendrawtransaction($transaction);
                 if (AbstractHandler::HANDLER_UNSUPPORTED_METHOD === $result) {
                     $result = null;
                     continue;
                 }
-            } catch (\InvalidArgumentException $ex) {
-                $this->loggerHandler->addError($ex->getMessage());
-                continue;
-            } catch (\RuntimeException $ex) {
+            } catch (\Exception $ex) {
                 $this->loggerHandler->addError($ex->getMessage());
                 continue;
             }
             return $result;
         }
-        throw new \RuntimeException(
-            "Transaction \"" . $Transaction . "\" was not sent (" . count($this->handlers) . " handlers)."
+        throw new BERuntimeException(
+            "Transaction \"" . $transaction . "\" was not sent (" . count($this->handlers) . " handlers)."
         );
     }
 
     /**
      * This Method allows you to create a new wallet, by POSTing a partially filled out Wallet or HDWallet object,
      * depending on the endpoint.
-     * @link https://www.blockcypher.com/dev/bitcoin/?shell#create-wallet-endpoint
      *
      * @param string $walletName
      * @param string[] $addresses
+     * @param WalletActionOptions $options
      *
-     * @throws \Exception|\InvalidArgumentException
+     * @throws BERuntimeException
      * @throws Exception\HandlerErrorException
-     * @throws \InvalidArgumentException if error of this type
+     * @throws BEInvalidArgumentException if error of this type
      * @throws Exception\ResultHandlerException|\Exception
      * @return Wallet
      *
      */
-    public function createWallet($walletName, array $addresses)
+    public function createWallet($walletName, array $addresses, WalletActionOptions $options = null)
     {
-        if ("string" != gettype($walletName)) {
-            throw new \InvalidArgumentException("Wallet name variable must be non empty string.");
+        if ((!is_string($walletName)) || empty($walletName)) {
+            throw new BEInvalidArgumentException("Wallet name variable must be non empty string.");
         }
         if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
-            throw new \InvalidArgumentException(
+            throw new BEInvalidArgumentException(
                 "Wallet name have to contain only alphanumeric, underline and dash symbols (\"" .
                 $walletName . "\" passed)."
             );
         }
         if (count($addresses) > 0) {
             foreach ($addresses as $address) {
-                if (!AddressFactory::isValidAddress($address)) {
-                    throw new \InvalidArgumentException("No valid address (\"" . $address . "\" passed).");
+                if (!AddressFactory::isValidAddress($address, $this->network)) {
+                    throw new BEInvalidArgumentException("No valid address (\"" . $address . "\" passed).");
                 }
             }
         }
@@ -642,8 +668,8 @@ class Bridge
 
         for ($i = 0, $ic = count($this->handlers); $i < $ic; ++$i) {
             try {
-                $resultWallet = $this->handlers[$i]->createWallet($walletName, $addresses);
-            } catch (\RuntimeException $ex) {
+                $resultWallet = $this->handlers[$i]->createWallet($walletName, $addresses, $options);
+            } catch (BERuntimeException $ex) {
                 $this->loggerHandler->error($ex->getMessage());
                 $errorHandler = $this->handlers[$i];
                 $errMsg = $ex->getMessage();
@@ -662,7 +688,7 @@ class Bridge
                 $this->resultHandler->setHandlers($successHandlers);
                 try {
                     $resultWallet = $this->resultHandler->createWallet($resultWallets);
-                } catch (\InvalidArgumentException $ex) {
+                } catch (BEInvalidArgumentException $ex) {
                     $this->resultHandler->setHandlers($this->handlers);
                     throw $ex;
                 } catch (ResultHandlerException $ex) {
@@ -691,26 +717,26 @@ class Bridge
 
     /**
      * This Method adds new addresses into a wallet
-     * @link https://www.blockcypher.com/dev/bitcoin/?shell#add-addresses-to-wallet-endpoint
      *
      * @param Wallet $wallet Object to which addresses will be added
      * @param string[] $addresses
+     * @param WalletActionOptions $options
      *
-     * @throws \Exception|\InvalidArgumentException
-     * @throws Exception\HandlerErrorException
-     * @throws \InvalidArgumentException if error of this type
-     * @throws Exception\ResultHandlerException|\Exception
+     * @throws BERuntimeException
+     * @throws BEInvalidArgumentException
+     * @throws HandlerErrorException
+     * @throws ResultHandlerException
      * @return Wallet
      *
      */
-    public function addAddresses(Wallet $wallet, array $addresses)
+    public function addAddresses(Wallet $wallet, array $addresses, WalletActionOptions $options = null)
     {
         if (empty($addresses)) {
-            throw new \InvalidArgumentException("addresses variable must be non empty array.");
+            throw new BEInvalidArgumentException("addresses variable must be non empty array.");
         }
         foreach ($addresses as $address) {
-            if (!AddressFactory::isValidAddress($address)) {
-                throw new \InvalidArgumentException("No valid address (\"" . $address . "\" passed).");
+            if (!AddressFactory::isValidAddress($address, $this->network)) {
+                throw new BEInvalidArgumentException("No valid address (\"" . $address . "\" passed).");
             }
         }
 
@@ -729,8 +755,8 @@ class Bridge
 
         for ($i = 0, $ic = count($this->handlers); $i < $ic; ++$i) {
             try {
-                $resultWallet = $this->handlers[$i]->addAddresses($wallet, $addresses);
-            } catch (\RuntimeException $ex) {
+                $resultWallet = $this->handlers[$i]->addAddresses($wallet, $addresses, $options);
+            } catch (BERuntimeException $ex) {
                 $this->loggerHandler->error($ex->getMessage());
                 $errorHandler = $this->handlers[$i];
                 break;
@@ -748,7 +774,7 @@ class Bridge
                 $this->resultHandler->setHandlers($successHandlers);
                 try {
                     $resultWallet = $this->resultHandler->addAddresses($resultWallets);
-                } catch (\InvalidArgumentException $ex) {
+                } catch (BEInvalidArgumentException $ex) {
                     $this->resultHandler->setHandlers($this->handlers);
                     throw $ex;
                 } catch (ResultHandlerException $ex) {
@@ -777,26 +803,26 @@ class Bridge
 
     /**
      * This Method adds new addresses into a wallet
-     * @link https://www.blockcypher.com/dev/bitcoin/?shell#remove-addresses-from-wallet-endpoint
      *
      * @param Wallet $wallet
      * @param string[] $addresses
+     * @param WalletActionOptions $options
      *
-     * @throws \Exception|\InvalidArgumentException
-     * @throws Exception\HandlerErrorException
-     * @throws \InvalidArgumentException if error of this type
-     * @throws Exception\ResultHandlerException|\Exception
-     * @return \BTCBridge\Api\Wallet
+     * @throws BERuntimeException
+     * @throws BEInvalidArgumentException
+     * @throws HandlerErrorException
+     * @throws ResultHandlerException
+     * @return Wallet
      *
      */
-    public function removeAddresses(Wallet $wallet, array $addresses)
+    public function removeAddresses(Wallet $wallet, array $addresses, WalletActionOptions $options = null)
     {
         if (empty($addresses)) {
-            throw new \InvalidArgumentException("addresses variable must be non empty array of strings.");
+            throw new BEInvalidArgumentException("addresses variable must be non empty array of strings.");
         }
         foreach ($addresses as $address) {
-            if (!AddressFactory::isValidAddress($address)) {
-                throw new \InvalidArgumentException("No valid address (\"" . $address . "\" passed).");
+            if (!AddressFactory::isValidAddress($address, $this->network)) {
+                throw new BEInvalidArgumentException("No valid address (\"" . $address . "\" passed).");
             }
         }
 
@@ -815,8 +841,8 @@ class Bridge
 
         for ($i = 0, $ic = count($this->handlers); $i < $ic; ++$i) {
             try {
-                $resultWallet = $this->handlers[$i]->removeAddresses($wallet, $addresses);
-            } catch (\RuntimeException $ex) {
+                $resultWallet = $this->handlers[$i]->removeAddresses($wallet, $addresses, $options);
+            } catch (BERuntimeException $ex) {
                 $this->loggerHandler->error($ex->getMessage());
                 $errorHandler = $this->handlers[$i];
                 break;
@@ -834,7 +860,7 @@ class Bridge
                 $this->resultHandler->setHandlers($successHandlers);
                 try {
                     $resultWallet = $this->resultHandler->removeAddresses($resultWallets);
-                } catch (\InvalidArgumentException $ex) {
+                } catch (BEInvalidArgumentException $ex) {
                     $this->resultHandler->setHandlers($this->handlers);
                     throw $ex;
                 } catch (ResultHandlerException $ex) {
@@ -864,12 +890,12 @@ class Bridge
 
     /**
      * This Method deletes a passed wallet
-     * https://www.blockcypher.com/dev/bitcoin/?shell#delete-wallet-endpoint
      *
      * @param Wallet $wallet wallet for deleting
      *
-     * @throws Exception\HandlerErrorException
-     * @throws \InvalidArgumentException if error of this type
+     * @throws BERuntimeException
+     * @throws HandlerErrorException
+     * @throws BEInvalidArgumentException if error of this type
      *
      */
     public function deleteWallet(Wallet $wallet)
@@ -888,7 +914,7 @@ class Bridge
         for ($i = 0, $ic = count($this->handlers); $i < $ic; ++$i) {
             try {
                 $this->handlers[$i]->deleteWallet($wallet);
-            } catch (\RuntimeException $ex) {
+            } catch (BERuntimeException $ex) {
                 $this->loggerHandler->error($ex->getMessage());
                 $errorHandler = $this->handlers[$i];
                 break;
@@ -915,15 +941,15 @@ class Bridge
     /**
      * This method returns addresses from the passed wallet
      * @link https://bitcoin.org/en/developer-reference#getaddressesbyaccount
-     * @link https://www.blockcypher.com/dev/bitcoin/?shell#get-wallet-addresses-endpoint
      *
      * @param Wallet $wallet
      *
-     * @throws \RuntimeException in case of any runtime error
-     * @throws \InvalidArgumentException if error of this type
+     * @throws BERuntimeException in case of any runtime error
+     * @throws BEInvalidArgumentException if error of this type
      * @throws ConflictHandlerException in case of any error of this type
+     * @throws ResultHandlerException in case of any error
      *
-     * @return \string[] addesses
+     * @return \string[] addresses
      */
     public function getAddresses(Wallet $wallet)
     {
@@ -951,14 +977,14 @@ class Bridge
     /**
      * This method returns wallets  and addresses optionally by token
      *
-     * @param GetWalletsOptions $options
+     * @param WalletActionOptions $options
      *
-     * @throws \RuntimeException in case of any error of this type
-     * @throws \InvalidArgumentException in case of any error of this type
+     * @throws BERuntimeException in case of any error of this type
+     * @throws BEInvalidArgumentException in case of any error of this type
      *
      * @return Wallet[] wallets
      */
-    public function getWallets(GetWalletsOptions $options = null)
+    public function getWallets(WalletActionOptions $options = null)
     {
         $results = [];
 
@@ -983,11 +1009,9 @@ class Bridge
 
     /**
      * The getnewaddress RPC returns a new Bitcoin address for receiving payments.
-     * If an account is specified, payments received with the address will be credited to that account.
      * @link https://bitcoin.org/en/developer-reference#getnewaddress
      *
-     * @throws \RuntimeException in case of error of this type
-     * @internal param string $walletName Name of wallet
+     * @throws BERuntimeException in case of error of this type
      *
      * @return \string
      *
@@ -1001,14 +1025,14 @@ class Bridge
             $network = Bitcoin::getNetwork();
             $wif = $privateKey->toWif($network);
         } catch (Base58ChecksumFailure $ex) {
-            throw new \RuntimeException($ex->getMessage());
+            throw new BERuntimeException($ex->getMessage());
         } //May be \RuntimeException will raised in the BitWASP library - we'll not change this
         if (!file_put_contents(
             $this->getOption(Bridge::OPT_LOCAL_PATH_OF_WALLET_DATA),
             ($wif.";".$address.PHP_EOL),
             FILE_APPEND
         ) ) {
-            throw new \RuntimeException(
+            throw new BERuntimeException(
                 "Write data into the file " . $this->getOption(Bridge::OPT_LOCAL_PATH_OF_WALLET_DATA) . " failed."
             );
         }
@@ -1022,32 +1046,30 @@ class Bridge
      *
      * @param string $address
      *
-     * @throws \RuntimeException in case of error of this type
-     * @throws \InvalidArgumentException in case of error of this type
+     * @throws BERuntimeException in case of error of this type
+     * @throws BEInvalidArgumentException in case of error of this type
      * @internal param string $walletName Name of wallet
      * @return \string|null WIF or null (if didn't found)
      *
      */
     public function dumpprivkey($address)
     {
-        if ("string" != gettype($address) || ("" == $address)) {
-            throw new \InvalidArgumentException("address variable must be non empty string.");
+        if ((!is_string($address)) || empty($address)) {
+            throw new BEInvalidArgumentException("address variable must be non empty string.");
         }
 
         $path = $this->getOption(Bridge::OPT_LOCAL_PATH_OF_WALLET_DATA);
 
         $handle = fopen($path, "r");
         if (false === $handle) {
-            throw new \RuntimeException(
-                "Read data from the file " . $path . " failed."
-            );
+            throw new BERuntimeException("Read data from the file " . $path . " failed.");
         }
         $i = 0;
         while (($data = fgetcsv($handle, 1000, ";")) !== false) {
             ++$i;
             $num = count($data);
             if (2 != $num) {
-                throw new \RuntimeException(
+                throw new BERuntimeException(
                     "Line #" . $i . " in the file " . $path . " contains " .
                     $num . " fields, must contain 3 fields only."
                 );
@@ -1069,14 +1091,14 @@ class Bridge
      *
      * @return boolean true on success
      *
-     * @throws \RuntimeException in case of any error
-     * @throws \InvalidArgumentException if error of this type
+     * @throws BERuntimeException in case of any error
+     * @throws BEInvalidArgumentException if error of this type
      *
      */
     public function settxfee($fee)
     {
-        if ((gettype($fee) != "integer") || ($fee <= intval($this->getOption(self::OPT_MINIMAL_FEE_PER_KB)))) {
-            throw new \InvalidArgumentException(
+        if ((!is_int($fee)) || ($fee <= intval($this->getOption(self::OPT_MINIMAL_FEE_PER_KB)))) {
+            throw new BEInvalidArgumentException(
                 "fee variable must be integer and more or  equal than " .
                 $this->getOption(self::OPT_MINIMAL_FEE_PER_KB) . ")."
             );
@@ -1101,39 +1123,40 @@ class Bridge
      *
      * @return string $transactionId
      *
-     * @throws \RuntimeException in case of any runtime error
-     * @throws \InvalidArgumentException if error of this type
+     * @throws BERuntimeException in case of any runtime error
+     * @throws BEInvalidArgumentException if error of this type
      * @throws ConflictHandlerException in case of any error of this type
      * @throws ResultHandlerException in case of any error of this type
      *
      */
     public function sendfrom($walletName, $address, $amount, $confirmations = 1, $comment = "", $commentTo = "")
     {
-        if ("string" != gettype($walletName)) {
-            throw new \InvalidArgumentException("Account variable must be non empty string.");
+        if ((!is_string($walletName)) || empty($walletName)) {
+            throw new BEInvalidArgumentException("Wallet name must be non empty string.");
         }
         if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
-            throw new \InvalidArgumentException(
+            throw new BEInvalidArgumentException(
                 "Wallet name have to contain only alphanumeric, underline and dash symbols (\"" .
                 $walletName . "\" passed)."
             );
         }
-        if ("string" != gettype($address) || ("" == $address)) {
-            throw new \InvalidArgumentException("address variable must be non empty string.");
+        if ((!is_string($address)) || empty($address)) {
+            throw new BEInvalidArgumentException("address variable must be non empty string.");
         }
-        if ("integer" != gettype($amount) || ($amount < intval(self::OPT_MINIMAL_AMOUNT_FOR_SENT))) {
-            throw new \InvalidArgumentException(
+        if ((!is_int($amount)) || ($amount < intval(self::OPT_MINIMAL_AMOUNT_FOR_SENT))) {
+            throw new BEInvalidArgumentException(
                 "amount variable must be integer bigger or equal " . self::OPT_MINIMAL_AMOUNT_FOR_SENT . "."
             );
         }
-        if ("integer" != gettype($confirmations) || ($confirmations < 0)) {
-            throw new \InvalidArgumentException("confirmation variable must be non negative integer.");
+        if ((!is_int($confirmations)) || ($confirmations < 0)) {
+            throw new BEInvalidArgumentException("confirmation variable must be non negative integer.");
         }
-        if ("string" != gettype($comment)) {
-            throw new \InvalidArgumentException("comment variable must be a string variable.");
+
+        if (!is_string($comment)) {
+            throw new BEInvalidArgumentException("comment variable must be a string variable.");
         }
-        if ("string" != gettype($commentTo)) {
-            throw new \InvalidArgumentException("commentTo variable must be a string variable.");
+        if (!is_string($commentTo)) {
+            throw new BEInvalidArgumentException("commentTo variable must be a string variable.");
         }
 
         $results = [];
@@ -1173,7 +1196,7 @@ class Bridge
                 if ($change < intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT))) {
                     $amount = $amount - ( intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT)) - $change );
                     if ($amount < intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT))) {
-                        throw new \InvalidArgumentException(
+                        throw new BEInvalidArgumentException(
                             "The transaction amount is too small to send after the fee has been deducted."
                         );
                     }
@@ -1184,7 +1207,7 @@ class Bridge
                 //no change
                 break;
             }
-            //throw new \RuntimeException(
+            //throw new BERuntimeException(
                 //"Logic error (\$amount (" . $amount . ") less than \$sumAmount" . $sumAmount . ")."
             //);
         } while (true);
@@ -1194,10 +1217,10 @@ class Bridge
         $transactionSources = [];
         foreach ($outputsForSpent as $output) {
             $txSource = new \stdClass();
-            $txSource->address = AddressFactory::fromString($output->getAddress());
+            $txSource->address = AddressFactory::fromString($output->getAddress(), $this->network);
             $txSource->privateKey = $this->dumpprivkey($output->getAddress());
             if (!$txSource->privateKey) {
-                throw new \RuntimeException(
+                throw new BERuntimeException(
                     "dumpprivkey did not return object on address \"" . $output->getAddress() . "\"."
                 );
             }
@@ -1216,11 +1239,11 @@ class Bridge
         foreach ($transactionSources as $source) {
             $transaction = $transaction->spendOutPoint($source->outpoint);
         }
-        $transaction = $transaction->payToAddress($amount, AddressFactory::fromString($address));
+        $transaction = $transaction->payToAddress($amount, AddressFactory::fromString($address, $this->network));
         if ($change >= $this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT)) {
             $addressForChange = $outputsForSpent[0]->getAddress();
             /** @noinspection PhpUndefinedMethodInspection */
-            $transaction = $transaction->payToAddress($change, AddressFactory::fromString($addressForChange));
+            $transaction = $transaction->payToAddress($change, AddressFactory::fromString($addressForChange, $this->network));
         }
         /** @noinspection PhpUndefinedMethodInspection */
         $transaction = $transaction->get();
@@ -1249,28 +1272,28 @@ class Bridge
      *
      * @return string $transactionId
      *
-     * @throws \RuntimeException in case of any runtime error
-     * @throws \InvalidArgumentException if error of this type
+     * @throws BERuntimeException in case of any runtime error
+     * @throws BEInvalidArgumentException if error of this type
      * @throws ConflictHandlerException in case of any error of this type
      * @throws ResultHandlerException in case of any error of this type
      *
      */
     public function sendfromEX($walletName, $address, $amount, SendMoneyOptions $sendMoneyOptions)
     {
-        if ("string" != gettype($walletName)) {
-            throw new \InvalidArgumentException("Account variable must be non empty string.");
+        if (!is_string($walletName)) {
+            throw new BEInvalidArgumentException("Wallet name variable must be non empty string.");
         }
         if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
-            throw new \InvalidArgumentException(
+            throw new BEInvalidArgumentException(
                 "Wallet name have to contain only alphanumeric, underline and dash symbols (\"" .
                 $walletName . "\" passed)."
             );
         }
-        if ("string" != gettype($address) || ("" == $address)) {
-            throw new \InvalidArgumentException("address variable must be non empty string.");
+        if ((!is_string($address)) || empty($address)) {
+            throw new BEInvalidArgumentException("address variable must be non empty string.");
         }
-        if ("integer" != gettype($amount) || ($amount < intval(self::OPT_MINIMAL_AMOUNT_FOR_SENT))) {
-            throw new \InvalidArgumentException(
+        if ((!is_int($amount)) || ($amount < intval(self::OPT_MINIMAL_AMOUNT_FOR_SENT))) {
+            throw new BEInvalidArgumentException(
                 "amount variable must be integer bigger or equal " . self::OPT_MINIMAL_AMOUNT_FOR_SENT . "."
             );
         }
@@ -1318,7 +1341,7 @@ class Bridge
                 if ($change < intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT))) {
                     $amount = $amount - ( intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT)) - $change );
                     if ($amount < intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT))) {
-                        throw new \InvalidArgumentException(
+                        throw new BEInvalidArgumentException(
                             "The transaction amount is too small to send after the fee has been deducted."
                         );
                     }
@@ -1334,10 +1357,10 @@ class Bridge
         $transactionSources = [];
         foreach ($outputsForSpent as $output) {
             $txSource = new \stdClass();
-            $txSource->address = AddressFactory::fromString($output->getAddress());
+            $txSource->address = AddressFactory::fromString($output->getAddress(), $this->network);
             $txSource->privateKey = $this->dumpprivkey($output->getAddress());
             if (!$txSource->privateKey) {
-                throw new \RuntimeException(
+                throw new BERuntimeException(
                     "dumpprivkey did not return object on address \"" . $output->getAddress() . "\"."
                 );
             }
@@ -1356,7 +1379,7 @@ class Bridge
         foreach ($transactionSources as $source) {
             $transaction = $transaction->spendOutPoint($source->outpoint);
         }
-        $transaction = $transaction->payToAddress($amount, AddressFactory::fromString($address));
+        $transaction = $transaction->payToAddress($amount, AddressFactory::fromString($address, $this->network));
         if ($change >= $this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT)) {
             $addressForChange = null;
             if ("" != $sendMoneyOptions) {
@@ -1365,7 +1388,7 @@ class Bridge
                 $addressForChange = $outputsForSpent[0]->getAddress();
             }
             /** @noinspection PhpUndefinedMethodInspection */
-            $transaction = $transaction->payToAddress($change, AddressFactory::fromString($addressForChange));
+            $transaction = $transaction->payToAddress($change, AddressFactory::fromString($addressForChange, $this->network));
         }
         /** @noinspection PhpUndefinedMethodInspection */
         $transaction = $transaction->get();
@@ -1395,45 +1418,45 @@ class Bridge
      *
      * @return string $transactionId
      *
-     * @throws \RuntimeException in case of any runtime error
-     * @throws \InvalidArgumentException if error of this type
+     * @throws BERuntimeException in case of any runtime error
+     * @throws BEInvalidArgumentException if error of this type
      * @throws ConflictHandlerException in case of any error of this type
      *
      */
     public function sendmany($walletName, array $smoutputs, $confirmations = 1, $comment = "")
     {
         /** @var $smoutputs SMOutput[] */
-        if ("string" != gettype($walletName) || ("" == $walletName)) {
-            throw new \InvalidArgumentException("Account variable must be non empty string.");
+        if (!is_string($walletName)) {
+            throw new BEInvalidArgumentException("Wallet name must be non empty string.");
         }
         if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
-            throw new \InvalidArgumentException(
+            throw new BEInvalidArgumentException(
                 "Wallet name have to contain only alphanumeric, underline and dash symbols (\"" .
                 $walletName . "\" passed)."
             );
         }
         if (empty($smoutputs)) {
-            throw new \InvalidArgumentException("\$smoutputs variable must be non empty string.");
+            throw new BEInvalidArgumentException("\$smoutputs variable must be non empty string.");
         }
         $amount = 0;
         for ($i = 0, $ic = count($smoutputs); $i < $ic; ++$i) {
             if (!$smoutputs[$i] instanceof SMOutput) {
-                throw new \InvalidArgumentException(
+                throw new BEInvalidArgumentException(
                     "items of smoutputs variable must be instances of SMOutput class"
                 );
             }
             $amount += $smoutputs[$i]->getAmount();
         }
         if ($amount < intval(self::OPT_MINIMAL_AMOUNT_FOR_SENT)) {
-            throw new \InvalidArgumentException(
+            throw new BEInvalidArgumentException(
                 "total amount from outputs must bigger or equal " . self::OPT_MINIMAL_AMOUNT_FOR_SENT . "."
             );
         }
-        if ("integer" != gettype($confirmations) || ($confirmations < 0)) {
-            throw new \InvalidArgumentException("confirmation variable must be non negative integer.");
+        if ((!is_int($confirmations)) || ($confirmations < 0)) {
+            throw new BEInvalidArgumentException("confirmation variable must be non negative integer.");
         }
-        if ("string" != gettype($comment)) {
-            throw new \InvalidArgumentException("comment variable must be a string variable.");
+        if (!is_string($comment)) {
+            throw new BEInvalidArgumentException("comment variable must be a string variable.");
         }
 
         $results = [];
@@ -1474,7 +1497,7 @@ class Bridge
                 if ($change < intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT))) {
                     $amount = $amount - ( intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT)) - $change );
                     if ($amount < intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT))) {
-                        throw new \InvalidArgumentException(
+                        throw new BEInvalidArgumentException(
                             "The transaction amount is too small to send after the fee has been deducted."
                         );
                     }
@@ -1490,10 +1513,10 @@ class Bridge
         $transactionSources = [];
         foreach ($outputsForSpent as $output) {
             $txSource = new \stdClass();
-            $txSource->address = AddressFactory::fromString($output->getAddress());
+            $txSource->address = AddressFactory::fromString($output->getAddress(), $this->network);
             $txSource->privateKey = $this->dumpprivkey($output->getAddress());
             if (!$txSource->privateKey) {
-                throw new \RuntimeException(
+                throw new BERuntimeException(
                     "dumpprivkey did not return object on address \"" . $output->getAddress() . "\"."
                 );
             }
@@ -1515,13 +1538,13 @@ class Bridge
         foreach ($smoutputs as $sendmanyoutput) {
             $transaction = $transaction->payToAddress(
                 $sendmanyoutput->getAmount(),
-                AddressFactory::fromString($sendmanyoutput->getAddress())
+                AddressFactory::fromString($sendmanyoutput->getAddress(), $this->network)
             );
         }
         if ($change > $this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT)) {
             $addressForChange = $outputsForSpent[0]->getAddress();
             /** @noinspection PhpUndefinedMethodInspection */
-            $transaction = $transaction->payToAddress($change, AddressFactory::fromString($addressForChange));
+            $transaction = $transaction->payToAddress($change, AddressFactory::fromString($addressForChange, $this->network));
         }
         /** @noinspection PhpUndefinedMethodInspection */
         $transaction = $transaction->get();
@@ -1546,8 +1569,8 @@ class Bridge
      *
      * @return string $transactionId
      *
-     * @throws \RuntimeException in case of any runtime error
-     * @throws \InvalidArgumentException if error of this type
+     * @throws BERuntimeException in case of any runtime error
+     * @throws BEInvalidArgumentException if error of this type
      * @throws ConflictHandlerException in case of any error of this type
      * @throws ResultHandlerException in case of any error of this type
      *
@@ -1555,29 +1578,29 @@ class Bridge
     public function sendmanyEX($walletName, array $smoutputs, SendMoneyOptions $sendMoneyOptions)
     {
         /** @var $smoutputs SMOutput[] */
-        if ("string" != gettype($walletName) || ("" == $walletName)) {
-            throw new \InvalidArgumentException("Account variable must be non empty string.");
+        if (!is_string($walletName)) {
+            throw new BEInvalidArgumentException("Wallet name variable must be non empty string.");
         }
         if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
-            throw new \InvalidArgumentException(
+            throw new BEInvalidArgumentException(
                 "Wallet name have to contain only alphanumeric, underline and dash symbols (\"" .
                 $walletName . "\" passed)."
             );
         }
         if (empty($smoutputs)) {
-            throw new \InvalidArgumentException("\$smoutputs variable must be non empty string.");
+            throw new BEInvalidArgumentException("\$smoutputs variable must be non empty string.");
         }
         $amount = 0;
         for ($i = 0, $ic = count($smoutputs); $i < $ic; ++$i) {
             if (!$smoutputs[$i] instanceof SMOutput) {
-                throw new \InvalidArgumentException(
+                throw new BEInvalidArgumentException(
                     "items of smoutputs variable must be instances of SMOutput class"
                 );
             }
             $amount += $smoutputs[$i]->getAmount();
         }
         if ($amount < intval(self::OPT_MINIMAL_AMOUNT_FOR_SENT)) {
-            throw new \InvalidArgumentException(
+            throw new BEInvalidArgumentException(
                 "total amount from outputs must bigger or equal " . self::OPT_MINIMAL_AMOUNT_FOR_SENT . "."
             );
         }
@@ -1623,7 +1646,7 @@ class Bridge
                 if ($change < intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT))) {
                     $amount = $amount - (intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT)) - $change);
                     if ($amount < intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT))) {
-                        throw new \InvalidArgumentException(
+                        throw new BEInvalidArgumentException(
                             "The transaction amount is too small to send after the fee has been deducted."
                         );
                     }
@@ -1639,10 +1662,10 @@ class Bridge
         $transactionSources = [];
         foreach ($outputsForSpent as $output) {
             $txSource = new \stdClass();
-            $txSource->address = AddressFactory::fromString($output->getAddress());
+            $txSource->address = AddressFactory::fromString($output->getAddress(), $this->network);
             $txSource->privateKey = $this->dumpprivkey($output->getAddress());
             if (!$txSource->privateKey) {
-                throw new \RuntimeException(
+                throw new BERuntimeException(
                     "dumpprivkey did not return object on address \"" . $output->getAddress() . "\"."
                 );
             }
@@ -1664,7 +1687,7 @@ class Bridge
         foreach ($smoutputs as $sendmanyoutput) {
             $transaction = $transaction->payToAddress(
                 $sendmanyoutput->getAmount(),
-                AddressFactory::fromString($sendmanyoutput->getAddress())
+                AddressFactory::fromString($sendmanyoutput->getAddress(), $this->network)
             );
         }
         if ($change > $this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT)) {
@@ -1675,7 +1698,7 @@ class Bridge
                 $addressForChange = $outputsForSpent[0]->getAddress();
             }
             /** @noinspection PhpUndefinedMethodInspection */
-            $transaction = $transaction->payToAddress($change, AddressFactory::fromString($addressForChange));
+            $transaction = $transaction->payToAddress($change, AddressFactory::fromString($addressForChange, $this->network));
         }
         /** @noinspection PhpUndefinedMethodInspection */
         $transaction = $transaction->get();

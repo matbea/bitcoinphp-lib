@@ -14,7 +14,8 @@
     "require": {
         "php": ">=5.4.0",
         "monolog/monolog": "^1.22",
-        "bitwasp/bitcoin": "^0.0.33"
+        "bitwasp/bitcoin": "^0.0.33",
+	"garoevans/php-enum": "~1.2"
     },
     "config": {
         "disable-tls": true,

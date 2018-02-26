@@ -11,11 +11,13 @@
 
 namespace BTCBridge\ConflictHandler;
 
-use BTCBridge\Exception\ConflictHandlerException;
 use BTCBridge\Api\Transaction;
 use BTCBridge\Api\Address;
 use BTCBridge\Api\Wallet;
 use BTCBridge\Api\TransactionReference;
+use BTCBridge\Exception\ConflictHandlerException;
+use BTCBridge\Exception\BEInvalidArgumentException;
+use BTCBridge\Exception\BERuntimeException;
 
 /**
  * Interface that all BTCBridge ConflictHandlers must implement.
@@ -31,7 +33,6 @@ interface ConflictHandlerInterface
      * It returns more information about an address’ transactions than the Address Balance Endpoint but
      * doesn’t return full transaction information (like the Address Full Endpoint).
      * @link https://bitcoin.org/en/developer-reference#listtransactions Official bitcoin documentation.
-     * @link https://www.blockcypher.com/dev/bitcoin/?shell#address-endpoint Official blockcypher documentation
      *
      * @param Address[] $data  Result from method listtransactions (from all handlers)
      *
@@ -53,7 +54,6 @@ interface ConflictHandlerInterface
      * The Address Balance Endpoint is the simplest—and fastest—method to get a subset of
      * information on a public address.
      * @link https://bitcoin.org/en/developer-reference#getbalance Official bitcoin documentation.
-     * @link https://www.blockcypher.com/dev/bitcoin/?shell#address-endpoint
      *
      * @param array $data  Result from method getbalance (from all handlers)
      *
@@ -66,7 +66,6 @@ interface ConflictHandlerInterface
      * The Address Balance Endpoint is the simplest—and fastest—method to get a subset of
      * information on a public address.
      * @link https://bitcoin.org/en/developer-reference#getunconfirmedbalance Official bitcoin documentation.
-     * @link https://www.blockcypher.com/dev/bitcoin/?shell#address-endpoint
      *
      * @param array $data  Result from method getunconfirmedbalance (from all handlers)
      *
@@ -79,7 +78,6 @@ interface ConflictHandlerInterface
      * The Address Balance Endpoint is the simplest—and fastest—method to get a subset
      * of information on a public address.
      * @link https://bitcoin.org/en/developer-reference#listunspent Official bitcoin documentation.
-     * @link https://www.blockcypher.com/dev/bitcoin/?shell#address-endpoint
      *
      * @param TransactionReference[][] $data
      * Result from method listunspent (from all handlers)
@@ -103,7 +101,6 @@ interface ConflictHandlerInterface
 
     /**
      * This Method Creates a new wallet
-     * @link https://www.blockcypher.com/dev/bitcoin/?shell#create-wallet-endpoint
      *
      * @param array $data  Result from method createWallet (from all handlers)
      *
@@ -116,7 +113,6 @@ interface ConflictHandlerInterface
 
     /**
      * This Method removes address from the passed wallet
-     * @link https://www.blockcypher.com/dev/bitcoin/?shell#remove-addresses-from-wallet-endpoint
      *
      * @param array $data  Result from method removeAddresses (from all handlers)
      *
@@ -128,7 +124,6 @@ interface ConflictHandlerInterface
 
     /**
      * This Method adds new addresses to the passed wallet
-     * @link https://www.blockcypher.com/dev/bitcoin/?shell#add-addresses-to-wallet-endpoint
      *
      * @param array $data  Result from method addAddresses (from all handlers)
      *
@@ -140,12 +135,11 @@ interface ConflictHandlerInterface
     /**
      * This method returns addresses from the passed wallet
      * @link https://bitcoin.org/en/developer-reference#getaddressesbyaccount
-     * @link https://www.blockcypher.com/dev/bitcoin/?shell#get-wallet-addresses-endpoint
      *
      * @param array $data  Result from method getAddresses (from all handlers)
      *
-     * @throws \RuntimeException in case of any error of this type
-     * @throws \InvalidArgumentException in case of any error of this type
+     * @throws BERuntimeException in case of any error of this type
+     * @throws BEInvalidArgumentException in case of any error of this type
      *
      * @return \string[] addresses
      */
@@ -156,8 +150,8 @@ interface ConflictHandlerInterface
      *
      * @param array $data  Result from method getAddresses (from all handlers)
      *
-     * @throws \RuntimeException in case of any error of this type
-     * @throws \InvalidArgumentException in case of any error of this type
+     * @throws BERuntimeException in case of any error of this type
+     * @throws BEInvalidArgumentException in case of any error of this type
      *
      * @return Wallet[] wallets
      */

@@ -18,7 +18,13 @@ use \BTCBridge\Api\Address;
 use \BTCBridge\Api\TransactionReference;
 use \BTCBridge\Api\BTCValue;
 use \BTCBridge\Api\ListTransactionsOptions;
-use \BTCBridge\Api\GetWalletsOptions;
+use \BTCBridge\Api\WalletActionOptions;
+use BTCBridge\Api\CurrencyTypeEnum;
+use BTCBridge\Exception\BERuntimeException;
+use BTCBridge\Exception\BEInvalidArgumentException;
+use BTCBridge\Exception\BELogicException;
+use BitWasp\Bitcoin\Network\Network;
+use BitWasp\Bitcoin\Network\NetworkFactory;
 
 /**
  * Base Handler class providing the Handler structure, must be extended
@@ -31,7 +37,7 @@ abstract class AbstractHandler
     const HANDLER_UNSUPPORTED_METHOD = "HANDLER_UNSUPPORTED_METHOD";
 
     /** This group of constants are options */
-    const OPT_BASE_URL = 1;
+    const OPT_BASE_URL     = 1;
     const OPT_BASE_BROWSER = 2;
 
     /** @var LoggerInterface logger handler */
@@ -40,11 +46,28 @@ abstract class AbstractHandler
     /** @var array options */
     protected $options = [];
 
+    /** @var CurrencyTypeEnum currency */
+    protected $currency;
+
+    /** @var Network network */
+    protected $network;
+
     /**
      * Constructor
+     *
+     * @param CurrencyTypeEnum $currency          Name of currency
+     *
+     * @throws BERuntimeException in case of error of this type
+     * @throws BEInvalidArgumentException in case of error of this type
      */
-    public function __construct()
+    public function __construct(CurrencyTypeEnum $currency)
     {
+        $this->currency = $currency;
+        if (CurrencyTypeEnum::BTC == $this->currency) {
+            $this->network = NetworkFactory::bitcoin();
+        } elseif (CurrencyTypeEnum::TBTC == $this->currency) {
+            $this->network = NetworkFactory::bitcoinTestnet();
+        }
         $this->setLogger(new Logger('BTCBridge'));
         $this->setOption(
             self::OPT_BASE_BROWSER,
@@ -54,12 +77,22 @@ abstract class AbstractHandler
     }
 
     /**
+     * Get currency
+     *
+     * @return CurrencyTypeEnum
+     */
+    public function getCurrency()
+    {
+        return $this->currency;
+    }
+
+    /**
      * Sets the logger handler
      *
      * @param LoggerInterface $loggerHandle a handler to logging Interface
      *
-     * @throws \RuntimeException in case of error of this type
-     * @throws \InvalidArgumentException in case of error of this type
+     * @throws BERuntimeException in case of error of this type
+     * @throws BEInvalidArgumentException in case of error of this type
      *
      */
     public function setLogger(LoggerInterface $loggerHandle)
@@ -70,74 +103,70 @@ abstract class AbstractHandler
     /**
      * Sets the option
      *
-     * @param string $optionname a name of the option
-     * @param string $optionvalue a value of the option
+     * @param int $optionName a const which describes name of the option
+     * @param string $optionValue a value of the followed option
      *
-     * @throws \InvalidArgumentException if error of this type
+     * @throws BEInvalidArgumentException if error of this type
      *
      */
-    public function setOption($optionname, $optionvalue)
+    public function setOption($optionName, $optionValue)
     {
-        if (gettype($optionname) != "integer") {
-            throw new \InvalidArgumentException("Bad type of option name (must be non empty string)");
+        if (!is_int($optionName)) {
+            $msg = "Bad type (" . gettype($optionName) . ") of option name (must be integer)";
+            throw new BEInvalidArgumentException($msg);
         }
-        if (gettype($optionvalue) != "string" || "" == $optionvalue) {
-            throw new \InvalidArgumentException("Bad type of option value (must be non empty string)");
+        if (!is_string($optionValue) || empty($optionValue)) {
+            $msg = "Bad type (" . gettype($optionValue) . ") of option value (must be non empty string)";
+            throw new BEInvalidArgumentException($msg);
         }
-        $this->options[$optionname] = $optionvalue;
+        $this->options[$optionName] = $optionValue;
     }
 
     /**
      * Gets the option
      *
-     * @param string $optionname a name of the option
+     * @param int $optionName a const which describes name of the option
      *
-     * @throws \InvalidArgumentException if error of this type
-     * @throws \RuntimeException in case if this option is not exists
+     * @throws BEInvalidArgumentException if error of this type
+     * @throws BERuntimeException in case if this option is not exists
      *
      * @return string Option
      */
-    public function getOption($optionname)
+    public function getOption($optionName)
     {
-        if (gettype($optionname) != "integer") {
-            throw new \InvalidArgumentException("Bad type of option name (must be non empty string)");
+        if (!is_int($optionName)) {
+            throw new BEInvalidArgumentException("Bad type (" . gettype($optionName) . ") of option name (must be integer)");
         }
-        if (!isset($this->options[$optionname])) {
-            throw new \RuntimeException("No option with name \"" . $optionname . "\" exists in the class)");
+        if (!isset($this->options[$optionName])) {
+            throw new BERuntimeException("No option with name \"" . $optionName . "\" exists in the class)");
         }
-        return $this->options[$optionname];
+        return $this->options[$optionName];
     }
 
     /**
      * Prepare curl descriptor for querying
      *
-     * @param resource $curl A reference to the curl onjet
+     * @param resource $curl A reference to the curl object
      * @param string $url An url address for connecting
      *
-     * @throws \RuntimeException in case of any curl error
+     * @throws BERuntimeException in case of any curl error
      */
     protected function prepareCurl(&$curl, $url)
     {
-        if (!curl_setopt($curl, CURLOPT_URL, $url)) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_USERAGENT, $this->getOption(self::OPT_BASE_BROWSER))) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1)) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_HEADER, 0)) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0)) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
-        }
-        if (!curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0)) {
-            throw new \RuntimeException("curl_setopt failed url:\"" . $url . "\").");
+        $curl_options = [
+            CURLOPT_URL            => $url,
+            CURLOPT_USERAGENT      => $this->getOption(self::OPT_BASE_BROWSER),
+            CURLOPT_RETURNTRANSFER => 1,
+            CURLOPT_HEADER         => 0,
+            CURLOPT_SSL_VERIFYHOST => 0,
+            CURLOPT_SSL_VERIFYPEER => 0
+        ];
+        if (false === curl_setopt_array($curl, $curl_options)) {
+            throw new BERuntimeException(
+                "curl_setopt_array failed url:\"" . $url . "\", parameters: " . serialize($curl_options) . ")."
+            );
         }
     }
-
 
     /**
      * The listtransactions RPC returns the most recent transactions that affect the wallet.
@@ -145,13 +174,12 @@ abstract class AbstractHandler
      * It returns more information about an address’ transactions than the Address Balance Endpoint
      * but doesn’t return full transaction information (like the Address Full Endpoint).
      * @link https://bitcoin.org/en/developer-reference#listtransactions Official bitcoin documentation.
-     * @link https://www.blockcypher.com/dev/bitcoin/?shell#address-endpoint Official blockcypher documentation
      *
-     * @param string $walletName  An account name (or address) to get transactions from
+     * @param string $walletName  A wallet name (or address) to get transactions from
      * @param ListTransactionsOptions $options contains the optional params
      *
-     * @throws \RuntimeException in case of any error of this type
-     * @throws \InvalidArgumentException in case of any error of this type
+     * @throws BERuntimeException in case of any error of this type
+     * @throws BEInvalidArgumentException in case of any error of this type
      *
      * @return Address object
      */
@@ -161,8 +189,8 @@ abstract class AbstractHandler
      * The gettransactions RPC gets detailed information about an in-wallet transaction.
      * @param string[] $txHashes transaction identifiers
      *
-     * @throws \RuntimeException in case of any error
-     * @throws \InvalidArgumentException if error of this type
+     * @throws BERuntimeException in case of any error
+     * @throws BEInvalidArgumentException if error of this type
      *
      * @return Transaction[]
      */
@@ -174,14 +202,14 @@ abstract class AbstractHandler
      * The Address Balance Endpoint is the simplest—and fastest—method
      * to get a subset of information on a public address.
      * @link https://bitcoin.org/en/developer-reference#getbalance Official bitcoin documentation.
-     * @link https://www.blockcypher.com/dev/bitcoin/?shell#address-endpoint
      *
-     * @param string $walletName            An account name to get balance from
+     * @param string $walletName (or address)     A wallet name to get balance from
      * @param int $Confirmations         The minimum number of confirmations an externally-generated transaction
      * must have before it is counted towards the balance.
      *
-     * @throws \RuntimeException in case of any error
-     * @throws \InvalidArgumentException if error of this type
+     * @throws BERuntimeException in case of any error
+     * @throws BELogicException in case of any error
+     * @throws BEInvalidArgumentException if error of this type
      *
      * @return BTCValue The total number of bitcoins paid to the passed wallet in unconfirmed transactions
      */
@@ -192,31 +220,29 @@ abstract class AbstractHandler
      * The Address Balance Endpoint is the simplest—and fastest—method
      * to get a subset of information on a public address.
      * @link https://bitcoin.org/en/developer-reference#getunconfirmedbalance Official bitcoin documentation.
-     * @link https://www.blockcypher.com/dev/bitcoin/?shell#address-endpoint
      *
-     * @param string $Account An account name to get unconfirmed balance from
+     * @param string $walletName A wallet name (or address) to get unconfirmed balance from
      *
-     * @throws \RuntimeException in case of any error
-     * @throws \InvalidArgumentException if error of this type
+     * @throws BERuntimeException in case of any error
+     * @throws BEInvalidArgumentException if error of this type
      *
      * @return BTCValue The total number of bitcoins paid to the passed wallet in unconfirmed transactions
      */
-    abstract public function getunconfirmedbalance($Account);
+    abstract public function getunconfirmedbalance($walletName);
 
     /**
      * Returns an array of unspent transaction outputs belonging to this wallet.
      * The Address Balance Endpoint is the simplest—and fastest—method to
      * get a subset of information on a public address.
      * @link https://bitcoin.org/en/developer-reference#listunspent Official bitcoin documentation.
-     * @link https://www.blockcypher.com/dev/bitcoin/?shell#address-endpoint
      *
-     * @param string $walletName An account name to get unconfirmed balance from
+     * @param string $walletName A wallet name (or address) to get unconfirmed balance from
      * @param int $MinimumConfirmations  The minimum number of confirmations the transaction containing an output
      * must have in order to be returned.
      * If $MinimumConfirmations = 0, then only unconfirmed transactions will be returned.
      *
-     * @throws \RuntimeException in case of any error
-     * @throws \InvalidArgumentException if error of this type
+     * @throws BERuntimeException in case of any error
+     * @throws BEInvalidArgumentException if error of this type
      *
      * @return  TransactionReference[] The list of unspent outputs
      */
@@ -226,82 +252,80 @@ abstract class AbstractHandler
      * The sendrawtransaction RPC validates a transaction and broadcasts it to the peer-to-peer network.
      * @link https://bitcoin.org/en/developer-reference#sendrawtransaction Official bitcoin documentation.
      *
-     * @param string $Transaction
+     * @param string $transaction Raw transaction hex-encoded
      *
      * @return string If the transaction was accepted by the node for broadcast, this will be the TXID
      * of the transaction encoded as hex in RPC byte order.
      *
-     * @throws \RuntimeException in case of any error
-     * @throws \InvalidArgumentException if error of this type
+     * @throws BERuntimeException in case of any error
+     * @throws BEInvalidArgumentException if error of this type
      *
      */
-    abstract public function sendrawtransaction($Transaction);
+    abstract public function sendrawtransaction($transaction);
 
     /**
      * This Method Creates a new wallet
-     * @link https://www.blockcypher.com/dev/bitcoin/?shell#create-wallet-endpoint
      *
      * @param string $walletName Name of wallet
      * @param string[] $addresses
+     * @param WalletActionOptions $options
      *
      * @return Wallet object
      *
-     * @throws \RuntimeException in case of error of this type
-     * @throws \InvalidArgumentException in case of error of this type
+     * @throws BERuntimeException in case of error of this type
+     * @throws BEInvalidArgumentException in case of error of this type
      *
      */
-    abstract public function createWallet($walletName, array $addresses);
+    abstract public function createWallet($walletName, array $addresses, WalletActionOptions $options = null);
 
     /**
      * This Method removes address from the wallet
-     * @link https://www.blockcypher.com/dev/bitcoin/?shell#remove-addresses-from-wallet-endpoint
      *
      * @param Wallet $wallet
      * @param string[] $addresses
+     * @param WalletActionOptions $options
      *
      * @return Wallet result object
      *
-     * @throws \RuntimeException in case of error of this type
-     * @throws \InvalidArgumentException in case of error of this type
+     * @throws BERuntimeException in case of error of this type
+     * @throws BEInvalidArgumentException in case of error of this type
      *
      */
-    abstract public function removeAddresses(Wallet $wallet, array $addresses);
+    abstract public function removeAddresses(Wallet $wallet, array $addresses, WalletActionOptions $options = null);
 
     /**
      * This Method adds new addresses into a wallet
-     * @link https://www.blockcypher.com/dev/bitcoin/?shell#add-addresses-to-wallet-endpoint
      *
      * @param Wallet $wallet Object to which addresses will be added
      * @param string[] $addresses
+     * @param WalletActionOptions $options
      *
      * @return Wallet result object
      *
-     * @throws \RuntimeException in case of error of this type
-     * @throws \InvalidArgumentException in case of error of this type
+     * @throws BERuntimeException in case of error of this type
+     * @throws BEInvalidArgumentException in case of error of this type
      *
      */
-    abstract public function addAddresses(Wallet $wallet, array $addresses);
+    abstract public function addAddresses(Wallet $wallet, array $addresses, WalletActionOptions $options = null);
 
 
     /**
      * This Method deletes a passed wallet
-     * https://www.blockcypher.com/dev/bitcoin/?shell#delete-wallet-endpoint
      *
      * @param Wallet $wallet
      *
-     * @throws \RuntimeException in case of error of this type
+     * @throws BERuntimeException in case of error of this type
      */
     abstract public function deleteWallet(Wallet $wallet);
 
     /**
      * This method returns addresses from the passed wallet
      * @link https://bitcoin.org/en/developer-reference#getaddressesbyaccount
-     * @link https://www.blockcypher.com/dev/bitcoin/?shell#get-wallet-addresses-endpoint
      *
      * @param Wallet $wallet
      *
-     * @throws \RuntimeException in case of any error of this type
-     * @throws \InvalidArgumentException in case of any error of this type
+     * @throws BERuntimeException in case of any error of this type
+     * @throws BEInvalidArgumentException in case of any error of this type
      *
      * @return \string[] addresses
      */
@@ -310,14 +334,14 @@ abstract class AbstractHandler
     /**
      * This method returns wallets  and addresses optionally by token
      *
-     * @param GetWalletsOptions $options
+     * @param WalletActionOptions $options
      *
-     * @throws \RuntimeException in case of any error of this type
-     * @throws \InvalidArgumentException in case of any error of this type
+     * @throws BERuntimeException in case of any error of this type
+     * @throws BEInvalidArgumentException in case of any error of this type
      *
      * @return Wallet[] wallets
      */
-    abstract public function getWallets(GetWalletsOptions $options = null);
+    abstract public function getWallets(WalletActionOptions $options = null);
 
     /**
      * This method transforms name of signature type to common
@@ -343,8 +367,8 @@ abstract class AbstractHandler
      *
      * @param Wallet $wallet
      *
-     * @throws \RuntimeException in case of any error of this type
-     * @throws \InvalidArgumentException in case of any error of this type
+     * @throws BERuntimeException in case of any error of this type
+     * @throws BEInvalidArgumentException in case of any error of this type
      *
      * @return \array systemdata
      */

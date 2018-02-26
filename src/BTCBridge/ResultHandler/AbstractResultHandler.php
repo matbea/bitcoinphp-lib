@@ -15,6 +15,8 @@ use BTCBridge\Handler\AbstractHandler;
 use BTCBridge\Api\TransactionReference;
 use BTCBridge\Api\Wallet;
 use BTCBridge\Exception\ResultHandlerException;
+use BTCBridge\Exception\BEInvalidArgumentException;
+use BTCBridge\Exception\BERuntimeException;
 use BTCBridge\Api\Transaction;
 use BTCBridge\Api\Address;
 use BTCBridge\Api\BTCValue;
@@ -34,17 +36,14 @@ abstract class AbstractResultHandler
      * Set handlers to the instanse
      * @param AbstractHandler[] $handlers
      *
-     * @throws \InvalidArgumentException if the provided argument $handlers is empty
+     * @throws BEInvalidArgumentException if the provided argument $handlers is empty
      * or any item of this array has incorrect type
      */
     public function setHandlers(array $handlers)
     {
-        /*if (empty($handlers)) {
-            throw new \InvalidArgumentException("Handlers array can not be empty.");
-        }*/
         foreach ($handlers as $handler) {
             if (!$handler instanceof AbstractHandler) {
-                throw new \InvalidArgumentException("The given handler is not an AbstractHandler");
+                throw new BEInvalidArgumentException("The given handler is not an AbstractHandler");
             }
         }
         $this->handlers = $handlers;
@@ -56,7 +55,6 @@ abstract class AbstractResultHandler
      * It returns more information about an address’ transactions than the Address Balance Endpoint but
      * doesn’t return full transaction information (like the Address Full Endpoint).
      * @link https://bitcoin.org/en/developer-reference#listtransactions Official bitcoin documentation.
-     * @link https://www.blockcypher.com/dev/bitcoin/?shell#address-endpoint Official blockcypher documentation
      *
      * @param Address[] $data  Result from method listtransactions (from all handlers)
      *
@@ -83,7 +81,6 @@ abstract class AbstractResultHandler
      * The Address Balance Endpoint is the simplest—and fastest—method to get a subset of
      * information on a public address.
      * @link https://bitcoin.org/en/developer-reference#getbalance Official bitcoin documentation.
-     * @link https://www.blockcypher.com/dev/bitcoin/?shell#address-endpoint
      *
      * @param array $data  Result from method getbalance (from all handlers)
      *
@@ -98,7 +95,6 @@ abstract class AbstractResultHandler
      * The Address Balance Endpoint is the simplest—and fastest—method to get a subset of
      * information on a public address.
      * @link https://bitcoin.org/en/developer-reference#getunconfirmedbalance Official bitcoin documentation.
-     * @link https://www.blockcypher.com/dev/bitcoin/?shell#address-endpoint
      *
      * @param array $data  Result from method getunconfirmedbalance (from all handlers)
      *
@@ -113,7 +109,6 @@ abstract class AbstractResultHandler
      * The Address Balance Endpoint is the simplest—and fastest—method to get a subset
      * of information on a public address.
      * @link https://bitcoin.org/en/developer-reference#listunspent Official bitcoin documentation.
-     * @link https://www.blockcypher.com/dev/bitcoin/?shell#address-endpoint
      *
      * @param TransactionReference[][] $data
      * Result from method listunspent (from all handlers)
@@ -139,7 +134,6 @@ abstract class AbstractResultHandler
 
     /**
      * This Method Creates a new wallet
-     * @link https://www.blockcypher.com/dev/bitcoin/?shell#create-wallet-endpoint
      *
      * @param array $data  Result from method createWallet (from all handlers)
      *
@@ -152,7 +146,6 @@ abstract class AbstractResultHandler
 
     /**
      * This Method removes address from the passed wallet
-     * @link https://www.blockcypher.com/dev/bitcoin/?shell#remove-addresses-from-wallet-endpoint
      *
      * @param array $data  Result from method removeAddresses (from all handlers)
      *
@@ -166,7 +159,6 @@ abstract class AbstractResultHandler
 
     /**
      * This Method adds new addresses into a wallet
-     * @link https://www.blockcypher.com/dev/bitcoin/?shell#add-addresses-to-wallet-endpoint
      *
      * @param array $data  Result from method addAddresses (from all handlers)
      *
@@ -180,12 +172,11 @@ abstract class AbstractResultHandler
     /**
      * This method returns addresses from the passed wallet
      * @link https://bitcoin.org/en/developer-reference#getaddressesbyaccount
-     * @link https://www.blockcypher.com/dev/bitcoin/?shell#get-wallet-addresses-endpoint
      *
      * @param array $data  Result from method getAddresses (from all handlers)
      *
-     * @throws \RuntimeException in case of any error of this type
-     * @throws \InvalidArgumentException in case of any error of this type
+     * @throws BERuntimeException in case of any error of this type
+     * @throws BEInvalidArgumentException in case of any error of this type
      *
      * @return \string[] addresses
      */
@@ -196,8 +187,8 @@ abstract class AbstractResultHandler
      *
      * @param array $data  Result from method getWallets (from all handlers)
      *
-     * @throws \RuntimeException in case of any error of this type
-     * @throws \InvalidArgumentException in case of any error of this type
+     * @throws BERuntimeException in case of any error of this type
+     * @throws BEInvalidArgumentException in case of any error of this type
      *
      * @return Wallet[] wallets
      */

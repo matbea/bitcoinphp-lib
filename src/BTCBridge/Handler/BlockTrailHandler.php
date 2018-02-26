@@ -18,14 +18,10 @@ use BTCBridge\Api\TransactionOutput;
 use BTCBridge\Api\Wallet;
 use BTCBridge\Api\BTCValue;
 use BTCBridge\Api\ListTransactionsOptions;
-use BTCBridge\Api\GetWalletsOptions;
-
-//use BitWasp\Bitcoin\Script\ScriptFactory;
-//use BitWasp\Bitcoin\Script\Classifier\OutputClassifier;
-//use BitWasp\Bitcoin\Key\PublicKeyFactory;
-//use BitWasp\Bitcoin\Script\Script;
-//use BitWasp\Bitcoin\Crypto\EcAdapter\Impl\PhpEcc\Key\PublicKey;
-//use BitWasp\Bitcoin\Script\Opcodes;
+use BTCBridge\Api\WalletActionOptions;
+use BTCBridge\Api\CurrencyTypeEnum;
+use BTCBridge\Exception\BEInvalidArgumentException;
+use BTCBridge\Exception\BERuntimeException;
 
 /**
  * Returns data to user's btc-requests using BlockTrail-API
@@ -38,9 +34,9 @@ class BlockTrailHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function __construct()
+    public function __construct(CurrencyTypeEnum $currency)
     {
-        parent::__construct();
+        parent::__construct($currency);
         $this->setOption(self::OPT_BASE_URL, "https://api.blocktrail.com/v1/btc/");
     }
 
@@ -49,14 +45,15 @@ class BlockTrailHandler extends AbstractHandler
      *
      * @param string $token An token for accessing to the blocktrail data
      *
-     * @throws \InvalidArgumentException in case of error of this type
+     * @throws BEInvalidArgumentException in case of error of this type
      *
      * @return $this
      */
     public function setToken($token)
     {
-        if ((gettype($token) != "string") || ("" == $token)) {
-            throw new \InvalidArgumentException("Bad type of token (must be non empty string)");
+        if ((!is_string($token)) || empty($token)) {
+            $msg = "Bad type (" . gettype($token) . ") of token or empty token";
+            throw new BEInvalidArgumentException($msg);
         }
         $this->token = $token;
         return $this;
@@ -75,18 +72,24 @@ class BlockTrailHandler extends AbstractHandler
      */
     public function gettransactions(array $txHashes)
     {
+
+        if (CurrencyTypeEnum::BTC != $this->currency) {
+            //blocktrail api doen't work correctly with testnet data, another are not supported now
+            return AbstractHandler::HANDLER_UNSUPPORTED_METHOD;
+        }
+
         if (empty($txHashes)) {
-            throw new \InvalidArgumentException("txHashes variable must be non empty array of non empty strings.");
+            throw new BEInvalidArgumentException("txHashes variable must be non empty array of non empty strings.");
         }
         if (count($txHashes) > Bridge::MAX_COUNT_OF_TRANSACTIONS_FOR__GETTRANSACTIONS__METHOD) {
-            throw new \InvalidArgumentException(
+            throw new BEInvalidArgumentException(
                 "txHashes variable size must be non bigger than " .
                 Bridge::MAX_COUNT_OF_TRANSACTIONS_FOR__GETTRANSACTIONS__METHOD . "."
             );
         }
         foreach ($txHashes as $txHash) {
             if ((!is_string($txHash)) || !preg_match('/^[a-z0-9]+$/i', $txHash) || (strlen($txHash) != 64)) {
-                throw new \InvalidArgumentException(
+                throw new BEInvalidArgumentException(
                     "Hashes in \$txHashes must be valid bitcoin transaction hashes (\"" . $txHash . "\" not valid)."
                 );
             }
@@ -100,21 +103,21 @@ class BlockTrailHandler extends AbstractHandler
         $ch = curl_init();
         $this->prepareCurl($ch, $url);
         $fullContent = curl_exec($ch);
-        if (false === $fullContent) {
-            throw new \RuntimeException("curl error occured (url:\"" . $url . "\")");
+        if ((false === $fullContent) || (null === $fullContent)) {
+            throw new BERuntimeException("curl error occured (url:\"" . $url . "\")");
         }
         $fullContent = json_decode($fullContent, true);
         if ((false === $fullContent) || (null === $fullContent)) {
-            throw new \RuntimeException("curl does not return a json object (url:\"" . $url . "\").");
+            throw new BERuntimeException("curl does not return a json object (url:\"" . $url . "\").");
         }
         if (isset($fullContent['msg'])) {
-            throw new \RuntimeException(
+            throw new BERuntimeException(
                 "Error \"" . $fullContent['msg'] . "\" (code: " . $fullContent["code"] .
                 ") returned (url:\"" . $url . "\")."
             );
         }
         if (!isset($fullContent['data']) || !is_array($fullContent['data'])) {
-            throw new \RuntimeException(
+            throw new BERuntimeException(
                 "Returned array from url \"" . $url .
                 "\" does not contain \"data\" field or \"data\" field is not array."
             );
@@ -123,7 +126,7 @@ class BlockTrailHandler extends AbstractHandler
         $txs = array_fill(0, count($txHashes), null);
         foreach ($fullContent['data'] as $content) {
             if (isset($content['msg'])) {
-                throw new \RuntimeException(
+                throw new BERuntimeException(
                     "Error \"" . $content['msg'] . "\" (code: " .
                     $content["code"] . ") returned (url:\"" . $url . "\")."
                 );
@@ -154,12 +157,10 @@ class BlockTrailHandler extends AbstractHandler
                         break;
                     default:
                         if (null === $inp["address"]) {
-                            throw new \RuntimeException(
-                                "Error: type of input: \"" . $inp["type"] .
-                                "\", address is null (url:\"" . $url . "\")."
-                            );
+                            $input->setAddresses([]);
+                        } else {
+                            $input->setAddresses([$inp["address"]]);
                         }
-                        $input->setAddresses([$inp["address"]]);
                         break;
                 };
 
@@ -168,11 +169,12 @@ class BlockTrailHandler extends AbstractHandler
                 }
                 $val = gmp_init(strval($inp["value"]));
                 $input->setOutputValue(new BTCValue($val));
-                $input->setScriptType($inp["type"]);
+                $input->setScriptType($this->getTransformedTypeOfSignature($inp["type"]));
                 $tx->addInput($input);
             }
             foreach ($content["outputs"] as $outp) {
                 $output = new TransactionOutput();
+                $outp["type"] = $this->getTransformedTypeOfSignature($outp["type"]);
                 if ("multisig" == $outp["type"]) {
                     $output->setAddresses($outp["multisig_addresses"]);
                 } elseif ("op_return" == $outp["type"]) {
@@ -183,9 +185,6 @@ class BlockTrailHandler extends AbstractHandler
                 $v = gmp_init(strval($outp["value"]));
                 $output->setValue(new BTCValue($v));
                 $output->setScriptType($outp["type"]);
-                if ("op_return" == $outp["type"]) {
-                    $output->setScriptType("nulldata");
-                }
                 $tx->addOutput($output);
             }
             $index = array_search($content["hash"], $txHashes);
@@ -221,7 +220,7 @@ class BlockTrailHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function sendrawtransaction($Transaction)
+    public function sendrawtransaction($transaction)
     {
         return AbstractHandler::HANDLER_UNSUPPORTED_METHOD;
     }
@@ -229,7 +228,7 @@ class BlockTrailHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function createWallet($walletName, array $addresses)
+    public function createWallet($walletName, array $addresses, WalletActionOptions $options = null)
     {
         return AbstractHandler::HANDLER_UNSUPPORTED_METHOD;
     }
@@ -237,7 +236,7 @@ class BlockTrailHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function addAddresses(Wallet $wallet, array $addresses)
+    public function addAddresses(Wallet $wallet, array $addresses, WalletActionOptions $options = null)
     {
         return AbstractHandler::HANDLER_UNSUPPORTED_METHOD;
     }
@@ -245,7 +244,7 @@ class BlockTrailHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function removeAddresses(Wallet $wallet, array $addresses)
+    public function removeAddresses(Wallet $wallet, array $addresses, WalletActionOptions $options = null)
     {
         return AbstractHandler::HANDLER_UNSUPPORTED_METHOD;
     }
@@ -268,7 +267,7 @@ class BlockTrailHandler extends AbstractHandler
     /**
      * {@inheritdoc}
      */
-    public function getWallets(GetWalletsOptions $options = null)
+    public function getWallets(WalletActionOptions $options = null)
     {
         return AbstractHandler::HANDLER_UNSUPPORTED_METHOD;
     }
@@ -280,27 +279,13 @@ class BlockTrailHandler extends AbstractHandler
     public function getTransformedTypeOfSignature($type, array $options = [])
     {
         switch ($type) {
-            case "pay-to-multi-pubkey-hash":
-                return "multisig";
-                break;
-            case "pay-to-pubkey-hash":
-                return "pubkeyhash";
-                break;
-            case "pay-to-pubkey":
-                return "pubkey";
-                break;
-            case "empty":
-                if (isset($options["newlyminted"])) {
-                    return "pubkey";
-                    break;
-                }
-                return "nonstandard";
-                break;
-            case "null-data":
-                return "nulldata";
-                break;
-            case "pay-to-script-hash":
-                return "scripthash";
+            //case "op_return":
+                //return "nulldata";
+                //break;
+            case "unknown":
+                //return "nonstandard";
+                //return "nulldata";
+                return "op_return";
                 break;
             default:
                 return $type;

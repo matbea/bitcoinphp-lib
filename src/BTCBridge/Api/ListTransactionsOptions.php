@@ -2,6 +2,8 @@
 
 namespace BTCBridge\Api;
 
+use BTCBridge\Exception\BEInvalidArgumentException;
+
 /**
  * Class ListTransactionsOptions
  * This class contains options for method Handler::listtransactions
@@ -10,23 +12,17 @@ namespace BTCBridge\Api;
  */
 class ListTransactionsOptions
 {
-    /** @var $before integer */
-    protected $before;
-
-    /** @var $after integer */
-    protected $after;
-
     /** @var $limit integer */
     protected $limit;
-
-    /** @var $offset integer */
-    protected $offset;
 
     /** @var $confirmations integer */
     protected $confirmations;
 
-    /** @var $nobalance boolean */
-    protected $nobalance;
+    /** @var $starttxid string */
+    protected $starttxid;
+
+    /** @var $omit_addresses string */
+    protected $omit_addresses;
 
 
     /**
@@ -35,61 +31,9 @@ class ListTransactionsOptions
      */
     public function __construct()
     {
-        $this->confirmations = 1;
-        $this->limit = 1000;
-        $this->nobalance = false;
-    }
-
-    /**
-     * @return integer
-     */
-    public function getBefore()
-    {
-        return $this->before;
-    }
-
-    /**
-     * @param integer $before
-     * @return $this
-     * @throws \InvalidArgumentException in case of error of this type
-     */
-    public function setBefore($before)
-    {
-        if ("integer" != gettype($before) || ($before <= 0)) {
-            if (!is_null($before)) {
-                throw new \InvalidArgumentException(
-                    "before variable must be positive integer or null."
-                );
-            }
-        }
-        $this->before = $before;
-        return $this;
-    }
-
-    /**
-     * @return integer
-     */
-    public function getAfter()
-    {
-        return $this->after;
-    }
-
-    /**
-     * @param integer $after
-     * @return $this
-     * @throws \InvalidArgumentException in case of error of this type
-     */
-    public function setAfter($after)
-    {
-        if ("integer" != gettype($after) || ($after <= 0)) {
-            if (!is_null($after)) {
-                throw new \InvalidArgumentException(
-                    "after variable must be positive integer or null."
-                );
-            }
-        }
-        $this->after = $after;
-        return $this;
+        $this->confirmations = 0;
+        $this->limit = 10;
+        $this->omit_addresses = true;
     }
 
     /**
@@ -103,44 +47,18 @@ class ListTransactionsOptions
     /**
      * @param integer $limit
      * @return $this
-     * @throws \InvalidArgumentException in case of error of this type
+     * @throws BEInvalidArgumentException in case of error of this type
      */
     public function setLimit($limit)
     {
-        if ("integer" != gettype($limit) || ($limit <= 0) || ($limit > 1000)) {
+        if ((!is_int($limit)) || ($limit <= 0) || ($limit > 1000)) {
             if (!is_null($limit)) {
-                throw new \InvalidArgumentException(
+                throw new BEInvalidArgumentException(
                     "limit variable must be positive integer (less than 1000) or null."
                 );
             }
         }
         $this->limit = $limit;
-        return $this;
-    }
-
-    /**
-     * @return integer
-     */
-    public function getOffset()
-    {
-        return $this->offset;
-    }
-
-    /**
-     * @param integer $offset
-     * @return $this
-     * @throws \InvalidArgumentException in case of error of this type
-     */
-    public function setOffset($offset)
-    {
-        if ("integer" != gettype($offset) || ($offset < 0)) {
-            if (!is_null($offset)) {
-                throw new \InvalidArgumentException(
-                    "offset variable must be non negative integer or null."
-                );
-            }
-        }
-        $this->offset = $offset;
         return $this;
     }
 
@@ -155,13 +73,13 @@ class ListTransactionsOptions
     /**
      * @param integer $confirmations
      * @return $this
-     * @throws \InvalidArgumentException in case of error of this type
+     * @throws BEInvalidArgumentException in case of error of this type
      */
     public function setConfirmations($confirmations)
     {
-        if ("integer" != gettype($confirmations) || ($confirmations <= 0)) {
+        if ((!is_int($confirmations)) || ($confirmations <= 0)) {
             if (!is_null($confirmations)) {
-                throw new \InvalidArgumentException(
+                throw new BEInvalidArgumentException(
                     "confirmation variable must be positive integer."
                 );
             }
@@ -171,21 +89,54 @@ class ListTransactionsOptions
     }
 
     /**
-     * @return boolean
+     * @return string
      */
-    public function getNobalance()
+    public function getStarttxid()
     {
-        return $this->nobalance;
+        return $this->starttxid;
     }
 
     /**
-     * @param boolean $nobalance
+     * @param string $starttxid
      * @return $this
-     * @throws \InvalidArgumentException in case of error of this type
+     * @throws BEInvalidArgumentException in case of error of this type
      */
-    public function setNobalance($nobalance)
+    public function setStarttxid($starttxid)
     {
-        $this->nobalance = $nobalance;
+        if ((!is_string($starttxid)) || (trim($starttxid) == '')) {
+            if (!is_null($starttxid)) {
+                throw new BEInvalidArgumentException(
+                    "starttxid variable must be non empty string."
+                );
+            }
+        }
+        $this->starttxid = $starttxid;
+        return $this;
+    }
+
+    /**
+     * @return boolean
+     */
+    public function getOmitAddresses()
+    {
+        return $this->omit_addresses;
+    }
+
+    /**
+     * @param boolean $omit_addresses
+     * @return $this
+     * @throws BEInvalidArgumentException in case of error of this type
+     */
+    public function setOmitAddresses($omit_addresses)
+    {
+        if (!is_bool($omit_addresses)) {
+            if (!is_null($omit_addresses)) {
+                throw new BEInvalidArgumentException(
+                    "omit_addresses variable must be boolean type or null."
+                );
+            }
+        }
+        $this->omit_addresses = $omit_addresses;
         return $this;
     }
 }
