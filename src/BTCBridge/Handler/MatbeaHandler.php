@@ -71,12 +71,11 @@ class MatbeaHandler extends AbstractHandler
      * @param array $content Data from matbea API
      *
      * @throws BERuntimeException in case of this type of error
-     * @throws BELogicException in case of this type of error
      * @throws BEInvalidArgumentException in case of this type of error
      */
     protected function checkMatbeaResult($url, $content)
     {
-        if (!is_string($url) || ("" == $url)) {
+        if (!is_string($url) || (empty($url))) {
             throw new BEInvalidArgumentException("Bad type of \$url (must be valid url-string)");
         }
         if ((false === $content) || (null === $content)) {
@@ -84,7 +83,7 @@ class MatbeaHandler extends AbstractHandler
         }
         if (!isset($content['error']) || (!isset($content['result']))) {
             throw new BERuntimeException(
-                "Incorrect format of returning data (\"" . json_decode($content) . "\"), url=\"" . $url . "\"."
+                "Incorrect format of returning data (\"" . json_encode($content) . "\"), url=\"" . $url . "\"."
             );
         }
         if (!empty($content['error'])) {

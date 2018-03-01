@@ -80,9 +80,11 @@ class BTCValue
      */
     public function getSatoshiValue()
     {
-        $intValue = gmp_intval(gmp_strval($this->value));
+        /** @var \string|\resource $val */
+        $val = gmp_strval($this->value);
+        $intValue = gmp_intval($val);
         if (strval($intValue) !== gmp_strval($this->value)) {
-            throw new BERuntimeException("Integer value is not equal string value (" . gmp_strval($this->value) . ").");
+            throw new BERuntimeException("Integer value is not equal string value (" .gmp_strval($this->value). ").");
         }
         return $intValue;
     }

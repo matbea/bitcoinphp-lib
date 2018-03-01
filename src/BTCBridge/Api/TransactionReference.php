@@ -2,6 +2,8 @@
 
 namespace BTCBridge\Api;
 
+use BTCBridge\Exception\BERuntimeException;
+
 /**
  * Class TransactionReference
  *
@@ -299,6 +301,8 @@ class TransactionReference
     /**
      Is $o equal current object
      * @param TransactionReference $o
+     *
+     * @throws BERuntimeException if case of any error of this type
      *
      * @return boolean
      */

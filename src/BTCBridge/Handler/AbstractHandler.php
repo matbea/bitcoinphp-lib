@@ -11,14 +11,14 @@
 namespace BTCBridge\Handler;
 
 use BTCBridge\Api\Wallet;
-use \Psr\Log\LoggerInterface;
-use \Monolog\Logger;
-use \BTCBridge\Api\Transaction;
-use \BTCBridge\Api\Address;
-use \BTCBridge\Api\TransactionReference;
-use \BTCBridge\Api\BTCValue;
-use \BTCBridge\Api\ListTransactionsOptions;
-use \BTCBridge\Api\WalletActionOptions;
+use Psr\Log\LoggerInterface;
+use Monolog\Logger;
+use BTCBridge\Api\Transaction;
+use BTCBridge\Api\Address;
+use BTCBridge\Api\TransactionReference;
+use BTCBridge\Api\BTCValue;
+use BTCBridge\Api\ListTransactionsOptions;
+use BTCBridge\Api\WalletActionOptions;
 use BTCBridge\Api\CurrencyTypeEnum;
 use BTCBridge\Exception\BERuntimeException;
 use BTCBridge\Exception\BEInvalidArgumentException;
@@ -63,10 +63,14 @@ abstract class AbstractHandler
     public function __construct(CurrencyTypeEnum $currency)
     {
         $this->currency = $currency;
-        if (CurrencyTypeEnum::BTC == $this->currency) {
-            $this->network = NetworkFactory::bitcoin();
-        } elseif (CurrencyTypeEnum::TBTC == $this->currency) {
-            $this->network = NetworkFactory::bitcoinTestnet();
+        try {
+            if (CurrencyTypeEnum::BTC == $this->currency) {
+                $this->network = NetworkFactory::bitcoin();
+            } elseif (CurrencyTypeEnum::TBTC == $this->currency) {
+                $this->network = NetworkFactory::bitcoinTestnet();
+            }
+        } catch (\Exception $ex) {
+            throw new BERuntimeException($ex->getMessage());
         }
         $this->setLogger(new Logger('BTCBridge'));
         $this->setOption(
@@ -91,8 +95,6 @@ abstract class AbstractHandler
      *
      * @param LoggerInterface $loggerHandle a handler to logging Interface
      *
-     * @throws BERuntimeException in case of error of this type
-     * @throws BEInvalidArgumentException in case of error of this type
      *
      */
     public function setLogger(LoggerInterface $loggerHandle)
@@ -152,6 +154,7 @@ abstract class AbstractHandler
      * @param string $url An url address for connecting
      *
      * @throws BERuntimeException in case of any curl error
+     * @throws BEInvalidArgumentException
      */
     protected function prepareCurl(&$curl, $url)
     {
@@ -368,9 +371,6 @@ abstract class AbstractHandler
      * This method returns system Id from the passed wallet
      *
      * @param Wallet $wallet
-     *
-     * @throws BERuntimeException in case of any error of this type
-     * @throws BEInvalidArgumentException in case of any error of this type
      *
      * @return \array systemdata
      */

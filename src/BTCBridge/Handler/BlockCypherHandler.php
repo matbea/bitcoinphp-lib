@@ -17,6 +17,7 @@ use BTCBridge\Api\TransactionInput;
 use BTCBridge\Api\TransactionOutput;
 use BTCBridge\Api\Wallet;
 use BTCBridge\Api\WalletActionOptions;
+use BTCBridge\Api\BTCValue;
 use BTCBridge\Api\CurrencyTypeEnum;
 use BTCBridge\Exception\BEInvalidArgumentException;
 use BTCBridge\Exception\BERuntimeException;
@@ -135,14 +136,14 @@ class BlockCypherHandler extends AbstractHandler
                 $input->setAddresses(
                     (isset($inp["addresses"]) && (null !== $inp["addresses"])) ? $inp["addresses"] : []
                 );
-                if (isset($inp["prev_hash"])) {
+                //if (isset($inp["prev_hash"])) {
                     //$input->setPrevHash($inp["prev_hash"]);
-                }
+                //}
                 if (isset($inp["output_index"])) {
                     $input->setOutputIndex($inp["output_index"]);
                 }
                 $val = gmp_init(strval($inp["output_value"]));
-                $input->setOutputValue($val);
+                $input->setOutputValue(new BTCValue($val));
                 //////////////////////////////////////////
                 /*
                 if ("pay-to-multi-pubkey-hash" == $inp["script_type"]) {
@@ -176,7 +177,8 @@ class BlockCypherHandler extends AbstractHandler
                 $output->setAddresses(
                     (isset($outp["addresses"]) && (null !== $outp["addresses"])) ? $outp["addresses"] : []
                 );
-                $output->setValue(gmp_init(strval($outp["value"])));
+                $v = gmp_init(strval($outp["value"]));
+                $output->setValue(new BTCValue($v));
                 /*if ("pay-to-multi-pubkey-hash" == $outp["script_type"]) {
                     $multisigAddresses = $this->extractAddressesFromMultisigScript($outp["script"]);
                     $previousOutputAddresses = $output->getAddresses();

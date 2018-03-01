@@ -15,7 +15,8 @@ use Garoevans\PhpEnum\Enum;
 class CurrencyTypeEnum extends Enum
 {
     // If no value is given during object construction this value is used
-    const __default = 1;
+    const /** @noinspection PhpConstantNamingConventionInspection */
+        __default = 1;
     // Our enum values
     const BTC     = 'btc';
     const TBTC    = 'tbtc';

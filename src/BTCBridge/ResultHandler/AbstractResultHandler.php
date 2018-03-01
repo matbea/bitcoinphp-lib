@@ -58,6 +58,7 @@ abstract class AbstractResultHandler
      *
      * @param Address[] $data  Result from method listtransactions (from all handlers)
      *
+     * @throws BEInvalidArgumentException in case of any error of this type
      * @throws ResultHandlerException in case of any error
      *
      * @return Address object
@@ -69,6 +70,7 @@ abstract class AbstractResultHandler
      *
      * @param Transaction[][] $data  Result from method gettransactions (from all handlers)
      *
+     * @throws BEInvalidArgumentException in case of any error of this type
      * @throws ResultHandlerException in case of any error
      *
      * @return Transaction[]
@@ -84,6 +86,7 @@ abstract class AbstractResultHandler
      *
      * @param array $data  Result from method getbalance (from all handlers)
      *
+     * @throws BEInvalidArgumentException in case of any error of this type
      * @throws ResultHandlerException in case of any error
      *
      * @return BTCValue The balance
@@ -98,6 +101,7 @@ abstract class AbstractResultHandler
      *
      * @param array $data  Result from method getunconfirmedbalance (from all handlers)
      *
+     * @throws BEInvalidArgumentException in case of any error of this type
      * @throws ResultHandlerException in case of any error
      *
      * @return BTCValue The total number of bitcoins paid to this wallet in unconfirmed transactions
@@ -113,24 +117,12 @@ abstract class AbstractResultHandler
      * @param TransactionReference[][] $data
      * Result from method listunspent (from all handlers)
      *
+     * @throws BEInvalidArgumentException in case of any error of this type
      * @throws ResultHandlerException in case of any error
      *
      * @return TransactionReference[] The list of unspent outputs
      */
     abstract public function listunspent($data);
-
-    /**
-     * The sendrawtransaction RPC validates a transaction and broadcasts it to the peer-to-peer network.
-     * @link https://bitcoin.org/en/developer-reference#sendrawtransaction Official bitcoin documentation.
-     *
-     * @param array $data  Result from method sendrawtransaction (from all handlers)
-     *
-     * @throws ResultHandlerException in case of any error
-     *
-     * @return string If the transaction was accepted by the node for broadcast, this will be the TXID of the
-     * transaction encoded as hex in RPC byte order.
-     */
-    //public function sendrawtransaction($data);
 
     /**
      * This Method Creates a new wallet
@@ -140,6 +132,7 @@ abstract class AbstractResultHandler
      * @return Wallet
      *
      * @throws ResultHandlerException in case of any error
+     * @throws BEInvalidArgumentException in case of any error of this type
      *
      */
     abstract public function createWallet($data);
@@ -151,6 +144,7 @@ abstract class AbstractResultHandler
      *
      * @return Wallet
      *
+     * @throws BEInvalidArgumentException in case of any error of this type
      * @throws ResultHandlerException in case of any error
      *
      */
@@ -164,6 +158,7 @@ abstract class AbstractResultHandler
      *
      * @return Wallet
      *
+     * @throws BEInvalidArgumentException in case of any error of this type
      * @throws ResultHandlerException in case of any error
      *
      */

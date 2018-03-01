@@ -9,7 +9,6 @@ use BTCBridge\Api\BTCValue;
 use BTCBridge\Handler\AbstractHandler;
 use BTCBridge\ResultHandler\AbstractResultHandler;
 use BTCBridge\ConflictHandler\ConflictHandlerInterface;
-use BTCBridge\Exception\ConflictHandlerException;
 use BTCBridge\Exception\ResultHandlerException;
 use BTCBridge\Exception\HandlerErrorException;
 use BTCBridge\Exception\BEInvalidArgumentException;
@@ -103,16 +102,17 @@ class Bridge
     protected $loggerHandler;
 
     /**
-     * @param CurrencyTypeEnum $currency          Name of currency
-     * @param AbstractHandler[] $handlers         Stack of handlers for calling BTC-methods, $handlers must not be empty
-     * @param ConflictHandlerInterface $conflictHandler  Methods of this objects will be raised for validating results.
+     * @param CurrencyTypeEnum $currency Name of currency
+     * @param AbstractHandler[] $handlers Stack of handlers for calling BTC-methods, $handlers must not be empty
+     * @param ConflictHandlerInterface $conflictHandler Methods of this objects will be raised for validating results.
      * Parameter is optional, by default DefaultConflictHandler instance will be used
      * @param AbstractResultHandler $resultHandler Methods of this objects will be raised for processing results
-     * @param LoggerInterface $loggerHandler    Methods of this objects will be raised for validating results
+     * @param LoggerInterface $loggerHandler Methods of this objects will be raised for validating results
      * Parameter is optional, by default DefaultConflictHandler instance will be used
      *
      * @throws BEInvalidArgumentException if the provided argument $handlers is empty
      * @throws BELogicException if the provided argument $conflictHandler is not instance of HandlerInterface
+     * @throws BERuntimeException
      */
     public function __construct(
         CurrencyTypeEnum $currency,
@@ -128,16 +128,20 @@ class Bridge
             if (!$handler instanceof AbstractHandler) {
                 throw new BEInvalidArgumentException("The given handler is not a AbstractHandler");
             }
-            if ($currency != $handler->getCurrency()) {
+            if ((string)$currency != (string)$handler->getCurrency()) {
                 throw new BELogicException("Handler contains different currency than bridge instance");
             }
         }
 
-        $this->currency = $currency;
-        if (CurrencyTypeEnum::BTC == $this->currency) {
-            $this->network = NetworkFactory::bitcoin();
-        } elseif (CurrencyTypeEnum::TBTC == $this->currency) {
-            $this->network = NetworkFactory::bitcoinTestnet();
+        try {
+            $this->currency = $currency;
+            if (CurrencyTypeEnum::BTC == $this->currency) {
+                $this->network = NetworkFactory::bitcoin();
+            } elseif (CurrencyTypeEnum::TBTC == $this->currency) {
+                $this->network = NetworkFactory::bitcoinTestnet();
+            }
+        } catch (\Exception $ex) {
+            throw new BERuntimeException($ex->getMessage());
         }
 
         $this->handlers = $handlers;
@@ -246,6 +250,7 @@ class Bridge
      * @param integer $searchedValue
      *
      * @return integer (index in array or -1 if item was not found)
+     * @throws BERuntimeException
      */
     private function binarySearch(array $outputs, $first, $last, $searchedValue)
     {
@@ -279,6 +284,7 @@ class Bridge
      * @throws BEInvalidArgumentException case of any error of this type
      *
      * @return TransactionReference[] If not enouth BTC on passed outputs then ampty array will be returned
+     * @throws BERuntimeException
      */
     public function selectOutputsForSpent($outputs, $amount)
     {
@@ -351,8 +357,6 @@ class Bridge
      *
      * @throws BERuntimeException in case of any runtime error
      * @throws BEInvalidArgumentException in case of error of this type
-     * @throws ConflictHandlerException in case of any error of this type
-     * @throws ResultHandlerException in case of any error of this type
      *
      * @return Address
      */
@@ -387,7 +391,6 @@ class Bridge
      *
      * @throws BERuntimeException in case of any runtime error
      * @throws BEInvalidArgumentException if error of this type
-     * @throws ConflictHandlerException in case of any error of this type
      *
      * @return Transaction[]
      */
@@ -436,15 +439,15 @@ class Bridge
      * to get a subset of information on a public address.
      * @link https://bitcoin.org/en/developer-reference#getbalance Official bitcoin documentation.
      *
-     * @param string $walletName            A wallet name to get balance from
-     * @param int $Confirmations         The minimum number of confirmations an externally-generated transaction
+     * @param string $walletName A wallet name to get balance from
+     * @param int $Confirmations The minimum number of confirmations an externally-generated transaction
      * must have before it is counted towards the balance.
      *
      * @throws BERuntimeException in case of any runtime error
      * @throws BEInvalidArgumentException if error of this type
-     * @throws ConflictHandlerException in case of any error of this type
      *
      * @return BTCValue The balance
+     * @throws BELogicException
      */
     public function getbalance($walletName, $Confirmations = 1)
     {
@@ -492,7 +495,6 @@ class Bridge
      *
      * @throws BERuntimeException in case of any runtime error
      * @throws BEInvalidArgumentException if error of this type
-     * @throws ConflictHandlerException in case of any error of this type
      *
      * @return BTCValue The unconfirmed balance
      */
@@ -540,7 +542,6 @@ class Bridge
      *
      * @throws BERuntimeException in case of any runtime error
      * @throws BEInvalidArgumentException if error of this type
-     * @throws ConflictHandlerException in case of any error of this type
      *
      * @return array The list of unspent outputs
      */
@@ -591,7 +592,6 @@ class Bridge
      *
      * @throws BERuntimeException in case of any runtime error
      * @throws BEInvalidArgumentException if error of this type
-     * @throws ConflictHandlerException in case of any error of this type
      *
      */
     public function sendrawtransaction($transaction)
@@ -626,10 +626,9 @@ class Bridge
      * @param string[] $addresses
      * @param WalletActionOptions $options
      *
-     * @throws BERuntimeException
-     * @throws Exception\HandlerErrorException
+     * @throws HandlerErrorException
      * @throws BEInvalidArgumentException if error of this type
-     * @throws Exception\ResultHandlerException|\Exception
+     * @throws ResultHandlerException|\Exception
      * @return Wallet
      *
      */
@@ -688,10 +687,7 @@ class Bridge
                 $this->resultHandler->setHandlers($successHandlers);
                 try {
                     $resultWallet = $this->resultHandler->createWallet($resultWallets);
-                } catch (BEInvalidArgumentException $ex) {
-                    $this->resultHandler->setHandlers($this->handlers);
-                    throw $ex;
-                } catch (ResultHandlerException $ex) {
+                } /** @noinspection PhpRedundantCatchClauseInspection */ catch (ResultHandlerException $ex) {
                     $this->resultHandler->setHandlers($this->handlers);
                     throw $ex;
                 }
@@ -722,12 +718,12 @@ class Bridge
      * @param string[] $addresses
      * @param WalletActionOptions $options
      *
-     * @throws BERuntimeException
      * @throws BEInvalidArgumentException
      * @throws HandlerErrorException
      * @throws ResultHandlerException
      * @return Wallet
      *
+     * @throws Base58ChecksumFailure
      */
     public function addAddresses(Wallet $wallet, array $addresses, WalletActionOptions $options = null)
     {
@@ -774,10 +770,7 @@ class Bridge
                 $this->resultHandler->setHandlers($successHandlers);
                 try {
                     $resultWallet = $this->resultHandler->addAddresses($resultWallets);
-                } catch (BEInvalidArgumentException $ex) {
-                    $this->resultHandler->setHandlers($this->handlers);
-                    throw $ex;
-                } catch (ResultHandlerException $ex) {
+                } /** @noinspection PhpRedundantCatchClauseInspection */ catch (ResultHandlerException $ex) {
                     $this->resultHandler->setHandlers($this->handlers);
                     throw $ex;
                 }
@@ -808,18 +801,19 @@ class Bridge
      * @param string[] $addresses
      * @param WalletActionOptions $options
      *
-     * @throws BERuntimeException
      * @throws BEInvalidArgumentException
      * @throws HandlerErrorException
      * @throws ResultHandlerException
      * @return Wallet
      *
+     * @throws Base58ChecksumFailure
      */
     public function removeAddresses(Wallet $wallet, array $addresses, WalletActionOptions $options = null)
     {
         if (empty($addresses)) {
             throw new BEInvalidArgumentException("addresses variable must be non empty array of strings.");
         }
+        //TODO - catch * @throws Base58ChecksumFailure in try ... isValidAddress .. catch
         foreach ($addresses as $address) {
             if (!AddressFactory::isValidAddress($address, $this->network)) {
                 throw new BEInvalidArgumentException("No valid address (\"" . $address . "\" passed).");
@@ -860,10 +854,7 @@ class Bridge
                 $this->resultHandler->setHandlers($successHandlers);
                 try {
                     $resultWallet = $this->resultHandler->removeAddresses($resultWallets);
-                } catch (BEInvalidArgumentException $ex) {
-                    $this->resultHandler->setHandlers($this->handlers);
-                    throw $ex;
-                } catch (ResultHandlerException $ex) {
+                } /** @noinspection PhpRedundantCatchClauseInspection */ /** @noinspection PhpRedundantCatchClauseInspection */ catch (ResultHandlerException $ex) {
                     $this->resultHandler->setHandlers($this->handlers);
                     throw $ex;
                 }
@@ -893,9 +884,7 @@ class Bridge
      *
      * @param Wallet $wallet wallet for deleting
      *
-     * @throws BERuntimeException
      * @throws HandlerErrorException
-     * @throws BEInvalidArgumentException if error of this type
      *
      */
     public function deleteWallet(Wallet $wallet)
@@ -946,8 +935,6 @@ class Bridge
      *
      * @throws BERuntimeException in case of any runtime error
      * @throws BEInvalidArgumentException if error of this type
-     * @throws ConflictHandlerException in case of any error of this type
-     * @throws ResultHandlerException in case of any error
      *
      * @return \string[] addresses
      */
@@ -1013,8 +1000,9 @@ class Bridge
      *
      * @throws BERuntimeException in case of error of this type
      *
-     * @return \string
+     * @throws BEInvalidArgumentException
      *
+     * @return \string
      */
     public function getnewaddress()
     {
@@ -1024,7 +1012,7 @@ class Bridge
             $address = $address->getAddress();
             $network = Bitcoin::getNetwork();
             $wif = $privateKey->toWif($network);
-        } catch (Base58ChecksumFailure $ex) {
+        } catch (\Exception $ex) {
             throw new BERuntimeException($ex->getMessage());
         } //May be \RuntimeException will raised in the BitWASP library - we'll not change this
         if (!file_put_contents(
@@ -1111,11 +1099,11 @@ class Bridge
      * The sendfrom RPC spends an amount from a local account to a bitcoin address.
      * @link https://bitcoin.org/en/developer-reference#sendfrom
      *
-     * @param string $walletName  The wallet, which is source for money
-     * @param string $address     The address to which the bitcoins should be sent
+     * @param string $walletName The wallet, which is source for money
+     * @param string $address The address to which the bitcoins should be sent
      * @param integer $amount The amount to spend in satoshis.
-     * @param int $confirmations  The minimum number of confirmations the transaction containing an output
-     * @param string $comment  A locally-stored (not broadcast) comment assigned to this
+     * @param int $confirmations The minimum number of confirmations the transaction containing an output
+     * @param string $comment A locally-stored (not broadcast) comment assigned to this
      * transaction. Default is no comment
      * must have in order to be returned.
      * @param string $commentTo A locally-stored (not broadcast) comment assigned to this transaction.
@@ -1123,11 +1111,11 @@ class Bridge
      *
      * @return string $transactionId
      *
-     * @throws BERuntimeException in case of any runtime error
      * @throws BEInvalidArgumentException if error of this type
-     * @throws ConflictHandlerException in case of any error of this type
-     * @throws ResultHandlerException in case of any error of this type
-     *
+     * @throws BERuntimeException in case of any runtime error
+     * @throws Base58ChecksumFailure
+     * @throws \BitWasp\Bitcoin\Exceptions\InvalidPrivateKey
+     * @throws \Exception
      */
     public function sendfrom($walletName, $address, $amount, $confirmations = 1, $comment = "", $commentTo = "")
     {
@@ -1242,8 +1230,9 @@ class Bridge
         $transaction = $transaction->payToAddress($amount, AddressFactory::fromString($address, $this->network));
         if ($change >= $this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT)) {
             $addressForChange = $outputsForSpent[0]->getAddress();
+            $objAddressForChange = AddressFactory::fromString($addressForChange, $this->network);
             /** @noinspection PhpUndefinedMethodInspection */
-            $transaction = $transaction->payToAddress($change, AddressFactory::fromString($addressForChange, $this->network));
+            $transaction = $transaction->payToAddress($change, $objAddressForChange);
         }
         /** @noinspection PhpUndefinedMethodInspection */
         $transaction = $transaction->get();
@@ -1265,18 +1254,18 @@ class Bridge
      * The sendfrom RPC spends an amount from a local account to a bitcoin address.
      * @link https://bitcoin.org/en/developer-reference#sendfrom
      *
-     * @param string $walletName  The wallet, which is source for money
-     * @param string $address     The address to which the bitcoins should be sent
+     * @param string $walletName The wallet, which is source for money
+     * @param string $address The address to which the bitcoins should be sent
      * @param integer $amount The amount to spend in satoshis.
      * @param SendMoneyOptions $sendMoneyOptions (comment,confirmations,commentTo etc)
      *
      * @return string $transactionId
      *
-     * @throws BERuntimeException in case of any runtime error
      * @throws BEInvalidArgumentException if error of this type
-     * @throws ConflictHandlerException in case of any error of this type
-     * @throws ResultHandlerException in case of any error of this type
-     *
+     * @throws BERuntimeException in case of any runtime error
+     * @throws Base58ChecksumFailure
+     * @throws \BitWasp\Bitcoin\Exceptions\InvalidPrivateKey
+     * @throws \Exception
      */
     public function sendfromEX($walletName, $address, $amount, SendMoneyOptions $sendMoneyOptions)
     {
@@ -1382,13 +1371,14 @@ class Bridge
         $transaction = $transaction->payToAddress($amount, AddressFactory::fromString($address, $this->network));
         if ($change >= $this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT)) {
             $addressForChange = null;
-            if ("" != $sendMoneyOptions) {
+            if (!empty($sendMoneyOptions)) {
                 $addressForChange = $sendMoneyOptions->getAddressForChange();
             } else {
                 $addressForChange = $outputsForSpent[0]->getAddress();
             }
+            $objAddressForChange = AddressFactory::fromString($addressForChange, $this->network);
             /** @noinspection PhpUndefinedMethodInspection */
-            $transaction = $transaction->payToAddress($change, AddressFactory::fromString($addressForChange, $this->network));
+            $transaction = $transaction->payToAddress($change, $objAddressForChange);
         }
         /** @noinspection PhpUndefinedMethodInspection */
         $transaction = $transaction->get();
@@ -1410,18 +1400,19 @@ class Bridge
      * The sendmany RPC creates and broadcasts a transaction which sends outputs to multiple addresses.
      * @link https://bitcoin.org/en/developer-reference#sendmany
      *
-     * @param string $walletName  The wallet, which is source for money
+     * @param string $walletName The wallet, which is source for money
      * @param SMOutput[] $smoutputs Object containing key/value pairs corresponding to the addresses and amounts to pay
-     * @param int $confirmations  The minimum number of confirmations the transaction containing an output
+     * @param int $confirmations The minimum number of confirmations the transaction containing an output
      * @param string $comment
      * A locally-stored (not broadcast) comment assigned to this transaction. Default is no comment
      *
      * @return string $transactionId
      *
-     * @throws BERuntimeException in case of any runtime error
      * @throws BEInvalidArgumentException if error of this type
-     * @throws ConflictHandlerException in case of any error of this type
-     *
+     * @throws BERuntimeException in case of any runtime error
+     * @throws Base58ChecksumFailure
+     * @throws \BitWasp\Bitcoin\Exceptions\InvalidPrivateKey
+     * @throws \Exception
      */
     public function sendmany($walletName, array $smoutputs, $confirmations = 1, $comment = "")
     {
@@ -1543,8 +1534,9 @@ class Bridge
         }
         if ($change > $this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT)) {
             $addressForChange = $outputsForSpent[0]->getAddress();
+            $objAddressForChange = AddressFactory::fromString($addressForChange, $this->network);
             /** @noinspection PhpUndefinedMethodInspection */
-            $transaction = $transaction->payToAddress($change, AddressFactory::fromString($addressForChange, $this->network));
+            $transaction = $transaction->payToAddress($change, $objAddressForChange);
         }
         /** @noinspection PhpUndefinedMethodInspection */
         $transaction = $transaction->get();
@@ -1563,17 +1555,17 @@ class Bridge
      * The sendmany RPC creates and broadcasts a transaction which sends outputs to multiple addresses.
      * @link https://bitcoin.org/en/developer-reference#sendmany
      *
-     * @param string $walletName  The wallet, which is source for money
+     * @param string $walletName The wallet, which is source for money
      * @param SMOutput[] $smoutputs Object containing key/value pairs corresponding to the addresses and amounts to pay
      * @param SendMoneyOptions $sendMoneyOptions (comment,confirmations,commentTo etc)
      *
      * @return string $transactionId
      *
-     * @throws BERuntimeException in case of any runtime error
      * @throws BEInvalidArgumentException if error of this type
-     * @throws ConflictHandlerException in case of any error of this type
-     * @throws ResultHandlerException in case of any error of this type
-     *
+     * @throws BERuntimeException in case of any runtime error
+     * @throws Base58ChecksumFailure
+     * @throws \BitWasp\Bitcoin\Exceptions\InvalidPrivateKey
+     * @throws \Exception
      */
     public function sendmanyEX($walletName, array $smoutputs, SendMoneyOptions $sendMoneyOptions)
     {
@@ -1692,13 +1684,14 @@ class Bridge
         }
         if ($change > $this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT)) {
             $addressForChange = null;
-            if ("" != $sendMoneyOptions) {
+            if (!empty($sendMoneyOptions)) {
                 $addressForChange = $sendMoneyOptions->getAddressForChange();
             } else {
                 $addressForChange = $outputsForSpent[0]->getAddress();
             }
+            $objAddressForChange = AddressFactory::fromString($addressForChange, $this->network);
             /** @noinspection PhpUndefinedMethodInspection */
-            $transaction = $transaction->payToAddress($change, AddressFactory::fromString($addressForChange, $this->network));
+            $transaction = $transaction->payToAddress($change, $objAddressForChange);
         }
         /** @noinspection PhpUndefinedMethodInspection */
         $transaction = $transaction->get();

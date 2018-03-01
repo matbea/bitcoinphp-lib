@@ -149,7 +149,7 @@ try {
         __DIR__ . "/data/wallet.dat"
     );
 
-    //$res = $bridge->getbalance('12S42ZEw2741DHrivgZHLfX8M58mxb7bFy');
+    $res = $bridge->getbalance('12S42ZEw2741DHrivgZHLfX8M58mxb7bFy');
     //$res = $bridge->getbalance('name__2N1WA');
 
     //$o = new \BTCBridge\Api\ListTransactionsOptions();
@@ -411,7 +411,7 @@ try {
     //$smoutput->setAddress("1MN3cT9Ro927h4kgpSZ5V7SfYjrwTysXv7")->setAmount(5500);
     //$res = $bridge->sendmany("tst", [$smoutput]);
 
-} catch (\BTCBridge\Exception\HandlerErrorException $ex) {
+} catch (BTCBridge\Exception\HandlerErrorException $ex) {
     $successHandlers = $ex->getSuccessHandlers();
     $errorHandler = $ex->getErrorHandler();
     $unusedHandlers = $ex->getUnusedHandlers();

@@ -14,7 +14,7 @@ namespace BTCBridge\ConflictHandler;
 use BTCBridge\Api\BTCValue;
 use BTCBridge\Api\Transaction;
 use BTCBridge\Api\Address;
-use \BTCBridge\Api\TransactionReference;
+use BTCBridge\Api\TransactionReference;
 use BTCBridge\Api\Wallet;
 use BTCBridge\Exception\ConflictHandlerException;
 use BTCBridge\Exception\BEInvalidArgumentException;
@@ -35,6 +35,8 @@ class DefaultConflictHandler implements ConflictHandlerInterface
 
     /**
      * Constructor of class
+     *
+     * @throws BEInvalidArgumentException if error of this type
      */
     public function __construct()
     {
