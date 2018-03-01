@@ -22,7 +22,7 @@ class BTCValue
     /**
      * Create a new BTCValue object with the value passed from parameter
      *
-     * @param \GMP $value
+     * @param \GMP|resource $value
      *
      * @throws BEInvalidArgumentException in case of any error of this logical type
      */
