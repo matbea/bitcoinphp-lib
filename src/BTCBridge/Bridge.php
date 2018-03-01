@@ -854,7 +854,7 @@ class Bridge
                 $this->resultHandler->setHandlers($successHandlers);
                 try {
                     $resultWallet = $this->resultHandler->removeAddresses($resultWallets);
-                } /** @noinspection PhpRedundantCatchClauseInspection */ /** @noinspection PhpRedundantCatchClauseInspection */ catch (ResultHandlerException $ex) {
+                } /** @noinspection PhpRedundantCatchClauseInspection */ catch (ResultHandlerException $ex) {
                     $this->resultHandler->setHandlers($this->handlers);
                     throw $ex;
                 }
