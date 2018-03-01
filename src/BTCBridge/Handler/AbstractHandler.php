@@ -135,7 +135,9 @@ abstract class AbstractHandler
     public function getOption($optionName)
     {
         if (!is_int($optionName)) {
-            throw new BEInvalidArgumentException("Bad type (" . gettype($optionName) . ") of option name (must be integer)");
+            throw new BEInvalidArgumentException(
+                "Bad type (" . gettype($optionName) . ") of option name (must be integer)"
+            );
         }
         if (!isset($this->options[$optionName])) {
             throw new BERuntimeException("No option with name \"" . $optionName . "\" exists in the class)");

@@ -1194,7 +1194,7 @@ class Bridge
                 $requiredCoins = $amount + $requiredFeeWithChange;
             } elseif ($change > 0) {
                 if ($change < intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT))) {
-                    $amount = $amount - ( intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT)) - $change );
+                    $amount -= ( intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT)) - $change );
                     if ($amount < intval($this->getOption(self::OPT_MINIMAL_AMOUNT_FOR_SENT))) {
                         throw new BEInvalidArgumentException(
                             "The transaction amount is too small to send after the fee has been deducted."

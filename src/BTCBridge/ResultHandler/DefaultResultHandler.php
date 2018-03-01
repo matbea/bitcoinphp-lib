@@ -17,7 +17,6 @@ use BTCBridge\Api\BTCValue;
 use BTCBridge\Exception\ResultHandlerException;
 use BTCBridge\Exception\BEInvalidArgumentException;
 
-
 /**
  * Default Conflict Handler class providing the default behaviour
  *
