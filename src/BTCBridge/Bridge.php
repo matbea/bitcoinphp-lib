@@ -140,6 +140,7 @@ class Bridge
             } elseif (CurrencyTypeEnum::TBTC == $this->currency) {
                 $this->network = NetworkFactory::bitcoinTestnet();
             }
+            Bitcoin::setNetwork($this->network);
         } catch (\Exception $ex) {
             throw new BERuntimeException($ex->getMessage());
         }
@@ -1010,8 +1011,7 @@ class Bridge
             $privateKey = PrivateKeyFactory::create();
             $address = $privateKey->getPublicKey()->getAddress();
             $address = $address->getAddress();
-            $network = Bitcoin::getNetwork();
-            $wif = $privateKey->toWif($network);
+            $wif = $privateKey->toWif($this->network);
         } catch (\Exception $ex) {
             throw new BERuntimeException($ex->getMessage());
         } //May be \RuntimeException will raised in the BitWASP library - we'll not change this
