@@ -1696,13 +1696,13 @@ class Bridge
         /** @noinspection PhpUndefinedMethodInspection */
         $transaction = $transaction->get();
 
-        $ec = Bitcoin::getEcAdapter();
+        $ec = Bitcoin::getEcAdapter(); 
         $signer = new Signer($transaction, $ec);
         for ($i = 0, $ic = count($transactionSources); $i < $ic; ++$i) {
             $signer->sign($i, $transactionSources[$i]->privateKey, $transactionSources[$i]->transactionOutput);
         }
         $signedTransaction = $signer->get();
-        $raw = $signedTransaction->getHex();
+        $raw = $signedTransaction->getHex(); 
         return $this->sendrawtransaction($raw);
     }
 }
