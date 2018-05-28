@@ -172,12 +172,10 @@ class Bridge
 
     /**
      * Sets the option
-     *
      * @param int $optionName a constant describying name of the option
      * @param string $optionValue a value of the option
-     *
      * @throws BEInvalidArgumentException if error of this type
-     *
+     * @return Bridge
      */
     public function setOption($optionName, $optionValue)
     {
@@ -197,6 +195,7 @@ class Bridge
             throw new BEInvalidArgumentException($msg);
         }
         $this->options[$optionName] = $optionValue;
+        return $this;
     }
 
     /**

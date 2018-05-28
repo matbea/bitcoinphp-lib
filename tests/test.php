@@ -119,17 +119,17 @@ try {
     $logger->pushHandler(new Monolog\Handler\StreamHandler($logfilename));
 
     $blockTrailHandler = (new \BTCBridge\Handler\BlockTrailHandler(
-        new \BTCBridge\Api\CurrencyTypeEnum(\BTCBridge\Api\CurrencyTypeEnum::BTC)
+        new \BTCBridge\Api\CurrencyTypeEnum(\BTCBridge\Api\CurrencyTypeEnum::TBTC)
     ))->setToken("YOUR_BLOCKTRAIL_TOKEN");
 
     $matbeaHandler = (new \BTCBridge\Handler\MatbeaHandler(
-        new \BTCBridge\Api\CurrencyTypeEnum(\BTCBridge\Api\CurrencyTypeEnum::BTC)
-    ))->setToken("YOUR_MATBEA_TOKEN");
+        new \BTCBridge\Api\CurrencyTypeEnum(\BTCBridge\Api\CurrencyTypeEnum::TBTC)
+    ))->setToken("abcdefghijklmnopqrstuvwxyz123546");
 
-    $matbeaHandler->setOption(
+    /*$matbeaHandler->setOption(
         \BTCBridge\Handler\AbstractHandler::OPT_BASE_URL,
         "https://136.243.32.19/btcbridge"
-    );
+    );*/
 
     $conflictHandler = new \BTCBridge\ConflictHandler\DefaultConflictHandler();
     $conflictHandler->setOption(
@@ -138,7 +138,7 @@ try {
     );
     //HUERAGA - vipilit
     $bridge = new \BTCBridge\Bridge(
-        new \BTCBridge\Api\CurrencyTypeEnum(\BTCBridge\Api\CurrencyTypeEnum::BTC),
+        new \BTCBridge\Api\CurrencyTypeEnum(\BTCBridge\Api\CurrencyTypeEnum::TBTC),
         [$matbeaHandler, $blockTrailHandler],
         $conflictHandler,
         new \BTCBridge\ResultHandler\DefaultResultHandler(),
@@ -149,7 +149,9 @@ try {
         __DIR__ . "/data/wallet.dat"
     );
 
-    $res = $bridge->getbalance('12S42ZEw2741DHrivgZHLfX8M58mxb7bFy');
+    $addr = $bridge->getnewaddress();
+    $addr = $addr;
+    //$res = $bridge->getbalance('12S42ZEw2741DHrivgZHLfX8M58mxb7bFy');
     //$res = $bridge->getbalance('name__2N1WA');
 
     //$o = new \BTCBridge\Api\ListTransactionsOptions();
