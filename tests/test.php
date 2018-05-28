@@ -124,7 +124,7 @@ try {
 
     $matbeaHandler = (new \BTCBridge\Handler\MatbeaHandler(
         new \BTCBridge\Api\CurrencyTypeEnum(\BTCBridge\Api\CurrencyTypeEnum::TBTC)
-    ))->setToken("abcdefghijklmnopqrstuvwxyz123546");
+    ))->setToken("YOUR_MATBEA_TOKEN");
 
     /*$matbeaHandler->setOption(
         \BTCBridge\Handler\AbstractHandler::OPT_BASE_URL,
