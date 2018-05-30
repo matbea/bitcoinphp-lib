@@ -34,7 +34,7 @@ use BTCBridge\Exception\BELogicException;
 class MatbeaHandler extends AbstractHandler
 {
 
-    protected $token = "";
+    protected $token = '';
 
     /**
      * {@inheritdoc}
@@ -42,7 +42,7 @@ class MatbeaHandler extends AbstractHandler
     public function __construct(CurrencyTypeEnum $currency)
     {
         parent::__construct($currency);
-        $this->setOption(self::OPT_BASE_URL, "https://api.matbea.net/btcbridge");
+        $this->setOption(self::OPT_BASE_URL, 'https://api.matbea.net/btcbridge');
     }
 
     /**
@@ -57,7 +57,7 @@ class MatbeaHandler extends AbstractHandler
     public function setToken($token)
     {
         if ((!is_string($token)) || empty($token)) {
-            $msg = "Bad type (" . gettype($token) . ") of token or empty token";
+            $msg = 'Bad type (' . gettype($token) . ') of token or empty token';
             throw new BEInvalidArgumentException($msg);
         }
         $this->token = $token;
@@ -75,21 +75,21 @@ class MatbeaHandler extends AbstractHandler
      */
     protected function checkMatbeaResult($url, $content)
     {
-        if (!is_string($url) || (empty($url))) {
-            throw new BEInvalidArgumentException("Bad type of \$url (must be valid url-string)");
+        if (!is_string($url) || empty($url)) {
+            throw new BEInvalidArgumentException('Bad type of \$url (must be valid url-string)');
         }
         if ((false === $content) || (null === $content)) {
-            throw new BERuntimeException("curl does not return a json object (url:\"" . $url . "\").");
+            throw new BERuntimeException('curl does not return a json object (url:"' . $url . '").');
         }
         if (!isset($content['error']) || (!isset($content['result']))) {
             throw new BERuntimeException(
-                "Incorrect format of returning data (\"" . json_encode($content) . "\"), url=\"" . $url . "\"."
+                'Incorrect format of returning data ("' . json_encode($content) . '"), url="' . $url . '".'
             );
         }
         if (!empty($content['error'])) {
             throw new BERuntimeException(
-                "Error \"" . $content['error']['message'] . "\" (code: "
-                . $content['error']['code'] . ") returned (url:\"" . $url . "\")."
+                'Error "' . $content['error']['message'] . '" (code: '
+                . $content['error']['code'] . ') returned (url:"' . $url . '").'
             );
         }
     }
@@ -101,38 +101,38 @@ class MatbeaHandler extends AbstractHandler
     public function listtransactions($walletName, ListTransactionsOptions $options = null)
     {
         if (!is_string($walletName)) {
-            throw new BEInvalidArgumentException("Walletname must be non empty string.");
+            throw new BEInvalidArgumentException('Walletname must be non empty string.');
         }
         if (!preg_match('/^[A-Z0-9_-]+$/i', $walletName)) {
             throw new BEInvalidArgumentException(
-                "Wallet name must contain only alphanumeric, underline and dash symbols (\"" .
-                $walletName . "\" passed)."
+                'Wallet name must contain only alphanumeric, underline and dash symbols ("' .
+                $walletName . '" passed).'
             );
         }
         $curr = $this->currency;
-        $url = $this->getOption(self::OPT_BASE_URL) . "/" . $curr . "/" . $walletName . "/" . "listtransactions";
-        $sep = "?";
+        $url = $this->getOption(self::OPT_BASE_URL) . '/' . $curr . '/' . $walletName . '/' . 'listtransactions';
+        $sep = '?';
         if ($this->token) {
-            $url .= $sep . "token=" . $this->token;
-            $sep = "&";
+            $url .= $sep . 'token=' . $this->token;
+            $sep = '&';
         }
         if ($options) {
             if (null !== $options->getLimit()) {
-                $url .= $sep . "limit=" . $options->getLimit();
-                $sep = "&";
+                $url .= $sep . 'limit=' . $options->getLimit();
+                $sep = '&';
             }
             if (null !== $options->getConfirmations()) {
-                $url .= $sep . "confirmations=" . $options->getConfirmations();
+                $url .= $sep . 'confirmations=' . $options->getConfirmations();
             } else {
-                $url .= $sep . "confirmations=1";
+                $url .= $sep . 'confirmations=1';
             }
-            $sep = "&";
+            $sep = '&';
             if (null !== $options->getStarttxid()) {
-                $url .= $sep . "starttxid=" . $options->getStarttxid();
-                $sep = "&";
+                $url .= $sep . 'starttxid=' . $options->getStarttxid();
+                $sep = '&';
             }
             if (null !== $options->getOmitAddresses()) {
-                $url .= $sep . "omit_addresses=" . (int)$options->getOmitAddresses();
+                $url .= $sep . 'omit_addresses=' . (int)$options->getOmitAddresses();
             }
         }
 
@@ -140,38 +140,38 @@ class MatbeaHandler extends AbstractHandler
         $this->prepareCurl($ch, $url);
         $content = curl_exec($ch);
         if ((false === $content) || (null === $content)) {
-            throw new BERuntimeException("curl error occured (url:\"" . $url . "\")");
+            throw new BERuntimeException('curl error occured (url:"' . $url . '")');
         }
         $content = json_decode($content, true);
         $this->checkMatbeaResult($url, $content);
-        if (!isset($content["result"]["transactions"])) {
-            $msg = "Answer of url: \"" . $url . "\")  does not contain a \"transactions\" property.";
-            $this->logger->error($msg, ["data" => $content]);
+        if (!isset($content['result']['transactions'])) {
+            $msg = 'Answer of url: "' . $url . '")  does not contain a "transactions" property.';
+            $this->logger->error($msg, ['data' => $content]);
             throw new BERuntimeException($msg);
         }
 
         /** @var $result Address */
         $addrObject = new Address();
 
-        if (isset($content["result"]["address"])) {
-            $addrObject->setAddress($content["result"]["address"]);
+        if (isset($content['result']['address'])) {
+            $addrObject->setAddress($content['result']['address']);
         } else {
-            if (isset($content["result"]["wallet"])) {
+            if (isset($content['result']['wallet'])) {
                 $wallet = new Wallet();
                 if (!isset($content['result']['wallet']['name'])) {
                     throw new BERuntimeException(
-                        "Answer does not contain \"wallet.name\" field (url:\"" . $url . "\")."
+                        'Answer does not contain "wallet.name" field (url:"' . $url . '").'
                     );
                 }
                 if (!isset($content['result']['wallet']['id'])) {
                     throw new BERuntimeException(
-                        "Answer does not contain \"wallet.id\" field (url:\"" . $url . "\")."
+                        'Answer does not contain "wallet.id" field (url:"' . $url . '").'
                     );
                 }
                 if ($options && (false === $options->getOmitAddresses())) {
                     if (!isset($content['result']['wallet']['addresses'])) {
                         throw new BERuntimeException(
-                            "Answer does not contain \"wallet.addresses\" field (url:\"" . $url . "\")."
+                            'Answer does not contain "wallet.addresses" field (url:"' . $url . '").'
                         );
                     }
                 }
@@ -180,9 +180,9 @@ class MatbeaHandler extends AbstractHandler
                 $wallet->setSystemDataByHandler(
                     $this->getHandlerName(),
                     [
-                        "name" => $content['result']['wallet']['name']
+                        'name' => $content['result']['wallet']['name']
                         ,
-                        "id" => intval($content['result']['wallet']['id'])
+                        'id' => (int)$content['result']['wallet']['id']
                     ]
                 );
                 $addrObject->setWallet($wallet);
@@ -195,38 +195,32 @@ class MatbeaHandler extends AbstractHandler
         $txUnconfirmedRefs = [];
         $txRefHashes = [];
 
-        foreach ($content["result"]["transactions"] as $txref) {
+        foreach ($content['result']['transactions'] as $txref) {
             $txr = new TransactionReference();
-            if (isset($txref["block_height"])) {
-                $txr->setBlockHeight($txref["block_height"]);
+            if (isset($txref['block_height'])) {
+                $txr->setBlockHeight($txref['block_height']);
             }
-            $txr->setConfirmations($txref["confirmations"]);
-            $txr->setDoubleSpend($txref["double_spend"]);
-            $txr->setTxHash($txref["txid"]);
-            $txr->setVout($txref["vout"]);
-            $txr->setConfirmed($txref["time"]);
-            $txr->setCategory($txref["category"]);
-            $v = gmp_init(strval($txref["amount"]));
+            $txr->setConfirmations($txref['confirmations']);
+            $txr->setDoubleSpend($txref['double_spend']);
+            $txr->setTxHash($txref['txid']);
+            $txr->setVout($txref['vout']);
+            $txr->setConfirmed($txref['time']);
+            $txr->setCategory($txref['category']);
+            $v = gmp_init((string)$txref['amount']);
             $txr->setValue(new BTCValue($v));
             $txr->setAddress($txref['address']);
 
-            $txRefHash = (string)($txr->getVout()) . "_" . $txr->getTxHash() . "_"
-                . $txr->getConfirmed() . "_" . $txr->getCategory() . "_"
-                . (string)($txr->getBlockHeight()) . "_" . ((string) $txr->getConfirmations())
-                . "_" . $txr->getAddress();
+            $txRefHash = (string)$txr->getVout() . '_' . $txr->getTxHash() . '_'
+                . $txr->getConfirmed() . '_' . $txr->getCategory() . '_'
+                . (string)$txr->getBlockHeight() . '_' . (string)$txr->getConfirmations()
+                . '_' . $txr->getAddress();
             if (!isset($txRefHashes[$txRefHash])) {
                 $txRefHashes[$txRefHash] = 1;
-                if (isset($txref["block_height"])) {
+                if (isset($txref['block_height'])) {
                     $txRefs [] = $txr;
                 } else {
                     $txUnconfirmedRefs [] = $txr;
                 }
-            } else {
-                throw new BERuntimeException(
-                    "Logic error in ListTransactions method, response contains same txref 
-                    (server side, url:\"" . $url . "\", txrefhash: \"" . $txRefHash . "\", 
-                    txref: ( " . serialize($txr) . " ) )."
-                );
             }
         }
         $addrObject->setTxrefs($txRefs);
@@ -284,19 +278,19 @@ class MatbeaHandler extends AbstractHandler
 
         $txs = [];
 
-        foreach ($content["result"]["transactions"] as $tr) {
+        foreach ($content['result']['transactions'] as $tr) {
             $tx = new Transaction;
-            if (-1 != $tr["block_height"]) {
-                $tx->setConfirmed($tr["block_time"]);
-                $tx->setBlockHash($tr["block_hash"]);
-                $tx->setBlockHeight($tr["block_height"]);
+            if (-1 != $tr['"block_height']) {
+                $tx->setConfirmed($tr['block_time']);
+                $tx->setBlockHash($tr['block_hash']);
+                $tx->setBlockHeight($tr['block_height']);
             } else {
                 $tx->setBlockHeight(-1);
             }
-            $tx->setHash($tr["hash"]);
-            $tx->setDoubleSpend($tr["double_spend"]);
-            $tx->setConfirmations($tr["confirmations"]);
-            foreach ($tr["inputs"] as $inp) {
+            $tx->setHash($tr['hash']);
+            $tx->setDoubleSpend($tr['double_spend']);
+            $tx->setConfirmations($tr['confirmations']);
+            foreach ($tr['inputs'] as $inp) {
                 $input = new TransactionInput();
                 if (isset($inp["addresses"])) {
                     $input->setAddresses($inp["addresses"]);
