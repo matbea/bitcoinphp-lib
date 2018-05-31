@@ -249,10 +249,10 @@ class DefaultConflictHandler implements ConflictHandlerInterface
                 // because of txhash=
                 //0000297bd516c501aa9b143a5eac8adaf457fa78431e844092a7112815411d03
                 // (different confirmed)
-                //($tx1->getConfirmed() !== $tx2->getConfirmed()) ||
+                //($tx1->getConfirmatonTime() !== $tx2->getConfirmationTime()) ||
                 ($tx1->getDoubleSpend() !== $tx2->getDoubleSpend()) ||
                 ($tx1->getBlockHeight() !== $tx2->getBlockHeight()) ||
-                ($tx1->getHash() !== $tx2->getHash())
+                ($tx1->getTxId() !== $tx2->getTxId())
             ) {
                 throw new ConflictHandlerException(
                     "Different values of transactions ( " . serialize($tx1) . " and " . serialize($tx2) . " )."

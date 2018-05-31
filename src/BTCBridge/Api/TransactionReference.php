@@ -37,7 +37,7 @@ class TransactionReference
      * One of the transaction hashes for the specified address.
      * @var string
      */
-    protected $txHash = null;
+    protected $txId = null;
 
     /**
      * For an output, the output index (vout) for this output in this transaction.
@@ -68,7 +68,7 @@ class TransactionReference
      * Time at which transaction was included in a block; only present for confirmed transactions.
      * @var int
      */
-    protected $confirmed = null;
+    protected $confirmationTime;
 
 
     /**
@@ -127,20 +127,20 @@ class TransactionReference
      *
      * @return string
      */
-    public function getTxHash()
+    public function getTxId()
     {
-        return $this->txHash;
+        return $this->txId;
     }
 
     /**
      * One of the transaction hashes for the specified address.
      *
-     * @param string $txHash
+     * @param string $txId
      * @return $this
      */
-    public function setTxHash($txHash)
+    public function setTxId($txId)
     {
-        $this->txHash = $txHash;
+        $this->txId = $txId;
         return $this;
     }
 
@@ -281,20 +281,20 @@ class TransactionReference
      *
      * @return int
      */
-    public function getConfirmed()
+    public function getConfirmationTime()
     {
-        return $this->confirmed;
+        return $this->confirmationTime;
     }
 
     /**
      * Time at which transaction was included in a block; only present for confirmed transactions.
      *
-     * @param int $confirmed
+     * @param int $confirmationTime
      * @return $this
      */
-    public function setConfirmed($confirmed)
+    public function setConfirmationTime($confirmationTime)
     {
-        $this->confirmed = $confirmed;
+        $this->confirmationTime = $confirmationTime;
         return $this;
     }
 
@@ -311,7 +311,7 @@ class TransactionReference
         return
             ($this->getDoubleSpend() == $o->getDoubleSpend())
                 &&
-            ($this->getTxHash() == $o->getTxHash())
+            ($this->getTxId() == $o->getTxId())
                 &&
             ($this->getBlockHeight() == $o->getBlockHeight())
                 &&
@@ -327,7 +327,7 @@ class TransactionReference
                 &&
             ($this->getAddress() == $o->getAddress())
             &&
-            ($this->getConfirmed() == $o->getConfirmed())
+            ($this->getConfirmationTime() == $o->getConfirmationTime())
         ;
     }
 }

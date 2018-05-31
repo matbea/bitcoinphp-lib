@@ -121,10 +121,10 @@ class BlockCypherHandler extends AbstractHandler
                 $tx->setBlockHash($content["block_hash"]);
             }
             $tx->setBlockHeight($content["block_height"]);
-            $tx->setHash($content["hash"]);
+            $tx->setTxId($content["hash"]);
             //$tx->setAddresses($content["addresses"]);
             if (isset($content["confirmed"])) {
-                $tx->setConfirmed(strtotime($content["confirmed"]));
+                $tx->setConfirmationTime(strtotime($content["confirmed"]));
             }
             //$tx->setLockTime($content["lock_time"]);
             $tx->setDoubleSpend($content["double_spend"]);

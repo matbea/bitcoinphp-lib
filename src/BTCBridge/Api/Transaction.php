@@ -35,7 +35,7 @@ class Transaction
      * Time at which transaction was included in a block; only present for confirmed transactions.
      * @var int
      */
-    protected $confirmed = null;
+    protected $confirmationTime = null;
 
     /**
      * Whether the transaction is a double spend.
@@ -93,20 +93,20 @@ class Transaction
      *
      * @return int
      */
-    public function getConfirmed()
+    public function getConfirmationTime()
     {
-        return $this->confirmed;
+        return $this->confirmationTime;
     }
 
     /**
      * Time at which transaction was included in a block; only present for confirmed transactions.
      *
-     * @param int $confirmed
+     * @param int $confirmationTime
      * @return $this
      */
-    public function setConfirmed($confirmed)
+    public function setConfirmationTime($confirmationTime)
     {
-        $this->confirmed = $confirmed;
+        $this->confirmationTime = $confirmationTime;
         return $this;
     }
 
@@ -271,12 +271,12 @@ class Transaction
      * Hash of the transaction. While hashes are reasonably unique, using them as identifiers may be unsafe.
      * https://en.bitcoin.it/wiki/Transaction_Malleability
      *
-     * @param $hash
+     * @param string $txId
      * @return $this
      */
-    public function setHash($hash)
+    public function setTxId($txId)
     {
-        $this->hash = $hash;
+        $this->txId = $txId;
         return $this;
     }
 
@@ -286,8 +286,8 @@ class Transaction
      *
      * @return string
      */
-    public function getHash()
+    public function getTxId()
     {
-        return $this->hash;
+        return $this->txId;
     }
 }

@@ -204,14 +204,14 @@ class MatbeaHandler extends AbstractHandler
             $txr->setDoubleSpend($txref['double_spend']);
             $txr->setTxHash($txref['txid']);
             $txr->setVout($txref['vout']);
-            $txr->setConfirmed($txref['time']);
+            $txr->setConfirmationTime($txref['time']);
             $txr->setCategory($txref['category']);
             $v = gmp_init((string)$txref['amount']);
             $txr->setValue(new BTCValue($v));
             $txr->setAddress($txref['address']);
 
             $txRefHash = (string)$txr->getVout() . '_' . $txr->getTxHash() . '_'
-                . $txr->getConfirmed() . '_' . $txr->getCategory() . '_'
+                . $txr->getConfirmationTime() . '_' . $txr->getCategory() . '_'
                 . (string)$txr->getBlockHeight() . '_' . (string)$txr->getConfirmations()
                 . '_' . $txr->getAddress();
             if (!isset($txRefHashes[$txRefHash])) {
@@ -280,14 +280,14 @@ class MatbeaHandler extends AbstractHandler
 
         foreach ($content['result']['transactions'] as $tr) {
             $tx = new Transaction;
-            if (-1 != $tr['"block_height']) {
-                $tx->setConfirmed($tr['block_time']);
+            if (-1 !== $tr['"block_height']) {
+                $tx->setConfirmationTime($tr['block_time']);
                 $tx->setBlockHash($tr['block_hash']);
                 $tx->setBlockHeight($tr['block_height']);
             } else {
                 $tx->setBlockHeight(-1);
             }
-            $tx->setHash($tr['hash']);
+            $tx->setTxId($tr['hash']);
             $tx->setDoubleSpend($tr['double_spend']);
             $tx->setConfirmations($tr['confirmations']);
             foreach ($tr['inputs'] as $inp) {
@@ -473,7 +473,7 @@ class MatbeaHandler extends AbstractHandler
                 $txr->setBlockHeight($txref["block_height"]);
             }
             if (isset($txref["confirmed"])) {
-                $txr->setConfirmed($txref["confirmed"]);
+                $txr->setConfirmationTime($txref["confirmed"]);
             }
             $txr->setConfirmations($txref["confirmations"]);
             $txr->setDoubleSpend($txref["double_spend"]);

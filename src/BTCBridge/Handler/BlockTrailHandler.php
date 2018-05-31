@@ -140,9 +140,9 @@ class BlockTrailHandler extends AbstractHandler
             if (null !== $content["block_hash"]) {
                 $tx->setBlockHash($content["block_hash"]);
             }
-            $tx->setHash($content["hash"]);
+            $tx->setTxId($content["hash"]);
             if (null !== $content["block_time"]) {
-                $tx->setConfirmed(strtotime($content["block_time"]));
+                $tx->setConfirmationTime(strtotime($content["block_time"]));
             }
             $tx->setDoubleSpend($content["is_double_spend"]);
             $tx->setConfirmations($content["confirmations"]);
