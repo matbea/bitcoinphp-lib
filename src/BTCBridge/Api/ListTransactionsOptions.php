@@ -12,6 +12,13 @@ use BTCBridge\Exception\BEInvalidArgumentException;
  */
 class ListTransactionsOptions
 {
+
+    /** Maximum limit for listtransactions method */
+    const MAXIMUM_LIMIT  = 100;
+
+    /** Default limit for listtransactions method */
+    const DEFAULT_LIMIT  = 10;
+
     /** @var $limit integer */
     protected $limit;
 
@@ -32,7 +39,7 @@ class ListTransactionsOptions
     public function __construct()
     {
         $this->confirmations = 0;
-        $this->limit = 10;
+        $this->limit = self::DEFAULT_LIMIT;
         $this->omit_addresses = true;
     }
 
@@ -51,10 +58,10 @@ class ListTransactionsOptions
      */
     public function setLimit($limit)
     {
-        if ((!is_int($limit)) || ($limit <= 0) || ($limit > 1000)) {
+        if ((!is_int($limit)) || ($limit <= 0) || ($limit > self::MAXIMUM_LIMIT)) {
             if (!is_null($limit)) {
                 throw new BEInvalidArgumentException(
-                    "limit variable must be positive integer (less than 1000) or null."
+                    'limit variable must be positive integer (less than ' . self::DEFAULT_LIMIT . ') or null.'
                 );
             }
         }
@@ -80,7 +87,7 @@ class ListTransactionsOptions
         if ((!is_int($confirmations)) || ($confirmations <= 0)) {
             if (!is_null($confirmations)) {
                 throw new BEInvalidArgumentException(
-                    "confirmation variable must be positive integer."
+                    'confirmation variable must be positive integer.'
                 );
             }
         }
@@ -106,7 +113,7 @@ class ListTransactionsOptions
         if ((!is_string($starttxid)) || (trim($starttxid) == '')) {
             if (!is_null($starttxid)) {
                 throw new BEInvalidArgumentException(
-                    "starttxid variable must be non empty string."
+                    'starttxid variable must be non empty string.'
                 );
             }
         }
@@ -132,7 +139,7 @@ class ListTransactionsOptions
         if (!is_bool($omit_addresses)) {
             if (!is_null($omit_addresses)) {
                 throw new BEInvalidArgumentException(
-                    "omit_addresses variable must be boolean type or null."
+                    'omit_addresses variable must be boolean type or null.'
                 );
             }
         }
